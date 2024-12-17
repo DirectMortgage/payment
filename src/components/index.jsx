@@ -7,5 +7,6 @@ import { RadioGroup } from "./RadioGroup";
 import { ReactTable } from "./ReactTable";
 import { SelectBox } from "./SelectBox";
 import { Text } from "./Text";
+import { Checkbox } from "./Checkbox";
 
-export { Button, Heading, Img, Input, Radio, RadioGroup, ReactTable, SelectBox, Text };
+export { Button, Heading, Img, Input, Radio, RadioGroup, ReactTable, SelectBox, Text,Checkbox };

@@ -80,6 +80,21 @@ background-color: inherit;
 .filter-red {
   filter: invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(112%);
 }
+.spinner {
+  animation: spin 1s linear infinite;
+}
+input[type="radio"]{
+  box-shadow: none !important;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 /* .cell-content {
   padding: 4px;
   min-height: 24px;

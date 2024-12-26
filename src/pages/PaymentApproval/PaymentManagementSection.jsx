@@ -3,7 +3,7 @@ import { CloseSVG } from "../../components/Input/close.jsx";
 import { ReactTable } from "../../components/ReactTable";
 import { createColumnHelper } from "@tanstack/react-table";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPencil } from '@fortawesome/free-solid-svg-icons';
+import { faPencil,faRotate } from '@fortawesome/free-solid-svg-icons';
 import uploadPdfImage from '../../components/Images/upload-pdf.png';
 import OpenPdfImage from '../../components/Images/open_in_new.png';
 import Close from '../../components/Images/close.png';
@@ -13,100 +13,65 @@ import {
   handleGetSessionData,
   getCurrentTimeAndDate,
   formatAsHTML,
+  fnOpenWindow,
+  handleShowUploadingStatus,
 } from "../../components/CommonFunctions/CommonFunction.js";
-import React, { useEffect, useState } from "react";
+import {
+ FileUpload,
+ 
+} from "../../components/CommonFunctions/Accessories";
+import React, { useEffect, useState,useRef, forwardRef, useImperativeHandle } from "react";
 import Table from "../../components/Table/Table.js";
 
 let SessionId;
 
-const tableData = [
-  {
-    payeeHeader: "CrossCheck Compliance ",
-    totalHeader: "$0.00",
-    glAccountHeader: "0-",
-    departmentHeader: "",
-    invoiceDateHeader: "",
-    invoiceNumberHeader: "",
-    memoHeader: "",
-    paidHeader: "images/img_instagram.svg",
-    imagesHeader: "Upload",
-    paymentDetails: "Date Last Paid: 10/28/2022\nAmount Paid: $8,383.23",
-
-
-  },
-  {
-    payeeHeader: "Gift Hounds",
-    paymentDetails: "Date Last Paid: 10/28/2022\nAmount Paid: $702.98",
-    totalHeader: "$2.00",
-    glAccountHeader: "6010 -Advertising",
-    departmentHeader: "",
-    invoiceDateHeader: "",
-    invoiceNumberHeader: "",
-    memoHeader: "",
-    paidHeader: "images/img_lock.svg",
-    imagesHeader: "Upload",
-  },
-  {
-    payeeHeader: "HubSpot Inc.",
-    paymentDetails: "Date Last Paid: None\nAmount Paid: None",
-    totalHeader: "$12,471.01",
-    glAccountHeader: "6010 -Advertising",
-    departmentHeader: "910 - Tripp Branch",
-    invoiceDateHeader: "10/24/2022",
-    invoiceNumberHeader: "9592219",
-    memoHeader: "DMC Oct 2022",
-    paidHeader: "images/img_instagram.svg",
-    imagesHeader: "Upload",
-  },
-  // {
-  //   payeeHeader: "HUD",
-  //   paymentDetails: "Process HUD",
-  //   paymentInfo: "Date Last Paid: 10/25/2024\nAmount Paid: $9,457.00",
-  //   totalHeader: "$7,835.80",
-  //   glAccountHeader: "2033 -HUD Premiums Payable",
-  //   departmentHeader: ".",
-  //   invoiceDateHeader: "10/31/2024",
-  //   invoiceNumberHeader: "FHA UFMIP - 515836",
-  //   memoHeader: "515836 - Edward Gonzalez",
-  //   paidHeader: "images/img_instagram.svg",
-  //   imagesHeader: "Upload",
-  // },
-  // {
-  //   payeeHeader: "VA",
-  //   paymentDetails: "Process VA",
-  //   paymentInfo: "Date Last Paid: 10/18/2024\nAmount Paid: $2,500.00",
-  //   totalHeader: "$4,825.00",
-  //   glAccountHeader: "2031 - VA Funding Fee Payable",
-  //   departmentHeader: ".",
-  //   invoiceDateHeader: "10/31/2024",
-  //   invoiceNumberHeader: "VA Funding Fee - 512932",
-  //   memoHeader: "512932 - Joseph Yeates",
-  //   paidHeader: "images/img_instagram.svg",
-  //   imagesHeader: "Upload",
-  //   viewImageText: "View Image",
-  //   fulfillmentText: "Fulfillment",
-  // },
-];
-
-
-
-const PaymentManagementSection = () => {
+const PaymentManagementSection = forwardRef(({companyId}, ref) => {
   const [searchBarValue, setSearchBarValue] = React.useState("");
   const [rawXmlData, setRawXmlData] = useState("");
   const [rowData, setRowData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [glAccounts, setGLAccounts] = useState([]);
+  const [Class, setClass] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [dropDownOptions, setDropDownOptions] = useState([]);
   const [editingRows, setEditingRows] = useState({});
-
-  let queryString = queryStringToObject();
   
+  
+  const tableRef = useRef(null);
+  let queryString = queryStringToObject();
+  const [EmpId, SetEmpID] = useState("0");
+  const empIdRef = useRef(EmpId);
+
+
+  useImperativeHandle(ref, () => ({
+    handleAddRow: () => {
+      console.log('Table ref:', tableRef.current); // Debug log
+      tableRef.current.addRow();
+    },
+    handleSave: () => {
+      tableRef.current.savevendorPayment();
+    }
+  }));
   //let FromPipeline = queryString["FromPipeline"];
   SessionId = queryString["SessionID"];
+  useEffect(() => {
+    empIdRef.current = EmpId;
+}, [EmpId]);
+useEffect(() => {
+  const fetchData = async () => {
+      let fetchedEmpNum = queryString["EmpNum"] || "0";
 
+      if (fetchedEmpNum === "0") {
+          fetchedEmpNum = await handleGetSessionData(SessionId, "empnum");
+      }
+      SetEmpID(fetchedEmpNum);
 
+      await GetVendorPaymentApprovalData(companyId, fetchedEmpNum);
+  };
+
+  fetchData();
+}, [companyId]);
   
   const GetVendorPaymentApprovalData = async (CompanyId, UserId) => {
     setIsLoading(true); // Set loading when starting the request
@@ -137,6 +102,7 @@ const PaymentManagementSection = () => {
           const dropDownOptions = formatDropdownOptions(htmlString);
           setDropDownOptions(dropDownOptions);
           setVendors(vendors);
+          setClass(responseJson.VendorPayment[5].Class)
           setGLAccounts(responseJson.VendorPayment[6].Accounts)
           setRowData(JSON.parse(processedData));
           console.log(JSON.parse(processedData))
@@ -224,6 +190,7 @@ const PaymentManagementSection = () => {
         AddedOn: full.AddedOn,
         pStatus: full.pStatus,
         AppraisalURL: full.AppraisalURL,
+        ACHApprovedDetail:full.ACHApprovedDetail,
         imagesHeader: "Upload",
       };
     });
@@ -253,12 +220,12 @@ const PaymentManagementSection = () => {
   };
   
   // useEffect to load data when the component mounts
-  useEffect(() => {
-    const LoadData = async () => {
-      GetVendorPaymentApprovalData(4, 32182); // Replace with the actual CompanyId and UserId
-    };
-    LoadData();
-  }, []); // Empty dependency array means it runs once when the component mounts
+  // useEffect(() => {
+  //   const LoadData = async () => {
+  //     GetVendorPaymentApprovalData(companyId, 32182); // Replace with the actual CompanyId and UserId
+  //   };
+  //   LoadData();
+  // }, [companyId]);
   const handleImageClick = (LinkId) => {
     // Handle the click event here
     const URL = "../../../NewDMAcct/GetUploadedImage.aspx?CompanyId=" + 4 + "&LinkId=" + LinkId;
@@ -288,6 +255,138 @@ const PaymentManagementSection = () => {
       checkNum: option.getAttribute('CheckNum'),
       selected: option.getAttribute('Selected') === 'Selected'
     }));
+  }
+  const onFileDrop = ({ files, documentDetail, target,vendorPaymentId,vendorPaymentDetailId,spinner,headerText,}) => {
+    const currentEmpId = empIdRef.current;
+    if (files.length) {
+
+     
+     
+      let details = {
+          LoanId: currentEmpId,
+          DocTypeId:vendorPaymentId,
+          sessionid: SessionId,
+          viewtype:23,
+          category: vendorPaymentDetailId,
+          description:'',
+          usedoc: 1,
+          entityid:0,
+          entitytypeid:0,
+          uploadsource:currentEmpId,
+          conditonid: 0,
+        },
+        index = 1;
+
+        return
+
+      files.forEach(async (file) => {
+        let formData = new FormData();
+        formData.append("", file);
+
+        let requestOptions = {
+          method: "POST",
+          body: formData,
+          redirect: "follow",
+        };
+
+        await handleAPI({
+          name: "Payment_UploadFilesdocs",
+          params: details || {},
+          requestOptions: requestOptions,
+        })
+          .then((ScanDocId) => {
+            if (ScanDocId) {
+
+              setTimeout(() => {
+                if (spinner && headerText) {
+                  // Hide spinner and update text to "Uploaded"
+                  spinner.style.display = "none";
+                  headerText.textContent = "Uploaded";
+                }
+              }, 500);
+              // handleSaveScanDocDetails(
+              //   ScanDocId,
+              //   entityid,
+              //   entitytypeid,
+              //   iRecId,
+              //   index === files.length
+              // );
+              if (index === files.length) {
+                // handlePostFileUpload({
+                //   target,
+                //   scanDocId: ScanDocId,
+                //   documentDetail,
+                // });
+              
+                // setUploadingStatus((prevUploading) => {
+                //   return [...prevUploading.filter((item) => item !== ID)];
+                // });
+
+
+
+              //  handleTempRefreshDocList(ID);
+               // setProcessingStatus(null);
+                // setTimeout(() => {
+                //   if (!promptFlag) {
+                //     setModalDetails({
+                //       body: (
+                //         <>
+                //           To view this document, click the Uploaded Documents
+                //           tab above
+                //         </>
+                //       ),
+                //       title: "Upload Success",
+                //       show: true,
+                //       footerLeftContent: (
+                //         <>
+                //           <div
+                //             style={{
+                //               display: "flex",
+                //               alignItems: "center",
+                //             }}
+                //           >
+                //             <input
+                //               value={promptFlag}
+                //               type="checkbox"
+                //               id="modal-checkbox"
+                //               style={{ height: 20, width: 20 }}
+                //               onChange={(event) => {
+                //                 setPromptFlag((iPromptFlag) => !iPromptFlag);
+                //                 handleAPI({
+                //                   name: "UpdateUploadPrompt",
+                //                   params: {
+                //                     empId: empNumber,
+                //                     Value: event.target.checked ? 1 : 0,
+                //                   },
+                //                 }).then(() => {});
+                //               }}
+                //             />
+                //             <label
+                //               htmlFor="modal-checkbox"
+                //               style={{
+                //                 cursor: "pointer",
+                //                 marginLeft: 5,
+                //               }}
+                //             >
+                //               <span className="checkmark">
+                //                 Turn off this prompt{" "}
+                //               </span>
+                //             </label>
+                //           </div>
+                //         </>
+                //       ),
+                //     });
+                //   } else {
+                //     handleToast("Document Uploaded Successfully", "success");
+                //   }
+                // }, 500);
+              }
+            }
+            index++;
+          })
+          .catch((e) => console.error("Error form UploadFilesdocs ====> ", e));
+      });
+    }
   }
   const [columns,setColumns] = useState([ 
     {
@@ -321,10 +420,16 @@ const PaymentManagementSection = () => {
             }));
             //rowData.isEditing = false; // Set the row's edit state
             InsertVendorInfo(SessionId,VendorId)
-            // const URL = "../../../NewDMAcct/CustomerVendorOptions.aspx?SessionId=" + SessionId;
-             const URL = "https://www.directcorp.com/NewDMAcct/CustomerVendorOptions.aspx?SessionId=" + SessionId;
+           
+             //const URL = "https://www.directcorp.com/NewDMAcct/CustomerVendorOptions.aspx?SessionId=" + SessionId;
 
-             window.open(URL, "", "width=1200,height=1200,resizable=yes,scrollbars=yes");
+             //window.open(URL, "", "width=1200,height=1200,resizable=yes,scrollbars=yes");
+
+             fnOpenWindow(
+              `/NewDMAcct/CustomerVendorOptions.aspx?SessionID=${SessionId}`,
+              "/NewDMAcct/CustomerVendorOptions.aspx",
+              SessionId
+            )
             };
             const handleEditClick = (e, rowData, rowIndex) => {
               setEditingRows((prevState) => ({
@@ -371,6 +476,7 @@ const PaymentManagementSection = () => {
     {
         field: "TotalAmount",
         'data-field': "TotalAmount",
+        sortable: true,
         header: () => (
             <Text size="textmd" as="p" className="py-3.5 text-left text-[14px] font-normal text-black-900">
                 Total
@@ -386,7 +492,21 @@ const PaymentManagementSection = () => {
             <Text as="p" className="text-[14px] font-normal text-black-900">
                 {rowData.TotalAmount}
             </Text>
-        )
+        ),
+        sortFunction: (event) => {
+           const { data, field, order } = event;
+
+          const sortedData = [...data].sort((a, b) => {
+            const valueA = parseFloat(a[field]?.replace(/[^0-9.-]+/g, "")) || 0;
+            const valueB = parseFloat(b[field]?.replace(/[^0-9.-]+/g, "")) || 0;
+
+            // Multiply with "order" to handle ascending/descending
+            return order * (valueA - valueB);
+          });
+
+          // Return the sorted data
+          return sortedData;
+        },
     },
     {
         field: "GLAccount",
@@ -397,7 +517,7 @@ const PaymentManagementSection = () => {
             </Text>
         ),
         style: { 
-          width: '116px', 
+          width: '156px', 
           padding: '0.5rem',
           whiteSpace: 'normal',
           wordWrap: 'break-word'
@@ -417,7 +537,7 @@ const PaymentManagementSection = () => {
             </Text>
         ),
         style: { 
-          width: '96px', 
+          width: '156px', 
           padding: '0.5rem',
           whiteSpace: 'normal',
           wordWrap: 'break-word'
@@ -431,6 +551,7 @@ const PaymentManagementSection = () => {
     {
         field: "InvoiceDate",
         'data-field': "InvoiceDate",
+        sortable: true,
         header: () => (
             <Text size="textmd" as="p" className="py-3.5 text-left text-[14px] font-normal text-black-900">
                 Invoice Date
@@ -498,48 +619,76 @@ const PaymentManagementSection = () => {
           </Text>
       ),
       style: { width: '136px' },
-      body: (rowData) => (
-          <div className="flex">
-              <div className="flex gap-1 py-0.5">
-                  <input
-                      type="radio"
-                      id={`ach-${rowData.RowId}`}
-                      name={`payment-${rowData.RowId}`}
-                      value="ach"
-                      checked={rowData.PayACH === true}
-                      onChange={() => {
-                          setExpandedRows(prev => [...prev, rowData]);
-                          rowData.PayACH = true;
-                      }}
-                  />
-                  <label 
-                      htmlFor={`ach-${rowData.RowId}`}
-                      className="text-[12px] text-black-900"
-                  >
-                      ACH
-                  </label>
-              </div>
+      body: (rowData) =>  {
+
+        const handlePaymentChange = (value) => {
+          rowData.PayACH = value === "ach";
+          rowData.PayCheck = value === "check";
+        };
+    
+        const selectedValue = rowData.PayACH ? "ach" : rowData.PayCheck ? "check" : "";
+        return (
+        <RadioGroup
+        name={`payment-${rowData.RowId}`}
+        selectedValue={selectedValue}
+        onChange={handlePaymentChange}
+        className="flex gap-2"
+      >
+        <Radio
+          value="ach"
+          label="ACH"
+          id={`chkACHApproved${rowData.RowId}`}
+          className="text-[12px] text-black-900"
+        />
+        <Radio
+          value="check"
+          label="Check"
+          id={`chkPrintChecks${rowData.RowId}`}
+          className="text-[12px] text-black-900"
+        />
+      </RadioGroup>
+ );
+          // <div className="flex">
+          //     <div className="flex gap-1 py-0.5">
+          //         <input
+          //             type="radio"
+          //             id={`ach-${rowData.RowId}`}
+          //             name={`payment-${rowData.RowId}`}
+          //             value="ach"
+          //             checked={rowData.PayACH === true}
+          //             onChange={() => {
+          //                // setExpandedRows(prev => [...prev, rowData]);
+          //                 rowData.PayACH = true;
+          //             }}
+          //         />
+          //         <label 
+          //             htmlFor={`ach-${rowData.RowId}`}
+          //             className="text-[12px] text-black-900"
+          //         >
+          //             ACH
+          //         </label>
+          //     </div>
   
-              <div className="ml-2.5 flex gap-1 py-0.5">
-                  <input
-                      type="radio"
-                      id={`check-${rowData.RowId}`}
-                      name={`payment-${rowData.RowId}`}
-                      value="check"
-                      checked={rowData.PayACH === false}
-                      onChange={() => {
-                          rowData.PayACH = false;
-                      }}
-                  />
-                  <label
-                      htmlFor={`check-${rowData.RowId}`}
-                      className="text-[12px] text-black-900"
-                  >
-                      Check
-                  </label>
-              </div>
-          </div>
-      )
+          //     <div className="ml-2.5 flex gap-1 py-0.5">
+          //         <input
+          //             type="radio"
+          //             id={`check-${rowData.RowId}`}
+          //             name={`payment-${rowData.RowId}`}
+          //             value="check"
+          //             checked={rowData.PayCheck === true}
+          //             onChange={() => {
+          //                 rowData.PayCheck = true;
+          //             }}
+          //         />
+          //         <label
+          //             htmlFor={`check-${rowData.RowId}`}
+          //             className="text-[12px] text-black-900"
+          //         >
+          //             Check
+          //         </label>
+          //     </div>
+          // </div>
+}
   },
     {
         field: "MarkPaid",
@@ -556,6 +705,7 @@ const PaymentManagementSection = () => {
                 <Checkbox 
                     label=""
                     name="item"
+                    id={`chkMarkaspaid${rowData.RowId}`}
                     onChange={(e) => console.log('Checked:', e.target.checked)}
                     className="text-gray-800"
                 />
@@ -573,11 +723,85 @@ const PaymentManagementSection = () => {
         ),
         style: { width: '100px' },
         body: (rowData) => (
-            <div className="flex justify-center rounded border border-dashed border-indigo-700 bg-indigo-400_33">
-                <Heading as="h2" className="self-end text-[12px] font-semibold text-black-900">
-                    {rowData.imagesHeader}
+            // <div className="flex justify-center rounded border border-dashed border-indigo-700 bg-indigo-400_33">
+            //     <Heading as="h2" className="self-end text-[12px] font-semibold text-black-900">
+            //         {rowData.imagesHeader}
+            //     </Heading>
+            // </div>
+
+            <FileUpload
+            id={`file-upload-${rowData.RowId}`} // _${rowData.Scandoctype}_${rowData.ID}
+            style={{
+              marginLeft: "1rem",
+              height: 25,
+              fontSize: 12,
+              display: "inline",
+            }}
+            className="primary"
+            text={
+              <div
+                id={`spinner-container-${rowData.RowId}`}
+                className="flex justify-center rounded border border-dashed border-indigo-700 bg-indigo-400_33"
+              >
+                <Heading
+                  id={`header-text-${rowData.RowId}`}
+                  as="h2"
+                  className="self-end text-[12px] font-semibold text-black-900"
+                >
+                  {rowData.imagesHeader || "Upload File"}
                 </Heading>
-            </div>
+                <FontAwesomeIcon
+                  id={`spinner-${rowData.RowId}`}
+                  icon={faRotate}
+                  className="spinner"
+                  color="#508BC9"
+                  style={{
+                    fontSize: 12,
+                    marginLeft: 5,
+                    marginTop:3,
+                    display: "none", // Hidden by default
+                  }}
+                />
+              </div>
+            }
+            index={rowData.index}
+            onChange={(event) => {
+              // Show spinner and "Uploading..." message
+
+              setRowData((prevData) =>
+                prevData.map((row) =>
+                    row.RowId === rowData.RowId ? { ...row, FileCount: 1 } : row
+                )
+            );
+
+              const spinner = document.getElementById(`spinner-${rowData.RowId}`);
+              const headerText = document.getElementById(`header-text-${rowData.RowId}`);
+              if (spinner && headerText) {
+                spinner.style.display = "inline";
+                headerText.textContent = "Uploading...";
+              }
+      
+              const { target } = event;
+      
+              // Simulate the file upload
+              onFileDrop({
+                files: Array.from(target.files),
+                documentDetail: rowData.oRequiredDetail,
+                target: "viewDocument_" + rowData.ID,
+                vendorPaymentId: rowData.VendorPaymentId,
+                vendorPaymentDetailId: rowData.VendorPaymentDetailId,
+                spinner,
+                headerText,
+      
+              });
+      
+              // Clear the input
+              event.target.value = "";
+      
+              
+            }}
+          />
+           
         )
     },
     {
@@ -598,7 +822,7 @@ const PaymentManagementSection = () => {
       body: (rowData) => {
         return (
           <div className="flex gap-2 justify-center items-center">
-             {rowData.FileCount > 0 && (
+             {rowData.FileCount === 1 && (
             <img 
               src={uploadPdfImage} 
               alt="Upload"
@@ -783,11 +1007,7 @@ const PaymentManagementSection = () => {
   //     }),
   //   ];
   // }, []);
-  const addRow = () => {
-  const newRow = createNewRow();  // Create an empty row
-  setRowData((prevData) => [newRow, ...prevData]);  // Add the empty row to the table
   
-};
 
   return (
     <>
@@ -816,13 +1036,17 @@ const PaymentManagementSection = () => {
           <div className="-mt-2">
             <div style={{ padding: "0 2em" }}>
         <Table
+          ref={tableRef}
           paginator
           isLoading={isLoading}
           tableData={rowData}
           accounts={glAccounts}
+          Class={Class}
           vendors={vendors}
           columns={columns}
           sessionid= {SessionId}
+          companyId = {companyId}
+          EmpId ={EmpId}
           editingRows = {editingRows}
           expandedRows={expandedRows}
           setExpandedRows={setExpandedRows}
@@ -856,7 +1080,7 @@ const PaymentManagementSection = () => {
         Pay From Account
       </Text>
       <SelectBox
-        indicator={<Img src="payment/images/img_arrowdown.svg" alt="Arrow Down" className="h-[18px] w-[18px]" />}
+        indicator={<Img src="images/img_arrowdown.svg" alt="Arrow Down" className="h-[18px] w-[18px]" />}
         name="Account Dropdown"
         placeholder={`1091 - Goldenwest Checking`}
         options={dropDownOptions}
@@ -864,7 +1088,7 @@ const PaymentManagementSection = () => {
       />
     </div>
     <Button
-      leftIcon={<Img src="payment/images/img_arrowright.svg" alt="Arrow Right" className="h-[18px] w-[18px]" />}
+      leftIcon={<Img src="images/img_arrowright.svg" alt="Arrow Right" className="h-[18px] w-[18px]" />}
       className="flex h-[38px] min-w-[118px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
     >
       Pay ACH
@@ -907,5 +1131,5 @@ const PaymentManagementSection = () => {
       </div>
     </>
   );
-}
+})
 export default PaymentManagementSection;

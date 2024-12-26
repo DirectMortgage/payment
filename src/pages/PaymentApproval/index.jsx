@@ -2,36 +2,67 @@ import { Helmet } from "react-helmet";
 import { Button } from "../../components";
 import Header from "../../components/Header";
 import PaymentManagementSection from "./PaymentManagementSection";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState ,useRef } from "react";
+import {
+  handleAPI,
+  queryStringToObject,
+  handleGetSessionData,
+  fnOpenWindow,
+  handleSaveWindowSize,
+
+} from "../../components/CommonFunctions/CommonFunction.js";
+import { Bounce, ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 export default function DesktopOnePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const [companyId, setCompanyId] = useState(4);
+  
+  const paymentSectionRef = useRef(null);
+  let SessionId;
+  let queryString = queryStringToObject();
+  SessionId = queryString["SessionID"];
+  
+
+
+  const addroe = () => {
+    console.log('Ref current:', paymentSectionRef.current); // Debug log
+    paymentSectionRef.current.handleAddRow();
+  };
+  const handleSave = () => {
+    // Access the save function from PaymentManagementSection using ref
+    handleToast('Saved Successfully','success')
+    //return;
+    if (paymentSectionRef.current) {
+      paymentSectionRef.current.handleSave();
+    }
+  };
+  const handleToast = (message, type='success') => {
+    toast(message, { type });
+  };
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isMenuOpen && !event.target.closest('.menu-container')) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false);
       }
     };
-  
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMenuOpen]);
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
  
   const fnUpdateWinSize = () => {
-    console.log("DM Accounting clicked");
-    // Add your functionality here
+    handleSaveWindowSize(
+      SessionId,
+      "/PaymentApproval",
+    )
   };
 
-  const fnAddNewPayee = () => {
-    console.log("Run Validation clicked");
-    // Add your functionality here
-  };
-
-  const fnVendorPaymentSplit = () => {
-    console.log("Create a Bill Reminder clicked");
-    // Add your functionality here
-  };
-
+  
   const fnOpenMenu = () => {
     console.log("Payment Approval History clicked");
     // Add your functionality here
@@ -49,17 +80,17 @@ export default function DesktopOnePage() {
   className="flex w-full flex-col items-center gap-[264px] bg-white-a700 md:gap-[198px] sm:gap-[132px] pb-[80px]"
 >
 <div className="flex flex-col gap-[18px] self-stretch">
-          <Header />
+<Header setCompanyId={setCompanyId} />
 
           {/* payment management section */}
-          <PaymentManagementSection />
+          <PaymentManagementSection  ref={paymentSectionRef} companyId={companyId} />
         </div>
         <div className="fixed-footer z-[1000]">
   <div className="mx-auto flex w-full max-w-[1346px] justify-between pl-0 pr-12 md:pl-0 md:pr-5">
-    <div className="relative">
+  <div className="relative" ref={menuRef}>
       <Button 
         className="flex h-[36px] min-w-[78px] flex-row items-center justify-center rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[14px] font-bold text-white-a700"
-        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        onClick={() => setIsMenuOpen((prev) => !prev)}
       >
         Menu
       </Button>
@@ -69,25 +100,52 @@ export default function DesktopOnePage() {
          
          
           <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 border-b">
-            <a href="#" onClick={() => fnVendorPaymentSplit()}>Add Payment Split</a>
+            <a href="#" onClick={() =>
+                fnOpenWindow(
+                  `FeeCollection/Presentation/Webforms/VendorPaymentSplit.aspx?SessionID=${SessionId}&VendorId=1&CID=${companyId}`,
+                  "/FeeCollection/Presentation/Webforms/VendorPaymentSplit.aspx",
+                  SessionId
+                )
+              }>Add Payment Split</a>
           </li>
           <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 border-b">
-            <a href="#" onClick={() => fnAddNewPayee()}>Add Payment</a>
+          <a href="#" onClick={(e) => {
+          e.preventDefault();
+          addroe();
+        }}>Add Payment</a>
           </li>
           <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 border-b">
-            <a href="#" onClick={() => fnOpenMenu(3)}>Search for Vendors and Customers</a>
+            <a href="#"onClick={() =>
+                fnOpenWindow(
+                  `/NewDMAcct/CustomerVendorOptions.aspx?SessionID=${SessionId}`,
+                  "/NewDMAcct/CustomerVendorOptions.aspx",
+                  SessionId
+                )
+              }>Search for Vendors and Customers</a>
           </li>
-          <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 border-b">
+          {/* <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 border-b">
             <a href="#" onClick={() => fnOpenMenu(1)}>DM Accounting</a>
-          </li>
+          </li> */}
           <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 border-b">
             <a href="#" onClick={() => fnOpenMenu(2)}>Run Validation</a>
           </li>
           <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 border-b">
-            <a href="#" onClick={() => fnOpenMenu(4)}>Create a Bill Reminder</a>
+            <a href="#" onClick={() =>
+                fnOpenWindow(
+                  `FeeCollection/Presentation/WebForms/BillReminder.aspx?SessionID=${SessionId}&CID=${companyId}`,
+                  "FeeCollection\\Presentation\\Webforms\\BillReminder.aspx",
+                  SessionId
+                )
+              }>Create a Bill Reminder</a>
           </li>
           <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 border-b">
-            <a href="#" onClick={() => fnOpenMenu(5)}>Payment Approval History</a>
+            <a href="#" onClick={() =>
+                fnOpenWindow(
+                  `FeeCollection/Presentation/Webforms/NewPaymentApprovalHistory.aspx?SessionID=${SessionId}&CompNum=${companyId}`,
+                  "FeeCollection\\Presentation\\Webforms\\NewPaymentApprovalHistory.aspx",
+                  SessionId
+                )
+              }>Payment Approval History</a>
           </li>
           <li className="cursor-pointer px-4 py-2 hover:bg-gray-100">
             <a href="#" onClick={() => fnUpdateWinSize()}>Save Window Size and Position</a>
@@ -96,12 +154,25 @@ export default function DesktopOnePage() {
       )}
     </div>
 
-    <Button className="flex h-[36px] min-w-[74px] flex-row items-center justify-center rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[14px] font-bold text-white-a700">
+    <Button className="flex h-[36px] min-w-[74px] flex-row items-center justify-center rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[14px] font-bold text-white-a700"
+     onClick={handleSave}>
       Save
     </Button>
   </div>
 </div>
       </div>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={8000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss={false}
+        draggable
+        pauseOnHover
+        transition={Bounce}
+      />
     </>
   );
 }

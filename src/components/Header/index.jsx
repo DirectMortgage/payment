@@ -9,7 +9,11 @@ const dropDownOptions = [
   { label: "Direct Mortgage, Corp", value: "4" },
 ];
 
-export default function Header({ ...props }) {
+export default function Header({ setCompanyId, ...props }) {
+
+    const handleCompanyChange = (event) => {
+        setCompanyId(parseInt(event.value));
+      };
   return (
     <header 
         {...props} 
@@ -17,10 +21,11 @@ export default function Header({ ...props }) {
     >
         <div className="flex items-center w-full">
             <SelectBox
-                indicator={<Img src="payment/images/img_arrowdown.svg" alt="Arrow Down" className="h-[18px] w-[18px]" />}
+                indicator={<Img src="images/img_arrowdown.svg" alt="Arrow Down" className="h-[18px] w-[18px]" />}
                 name="Company Dropdown"
                 placeholder={`Direct Mortgage, Corp`}
                 options={dropDownOptions}
+                onChange={handleCompanyChange}
                 className="flex w-[200px] gap-[26px] rounded border border-solid border-black-900 bg-white-a700 px-3 py-1.5 font-inter text-[12px] text-blue_gray-900 md:w-[200px]"
             />
             <div className="flex items-center gap-8 flex-1 ml-[200px]">

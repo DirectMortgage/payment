@@ -7,14 +7,25 @@ const handleAPI = async ({
   body,
   requestOptions = null,
 }) => {
-  let url = "../../../LoginCredentialsAPI/api/";
+  let url = ""
+  if (name === "GetSessionData" || name === "GetSetWindowSize") {
+     url ="../../../GenericAPI/api/";
+  }
+  else{
+    url = "../../../LoginCredentialsAPI/api/";
+  }
   if (window.location.href.indexOf("localhost") != -1) {
-    url = "https://www.solutioncenter.biz/LoginCredentialsAPI/api/";
+    if (name === "GetSessionData" || name === "GetSetWindowSize") {
+      url = "https://www.solutioncenter.biz/GenericAPI/api/";
+    }
+    else{
+      url = "https://www.solutioncenter.biz/LoginCredentialsAPI/api/";
+    }
   }
   if (requestOptions) {
     url = `../../../`;
     if (window.location.href.indexOf("localhost") != -1) {
-      url = `https://www.solutioncenter.biz/`;
+      url = `https://www.solutioncenter.biz/LoginCredentialsAPI/api/`;
     }
   }
   params = Object.keys(params)
@@ -96,8 +107,8 @@ const handleSaveWindowSize = async (SessionId, FormName) => {
   var obj = {
     SessionId: SessionId,
     ViewJson: JSON.stringify(viewPosition),
-    // UpdateFlag: 0,
-    UpdateFlag: FormName === "/DWLandingPage/DisplayColumns" ? 1 : 0,
+   // UpdateFlag: 0,
+     UpdateFlag: FormName === "/PaymentApproval" ? 1 : 0,
     FormID: 0,
     FormName: FormName,
   };
@@ -108,7 +119,32 @@ const handleSaveWindowSize = async (SessionId, FormName) => {
     return JSON.parse(response || "{}");
   });
 };
+const fnOpenWindow = async (link, FormName, SessionId) => {
+  let hostName = "../../../";
+  if (window.location?.href?.indexOf("localhost") != -1)
+    hostName = "https://www.directcorp.com/";
 
+  link = `${hostName}${link}`;
+  let position = await handleSaveWindowSize(SessionId, FormName);
+  let Width = position?.Width;
+  let Height = position?.Height;
+  let Left = position?.Left;
+  let Top = position?.Top;
+ 
+    window.open(
+      link,
+      "",
+      "resizable=yes,top=" +
+        Top +
+        ",left=" +
+        Left +
+        ",width=" +
+        Width +
+        "px,height=" +
+        Height +
+        "px,resizable=1,scrollbars=yes"
+    );
+};
 function cleanUrl(url) {
   return decodeURIComponent(url)
     .replace(/&amp;apos;/g, "")
@@ -189,6 +225,60 @@ const formatAsHTML = (notes) => {
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'");
 };
+const handleShowUploadingStatus = (selector) => {
+  document.querySelector('label[for="' + selector + '"] svg').style.display =
+    "";
+  document.querySelector('label[for="' + selector + '"] span').textContent =
+    "Uploading...";
+  document
+    .querySelector('label[for="' + selector + '"]')
+    .classList.remove("primary");
+  document.querySelector('label[for="' + selector + '"]').classList.add("dark");
+};
+const cleanValue = (value = 0) => {
+  value = value
+    .toString()
+    .replaceAll("(", "")
+    .replaceAll(")", "")
+    .replaceAll("$", "")
+    .replaceAll("%", "")
+    .replaceAll(",", "");
+
+  return Number(value);
+};
+const formatCurrency = (value) => {
+  let num = parseFloat(
+      (value || "").toString().replace("$", "").replace(",", "")
+    )
+      ?.toFixed(2)
+      .toString(),
+    numParts = num.split("."),
+    dollars = numParts[0],
+    cents = numParts[1] || "",
+    sign = num == (num = Math.abs(num));
+  dollars = dollars.replace(/\$|\,/g, "");
+  if (isNaN(dollars)) dollars = "0";
+  dollars = dollars.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  let val = "$" + ((sign ? "" : "-") + dollars + (cents ? "." + cents : ".00"));
+  val = val.replaceAll("--", "");
+  if (val == "$-0.00") val = "$0.00";
+  return val;
+};
+const FormatValueforCalc = (val) => {
+  if (val === '' || val === null || val === undefined) return 0;
+
+  val = val.toString();
+  val = val.replace(/\$/g, '').replace(/,/g, '').replace(/%/g, '');
+
+  if (val.includes('(')) { // Negative value
+    val = val.replace(/\(/g, '').replace(/\)/g, '');
+    return -1 * parseFloat(val);
+  }
+
+  return parseFloat(val).toFixed(2);
+};
+
+
 export {
   handleAPI,
   fnGetIndex,
@@ -201,4 +291,9 @@ export {
   handleGetSessionData,
   cleanUrl,
   formatAsHTML,
+  fnOpenWindow,
+  handleShowUploadingStatus,
+  cleanValue,
+  formatCurrency,
+  FormatValueforCalc,
 };

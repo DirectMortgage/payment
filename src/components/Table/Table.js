@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState , forwardRef, useImperativeHandle} from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Toast } from "primereact/toast";
@@ -9,13 +9,22 @@ import { Paginator } from 'primereact/paginator';
 import AutoCompleteInputBox from '../AutoComplete/AutoComplete';
 import {GroupSelect} from '../GroupSelect/index';
 import { Img, Text, Button, SelectBox, Heading, Radio, RadioGroup, Input,Checkbox } from "../../components";
+import {
+  handleAPI,
+  queryStringToObject,
+  handleGetSessionData,
+  FormatValueforCalc,
+} from "../../components/CommonFunctions/CommonFunction.js";
 
-const Table = ({
+const Table = forwardRef(({
   accounts = [],
   vendors = [],
+  Class=[],
   tableData = [],
   columns = [],
   sessionid = "",
+  companyId,
+  EmpId,
   editingRows,
   tableTitle = "",
   paginator = false,
@@ -23,11 +32,11 @@ const Table = ({
   row = 50,
   isLoading = false,
   footerContent = <></>,
-  expandedRows, // New prop
-  setExpandedRows, // New prop
-  handleRemove = ()=>{ },
+  expandedRows,
+  setExpandedRows,
+  handleRemove = () => { },
   ...props
-}) => {
+}, ref) => {
     const toast = useRef(null),
     [globalFilter, setGlobalFilter] = useState(null),
     [rows, setRows] = useState(5),
@@ -39,70 +48,96 @@ const Table = ({
       // Add more GL accounts as needed
   ]);
   const [rowData, setRowData] = useState([]);
+  const [sortField, setSortField] = useState(null);
+  const [sortOrder, setSortOrder] = useState(null);
+
+  // Sorting handler
+  const onSort = (event) => {
+    setSortField(event.sortField);
+    setSortOrder(event.sortOrder);
+  };
 
 
   const dataArray = Array.isArray(tableData) ? tableData : [];
 
-  const groupedData = dataArray.reduce((acc, item) => {
-      const paymentId = item.VendorPaymentId;
-      if (!acc[paymentId]) {
-          acc[paymentId] = [];
-      }
-      acc[paymentId].push(item);
-      return acc;
-  }, {});
-  
-  // Store original values at the group level
-  const fieldMaps = {
-      classNameMap: {},
-      glAccountMap: {},
-      invoiceDateMap: {},
-      invoiceMap: {},
-      memoMap: {}
-  };
-  
-  // Store the original values first
-  Object.entries(groupedData).forEach(([paymentId, rows]) => {
-      const firstRow = rows[0];
-      fieldMaps.classNameMap[paymentId] = firstRow.ClassName;
-      fieldMaps.glAccountMap[paymentId] = firstRow.GLAccount;
-      fieldMaps.invoiceDateMap[paymentId] = firstRow.InvoiceDate;
-      fieldMaps.invoiceMap[paymentId] = firstRow.Invoice;
-      fieldMaps.memoMap[paymentId] = firstRow.Memo;
-  });
-  
-  const parentRows = Object.entries(groupedData).map(([paymentId, rows]) => {
-      const parentRow = rows.reduce((minRow, currentRow) => 
-          currentRow.RowId < minRow.RowId ? currentRow : minRow
-      );
-      
-      // Create a display copy of the parent row
-      const displayParentRow = { ...parentRow };
-      
-      if (rows.length > 1) {
-          displayParentRow.ClassName = '';
-          displayParentRow.GLAccount = '';
-          displayParentRow.InvoiceDate = '';
-          displayParentRow.Invoice = '';
-          displayParentRow.Memo = '';
-      }
-      
-      return {
-          ...displayParentRow,
-          originalClassName: fieldMaps.classNameMap[paymentId],
-          originalGLAccount: fieldMaps.glAccountMap[paymentId],
-          originalInvoiceDate: fieldMaps.invoiceDateMap[paymentId],
-          originalInvoice: fieldMaps.invoiceMap[paymentId],
-          originalMemo: fieldMaps.memoMap[paymentId]
-      };
-  });
-  
-    const [localData, setLocalData] = useState(parentRows);
+// Store original order of paymentIds
+const paymentIdOrder = [];
+
+const groupedData = dataArray.reduce((acc, item) => {
+    const paymentId = item.VendorPaymentId;
+    if (!acc[paymentId]) {
+        acc[paymentId] = [];
+        paymentIdOrder.push(paymentId); // Track order of paymentIds
+    }
+    acc[paymentId].push(item);
+    return acc;
+}, {});
+
+// Store original values at the group level
+const fieldMaps = {
+    classNameMap: {},
+    glAccountMap: {},
+    invoiceDateMap: {},
+    invoiceMap: {},
+    memoMap: {},
+    classMap: {}
+};
+
+// Store the original values first
+Object.entries(groupedData).forEach(([paymentId, rows]) => {
+    const firstRow = rows[0];
+    fieldMaps.classNameMap[paymentId] = firstRow.ClassName;
+    fieldMaps.glAccountMap[paymentId] = firstRow.GLAccount;
+    fieldMaps.invoiceDateMap[paymentId] = firstRow.InvoiceDate;
+    fieldMaps.invoiceMap[paymentId] = firstRow.Invoice;
+    fieldMaps.memoMap[paymentId] = firstRow.Memo;
+});
+
+const parentRows = Object.entries(groupedData).map(([paymentId, rows]) => {
+    const parentRow = rows.reduce((minRow, currentRow) => 
+        currentRow.RowId < minRow.RowId ? currentRow : minRow
+    );
     
+    // Create a display copy of the parent row
+    const displayParentRow = { ...parentRow };
+    
+    if (rows.length > 1) {
+        displayParentRow.ClassName = '';
+        displayParentRow.GLAccount = '';
+        displayParentRow.InvoiceDate = '';
+        displayParentRow.Invoice = '';
+        displayParentRow.Memo = '';
+    }
+    
+    return {
+        ...displayParentRow,
+        originalClassName: fieldMaps.classNameMap[paymentId],
+        originalGLAccount: fieldMaps.glAccountMap[paymentId],
+        originalInvoiceDate: fieldMaps.invoiceDateMap[paymentId],
+        originalInvoice: fieldMaps.invoiceMap[paymentId],
+        originalMemo: fieldMaps.memoMap[paymentId]
+    };
+});
+
+const [localData, setLocalData] = useState(parentRows);
+const [OnloadData, setOnloadData] = useState(parentRows);
+
+useEffect(() => {
+    // Re-sort parentRows to match original paymentId order
+    const sortedParentRows = [...parentRows].sort((a, b) => 
+        paymentIdOrder.indexOf(a.VendorPaymentId) - paymentIdOrder.indexOf(b.VendorPaymentId)
+    );
+    setLocalData(sortedParentRows);
+}, [tableData]);
 
     useEffect(() => {
-      setLocalData(parentRows);  
-    }, [tableData]);
+      if (parentRows) {
+        const sortedParentRows = [...parentRows].sort((a, b) => 
+          paymentIdOrder.indexOf(a.VendorPaymentId) - paymentIdOrder.indexOf(b.VendorPaymentId)
+      );
+        setOnloadData(sortedParentRows);
+      }
+    }, [parentRows]);
   
     const toggleRow = (data) => {
       setExpandedRows((prev) => {
@@ -177,20 +212,28 @@ const Table = ({
                               style={{
                                   ...(colIndex === 0 && {
                                       position: "relative",
-                                      left: "-11px",
+                                      left: "-8px",
                                   }),
                                   ...(colIndex === 1 && {
                                       position: "relative",
-                                      left: "8px",
+                                      left: "2px",
                                   }),
                                   ...(colIndex === 7 && {
                                     position: "relative",
-                                    left: "4px",
+                                    left: "12px",
                                 }),
                                   ...(colIndex === 8 && {
                                     position: "relative",
-                                    left: "11px",
+                                    left: "13px",
                                 }),
+                                ...(colIndex === 9 && {
+                                  position: "relative",
+                                  left: "10px",
+                              }),
+                              ...(colIndex === 10 && {
+                                position: "relative",
+                                left: "5px",
+                            }),
                                   ...(col.style
                                       ? { width: col.style.width, minWidth: col.style.width }
                                       : {}),
@@ -205,30 +248,41 @@ const Table = ({
                                   </div>
                               ) : col.field === "GLAccount" ? (
                                 editingCell === `${childRow.RowId}-${col.field}` ? (
-                                    <AutoCompleteInputBox
-                                        value={childRow[col.field]}
-                                        options={accounts.map(opt => ({
-                                          label: `${opt.Account_Id} - ${opt.Account_Name}`,
-                                          value: opt.Account_Id
-                                      }))}
-                                        onSelect={(selectedItem) => {
-                                            childRow[col.field] = selectedItem.label;
-                                            setLocalData([...localData]);
-                                            setEditingCell(null);
-                                        }}
-                                        placeholder="Search GL Account"
-                                        style={{ 
-                                            margin: 0,
-                                            border: 'none'
-                                        }}
-                                        inputBoxStyle={{ 
-                                            padding: '2px 8px',
-                                            fontSize: '12px',
-                                            height: '28px'
-                                        }}
-                                        onBlur={() => setTimeout(() => setEditingCell(null), 200)}
-                                        
-                                    />
+                                  <GroupSelect
+                                  size="sm"
+                                  shape="round"
+                                  options={accounts.map(opt => ({
+                                    label: `${opt.Account_Id} - ${opt.Account_Name}`,
+                                    value: opt.Account_Id,
+                                    Account_Id: opt.Account_Id,
+                                    Account_Name: opt.Account_Name
+                                  }))}
+                                  name="Account"
+                                  valueKey="Account_Id"
+                                  labelKey="label"
+                                  sessionid={sessionid}
+                                  values={[{
+                                    Account_Id: parseInt(childRow[col.field]?.split('-')[0]?.trim()) || 0,
+                                    label: childRow[col.field] || ''
+                                  }]}
+                                  Account_Id={parseInt(childRow[col.field]?.split('-')[0]?.trim()) || 0}
+                                  RowId={childRow.RowId}
+                                  handleRemove={handleRemove}
+                                  onChange={(selected) => {
+                                    const selectedEntityLabel = selected[1];
+                                    childRow[col.field] = `${selectedEntityLabel.value}`;
+                                    setLocalData([...localData]);
+                                    setEditingCell(null);
+                                  }}
+                                  showSearch={true}
+                                  placeholder="Search GL Account"
+                                  showAddPaymentSplit={false}
+                                  showRemoveRow={false}
+                                  style={{ 
+                                    margin: 0,
+                                    border: 'none'
+                                  }}
+                                />
                                 ) : (
                                     <span
                                         onClick={(e) => {
@@ -281,24 +335,212 @@ const Table = ({
       );
   };
   const addRow = () => {
+   
     const newRow = createNewRow();
     
-    // Initialize groupedData if undefined
     if (!groupedData) {
         groupedData = {};
     }
     
-    // Add new row to groupedData
     groupedData[newRow.VendorPaymentId] = [newRow];
-    
     setLocalData(prevData => [newRow, ...prevData]);
 
-    // Focus first editable cell (adjust field name based on your first editable column)
-  setTimeout(() => {
-    const firstEditableField = "Payee"; // Change this to your first editable column field
-    setEditingCell(`${newRow.RowId}-${firstEditableField}`);
-  }, 100);
-};
+    setTimeout(() => {
+      const firstEditableField = "Payee";
+      setEditingCell(`${newRow.RowId}-${firstEditableField}`);
+    }, 100);
+  };
+  const savevendorPayment = async() => {
+    let ChangeXML = '';
+  const changedJSON = [];
+  
+  localData.forEach((val) => {
+    debugger
+    const RowId = val.RowId;
+
+    const childRows = groupedData[val.VendorPaymentId] || [];
+    const hasChildRows = childRows.length > 0;
+    let originalValues = childRows[0];
+    let SplitAccounts = '';
+    // Use original values if child rows exist
+    if (hasChildRows) {
+      SplitAccounts = originalValues.GLAccount.split('-');
+    }
+    else{
+       SplitAccounts = val.GLAccount.split('-');
+    }
+    let VendorId = val.VendorId
+    let TotalAmount = val.TotalAmount;
+    const Accounts = SplitAccounts[0] || "0";
+    
+    let ClassName,ClassAmount,RefNo,InvNum,InvDate
+    if (hasChildRows) {
+
+    ClassName =  originalValues?.ClassName ||'0'
+    // Form values
+     ClassAmount = originalValues?.SubTotal ||'0';
+     RefNo = originalValues?.Invoice || '';
+     InvNum = originalValues?.Memo || '';
+     InvDate = originalValues?.InvoiceDate || '';
+    }
+    else{
+
+     ClassName =  val.ClassName
+  
+    // Form values
+     ClassAmount = val.SubTotal;
+     RefNo = val.Invoice;
+     InvNum = val.Memo;
+     InvDate = val.InvoiceDate;
+      
+    }
+    const DueDate = val.InvoiceDue;
+    const PayOn = val.Payon;
+    const VendorPaymentId = val.VendorPaymentId;
+    const VendorPaymentDetailId = val.VendorPaymentDetailId;
+
+
+      // Class handling
+      let ClassId = "0";
+      Class.some(item => {
+        if (item.Class_Name === ClassName) {
+          ClassId = item.Class_Id;
+          return true;
+        }
+        return false;
+      });
+  
+    
+    // Entity Type handling
+    // const EntityType = document.querySelector(`#drpVendors${RowId}`)?.getAttribute("EntityType") || 
+    //   (VendorPaymentId !== val.VendorPaymentId ? 0 : undefined);
+
+    let EntityType = "0";
+    vendors.some(item => {
+      if (item.VendorId === val.VendorId) {
+        EntityType = item.Entity_Type;
+        return true;
+      }
+      return false;
+    });
+
+
+    // Checkbox states
+    const Status = document.getElementById(`chkApprove${RowId}`)?.checked ? 2 : 0;
+    const Paid = document.getElementById(`chkMarkaspaid${RowId}`)?.checked ? 1 : 0;
+    let PayACH = 0;
+    
+    if (document.getElementById(`chkACHApproved${RowId}`)?.checked) {
+      PayACH = 1;
+    } else if (document.getElementById(`chkPrintChecks${RowId}`)?.checked) {
+      PayACH = 2;
+    }
+
+    const ApprovedBy = Status === 0 ? "" : ApprovedBy;
+    
+    // Format values
+    TotalAmount =FormatValueforCalc(TotalAmount);
+    ClassAmount = FormatValueforCalc(ClassAmount);
+    const Change = val.Change || "0";
+
+    const result = OnloadData.find(e => e.RowId === val.RowId);
+
+    if (result && val.Change === 1) {
+      const changeobj = {
+        VendorPaymentId,
+        VendorId,
+        VendorPaymentDetailId,
+        EntityType,
+        ApprovedBy,
+        ApprovedOn: ""
+      };
+
+      // Compare with OnloadData and add changed fields
+      if (FormatValueforCalc(result.TotalAmount) !== TotalAmount) {
+        changeobj.TotalAmount = TotalAmount;
+      }
+
+      if (result.InvoiceDate !== InvDate) {
+        changeobj.InvoiceDate = InvDate;
+      }
+
+      if (result.InvoiceDue !== DueDate) {
+        changeobj.InvoiceDue = DueDate;
+      }
+
+      if (result.Invoice !== RefNo) {
+        changeobj.RefNo = RefNo;
+      }
+
+      if (result.Memo !== InvNum) {
+        changeobj.Memo = InvNum;
+      }
+
+      if (result.Payon !== PayOn) {
+        changeobj.Payon = PayOn;
+      }
+      if (result.GLAccount.split('-')[0].trim() !== Accounts) {
+        changeobj.AccountId = Accounts;
+      }
+
+      if (parseInt(result.Class) !== parseInt(ClassId)) {
+        changeobj.Class = ClassId;
+      }
+
+      if (FormatValueforCalc(result.SubTotal) !== ClassAmount) {
+        changeobj.Amount = ClassAmount;
+      }
+
+      if (parseInt(result.Status) !== parseInt(Status)) {
+        changeobj.Status = Status;
+      }
+
+      if (result.ACHApprovedDetail !== PayACH) {
+        changeobj.PayACH = PayACH;
+      }
+
+      if (result.ACHApprovedDetail === 0 && result.ACHApprovedDetail !== Paid) {
+        changeobj.Paid = Paid;
+      }
+
+      if (Paid === 1 && result.ACHApprovedDetail !== 3) {
+        changeobj.Paid = Paid;
+      }
+
+      changedJSON.push(changeobj);
+    }
+
+    ChangeXML += `<row VendorPaymentId="${VendorPaymentId}" VendorId="${VendorId}" TotalAmount="${TotalAmount}" InvoiceDate="${InvDate}" InvoiceDue="${DueDate}" RefNo="${RefNo}" Memo="${InvNum}" Payon="${PayOn}" Status="${Status}" ApprovedBy="${ApprovedBy}" ApprovedOn="" VendorPaymentDetailId="${VendorPaymentDetailId}" AccountId="${Accounts}" Class="${ClassId}" Amount="${ClassAmount}" Change="${Change}" Paid="${Paid}" PayACH="${PayACH}" EntityType="${EntityType}"/>`;
+
+
+  });
+  ChangeXML = `<PaymentSave BankAccountId="${8}">${ChangeXML}</PaymentSave>`;
+
+  // Replace quotes for proper formatting
+    ChangeXML = ChangeXML.replaceAll('"', '~').replaceAll('~', '\\"');
+    const jsonString = JSON.stringify(changedJSON);
+    console.log({ ChangeXML, jsonString });
+    return
+    let obj = { SaveXml: ChangeXML,changedJSON: jsonString };
+    const response = await handleAPI({
+      name: "VendorMonthlySave",
+      params: {},
+      method: "POST",
+      body: JSON.stringify(obj),
+    });
+
+    
+    if (!response || response.trim() === "{}" || response.trim() === "[]") {
+
+    }
+
+
+
+  };
+  useImperativeHandle(ref, () => ({
+    addRow,
+    savevendorPayment,
+  }));
   const createNewRow = () => {
     return {
       Payee: "",  // Empty string for Payee
@@ -315,7 +557,8 @@ const Table = ({
       Status: "",  // Empty string for Status
       RowId: Date.now(),  // Generate a unique RowId based on timestamp
       VendorPaymentId: Date.now(),  // Empty string for VendorPaymentId
-      VendorPaymentDetailId: "",  // Empty string for VendorPaymentDetailId
+      VendorPaymentDetailId: "", 
+      ACHApprovedDetail:0, // Empty string for VendorPaymentDetailId
       imagesHeader: "Upload",
       // Add other fields as empty or default values
     };
@@ -340,7 +583,7 @@ const Table = ({
         <div className="flex w-full justify-between items-center">
           <div className="flex-start flex gap-2">
             <Button
-              leftIcon={<Img src="payment/images/img_grid.svg" alt="Grid" className="h-[18px] w-[18px]" />}
+              leftIcon={<Img src="images/img_grid.svg" alt="Grid" className="h-[18px] w-[18px]" />}
               className="flex h-[38px] min-w-[146px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
               onClick={addRow}  
             >
@@ -396,7 +639,7 @@ const Table = ({
     setFirst(event.first);
     setRows(event.rows);
   };
-  const cellEditor = (options) => {
+    const cellEditor = (options) => {
     const rowId = options.rowData.RowId;
     const isEditing = editingRows[rowId] ?? false;
     
@@ -405,24 +648,61 @@ const Table = ({
     }
 
     if (options.field === "GLAccount") {
+     
         return (
-            <AutoCompleteInputBox
-                value={options.value}
-                options={accounts.map(opt => ({
-                  label: `${opt.Account_Id} - ${opt.Account_Name}`,
-                  value: opt.Account_Id
-              }))}
-                onSelect={(selectedItem) => {
-                    options.editorCallback(selectedItem.label);
-                }}
-                placeholder="Search GL Account"
-                style={{ margin: 0, border: 'none' }}
-                inputBoxStyle={{ 
-                    padding: '2px 8px',
-                    fontSize: '12px',
-                    height: '28px'
-                }}
-            />
+            // <AutoCompleteInputBox
+            //     value={options.value}
+            //     options={accounts.map(opt => ({
+            //       label: `${opt.Account_Id} - ${opt.Account_Name}`,
+            //       value: opt.Account_Id
+            //   }))}
+            //     onSelect={(selectedItem) => {
+            //         options.editorCallback(selectedItem.label);
+            //     }}
+            //     placeholder="Search GL Account"
+            //     style={{ margin: 0, border: 'none' }}
+            //     inputBoxStyle={{ 
+            //         padding: '2px 8px',
+            //         fontSize: '12px',
+            //         height: '28px'
+            //     }}
+            // />
+
+            <GroupSelect
+            size="sm"
+            shape="round"
+            options={accounts.map(opt => ({
+              label: `${opt.Account_Id} - ${opt.Account_Name}`,
+              value: opt.Account_Id,
+              Account_Id: opt.Account_Id,
+              Account_Name: opt.Account_Name
+            }))}
+            name="Account"
+            valueKey="Account_Id"
+            labelKey="label"
+            sessionid={sessionid}
+            values={[{
+              Account_Id: parseInt(options.rowData.GLAccount.split('-')[0].trim()),
+              label: options.value || options.rowData.GLAccount
+            }]}
+            Account_Id={parseInt(options.rowData.GLAccount.split('-')[0].trim())}
+            RowId={options.rowData.RowId}
+            handleRemove={handleRemove}
+            onChange={(selected) => {
+            const selectedEntityLabel = selected[1];
+      
+             options.editorCallback(`${selectedEntityLabel.value}`);
+             const updatedData = { ...options.rowData,GLAccount: selectedEntityLabel.value };
+             if (options.onRowUpdate) {
+                options.onRowUpdate(updatedData);
+              }
+            }}
+          
+            showSearch={true}
+            placeholder="Search GL Account"
+            showAddPaymentSplit={false}
+            showRemoveRow={false}
+          />
         );
     }
     if (options.field === "Payee") {
@@ -449,10 +729,14 @@ const Table = ({
           }]}
           VendorId = {options.rowData.VendorId}
           RowId = {options.rowData.RowId}
+          companyId = {companyId}
+          EmpId = {EmpId}
           handleRemove = {handleRemove}
+          showAddPaymentSplit={true}  // Control visibility of Add Payment Split
+          showRemoveRow={true}
           onChange={(selected) => {
-            const selectedEntity = selected[0];
-    const selectedEntityLabel = selected[1];
+          const selectedEntity = selected[0];
+          const selectedEntityLabel = selected[1];
 
     // Log to verify what's being selected
     console.log('Selected Vendor:', selectedEntity.value);
@@ -510,13 +794,15 @@ const Table = ({
       };
     });
 
-    // Log the updated local data
+   
     console.log('Updated Local Data:', updatedLocalData);
 
-    // Update the state with the new local data
-    setLocalData(updatedLocalData);
+    const sortedParentRows = [...updatedLocalData].sort((a, b) => 
+      paymentIdOrder.indexOf(a.VendorPaymentId) - paymentIdOrder.indexOf(b.VendorPaymentId)
+  );
 
-    // Call onRowUpdate to propagate the updated row data to the parent (if needed)
+    setLocalData(sortedParentRows);
+
     if (options.onRowUpdate) {
       options.onRowUpdate(updatedData);
     }
@@ -526,6 +812,103 @@ const Table = ({
         />
       );
     }
+    if (options.field === "ClassName") {
+     console.log(Class)
+      return (
+        
+          <GroupSelect
+          size="sm"
+          shape="round"
+          options={Class.map(opt => ({
+            label: `${opt.label}`,
+            value: opt.Class_Id,
+            Class_Id: opt.Class_Id,
+            Class_Name: opt.Class_Name
+          }))}
+          name="Class"
+          valueKey="Class_Id"
+          labelKey="label"
+          sessionid={sessionid}
+          values={[{
+            Class_Id:  parseInt(options.rowData.Class),
+            label: options.value
+          }]}
+          Class_Id={ parseInt(options.rowData.Class)} 
+          RowId={options.rowData.RowId}
+          handleRemove={handleRemove}
+          onChange={(selected) => {
+          const selectedEntity = selected[0];
+          const selectedEntityLabel = selected[1];
+    
+           options.editorCallback(`${selectedEntityLabel.value}`);
+           const updatedData = { ...options.rowData, Class: selectedEntity.value,ClassName: selectedEntityLabel.value };
+         // Update the groupedData by finding the right VendorPaymentId and RowId
+           const updatedGroupedData = { ...groupedData };
+           const paymentId = options.rowData.VendorPaymentId;
+    
+          if (updatedGroupedData[paymentId]) {
+          // Find the index of the current row in the grouped data
+            const rowIndex = updatedGroupedData[paymentId].findIndex(
+              (row) => row.RowId === options.rowData.RowId
+            );
+
+            if (rowIndex !== -1) {
+              // Update the row in groupedData
+              updatedGroupedData[paymentId][rowIndex] = updatedData;
+            }
+          }
+    // Now, update the localData state to reflect the changes
+       const updatedLocalData = Object.entries(updatedGroupedData).map(([paymentId, rows]) => {
+       const parentRow = rows.reduce((minRow, currentRow) => 
+          currentRow.RowId < minRow.RowId ? currentRow : minRow
+       );
+
+      // Create a display copy of the parent row
+      const displayParentRow = { ...parentRow };
+
+      if (rows.length > 1) {
+        displayParentRow.ClassName = '';
+        displayParentRow.Class = 0;
+        displayParentRow.GLAccount = '';
+        displayParentRow.InvoiceDate = '';
+        displayParentRow.Invoice = '';
+        displayParentRow.Memo = '';
+      }
+
+      return {
+        ...displayParentRow,
+        originalClassName: fieldMaps.classNameMap[paymentId],
+        originalGLAccount: fieldMaps.glAccountMap[paymentId],
+        originalInvoiceDate: fieldMaps.invoiceDateMap[paymentId],
+        originalInvoice: fieldMaps.invoiceMap[paymentId],
+        originalMemo: fieldMaps.memoMap[paymentId],
+        originalClass: fieldMaps.classMap[paymentId]
+      };
+    });
+
+    // Log the updated local data
+    console.log('Updated Local Data:', updatedLocalData);
+
+    const sortedParentRows = [...updatedLocalData].sort((a, b) => 
+      paymentIdOrder.indexOf(a.VendorPaymentId) - paymentIdOrder.indexOf(b.VendorPaymentId)
+  );
+
+    // Update the state with the new local data
+    setLocalData(sortedParentRows);
+
+    // Call onRowUpdate to propagate the updated row data to the parent (if needed)
+    if (options.onRowUpdate) {
+      options.onRowUpdate(updatedData);
+    }
+          }}
+        
+          showSearch={true}
+          placeholder="Search Department"
+          showAddPaymentSplit={false}
+          showRemoveRow={false}
+        />
+      );
+  }
 
     return (
         <input
@@ -569,6 +952,8 @@ const Table = ({
 const onCellEditComplete = (e) => {
     let { rowData, newValue, field } = e;
     rowData[field] = newValue;
+
+    rowData.Change = 1;
 };
   useEffect(() => setRows(row), [row]);
  // Modify how we calculate pagination values
@@ -613,9 +998,14 @@ const paginatedData = localData.slice(first, first + rows);
             </tbody>
           </>
         }
+        sortField={sortField}
+        sortOrder={sortOrder}// Triggered when a column header is clicked for sorting
+        onSort={onSort}
+      removableSort // Allows sorting to be reset
+
       >
         {expandedColumns.map((columnProps, index) => (
-          <Column key={index} {...columnProps} editor={(options) => cellEditor(options)}
+          <Column key={index} {...columnProps}   sortable={columnProps.sortable}  sortFunction={columnProps.sortFunction} editor={(options) => cellEditor(options)}
           onCellEditComplete={onCellEditComplete} />
         ))}
       </DataTable>
@@ -641,6 +1031,6 @@ const paginatedData = localData.slice(first, first + rows);
       <Toast ref={toast} />
     </div>
   );
-};
+});
 
 export default Table;

@@ -4,6 +4,7 @@ import Select from "react-dropdown-select";
 import { Heading } from "../Heading";
 import Close from '../../components/Images/close.png';
 import Add from '../../components/Images/add.png';
+import { fnOpenWindow } from "../../components/CommonFunctions/CommonFunction.js";
 
 const shapes = {
   round: "rounded",
@@ -16,7 +17,7 @@ const variants = {
 };
 
 const sizes = {
-  sm: "h-[48px] pl-2.5 text-[16px]",
+  sm: "h-[68px] pl-2.5 text-[14px]", //48 16px
   xs: "h-[24px] px-2.5 text-[14px]",
 };
 
@@ -40,35 +41,45 @@ const GroupSelect = ({
   RowId,
   VendorId,
   handleRemove,
+  showAddPaymentSplit = false,  // Add these new props
+  showRemoveRow = false,
+  companyId,
+  EmpId,
   ...restProps
 }) => {
   const [customOptions, setCustomOptions] = useState([]);
 
   useEffect(() => {
-    const additionalOptions = [
-      {
+    const additionalOptions = [];
+
+    if (showAddPaymentSplit) {
+      additionalOptions.push({
         label: "Add Payment Split",
         value: "add-payment-split",
         icon: Add,
         onClick: () => {
          
-         const URL = "https://www.directcorp.com/FeeCollection/Presentation/Webforms/VendorPaymentSplit.aspx?SessionId=" + sessionid +"&VendorId="+VendorId+"&EmpNum=32182"+"&CID=4";
-
-          window.open(URL, "", "width=1200,height=1200,resizable=yes,scrollbars=yes");
+          fnOpenWindow(`FeeCollection/Presentation/Webforms/VendorPaymentSplit.aspx?SessionID=${sessionid}&VendorId=${VendorId}&EmpNum=${EmpId}&CID=${companyId}`,
+          "/FeeCollection/Presentation/Webforms/VendorPaymentSplit.aspx",
+          sessionid
+          )
         },
-      },
-      {
+      });
+    }
+
+    if (showRemoveRow) {
+      additionalOptions.push({
         label: "Remove Row",
         value: "remove-row",
         icon: Close,
         onClick: () => {
-            handleRemove(RowId)
+          handleRemove(RowId);
         },
-      },
-    ];
+      });
+    }
 
     setCustomOptions(additionalOptions);
-  }, []);
+  }, [showAddPaymentSplit, showRemoveRow]);
 
   const allOptions = [...options, ...customOptions];
 
@@ -163,6 +174,8 @@ GroupSelect.propTypes = {
   loading: PropTypes.bool,
   loadingMessage: PropTypes.string,
   placeholder: PropTypes.string,
+  showAddPaymentSplit: PropTypes.bool,
+  showRemoveRow: PropTypes.bool,
 };
 
 export { GroupSelect };

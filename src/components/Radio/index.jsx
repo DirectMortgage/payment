@@ -11,7 +11,7 @@ const sizes = {
 const Radio = React.forwardRef(
   ({ className = "", name = "", label = "", id = "radio_id", variant = "primary", size = "xs", ...restProps }, ref) => {
     return (
-      <label className={className + " undefined"}>
+      <label className={`flex items-center gap-1 ${className}`}>
         <input
           className={` ${(size && sizes[size]) || ""} ${(variant && variants[variant]) || ""}`}
           ref={ref}

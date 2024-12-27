@@ -520,7 +520,7 @@ useEffect(() => {
     ChangeXML = ChangeXML.replaceAll('"', '~').replaceAll('~', '\\"');
     const jsonString = JSON.stringify(changedJSON);
     console.log({ ChangeXML, jsonString });
-    return
+    //return
     let obj = { SaveXml: ChangeXML,changedJSON: jsonString };
     const response = await handleAPI({
       name: "VendorMonthlySave",
@@ -1008,6 +1008,8 @@ const paginatedData = localData.slice(first, first + rows);
           <Column key={index} {...columnProps}   sortable={columnProps.sortable}  sortFunction={columnProps.sortFunction} editor={(options) => cellEditor(options)}
           onCellEditComplete={onCellEditComplete} />
         ))}
+
+
       </DataTable>
       {paginator && (
         <div className="custom-footer mt-2">

@@ -86,7 +86,39 @@ background-color: inherit;
 input[type="radio"]{
   box-shadow: none !important;
 }
+.coverAll {
+  z-index: 1000;
+  background-color: #508BC9;
+  margin-bottom: 10px;
+  margin-top:25px;
+  color: white;
+  font-family: Verdana;
+  font-size: 12px;
+  position: absolute !important;
+  width: 400px; /* Fixed width for rectangular shape */
+  height: fit-content;
+  min-height: 100px;
+  overflow: auto;
+  box-shadow: 0 2px 10px rgba(50, 50, 50, 0.5);
+  padding: 15px;
+  top: 100%; /* Position right below the button */
+  left: 0;
+  border-radius: 4px; /* Optional: slight rounding of corners */
+}
 
+.close {
+  float: right;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.white {
+  color: white;
+}
 @keyframes spin {
   from {
     transform: rotate(0deg);

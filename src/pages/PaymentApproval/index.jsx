@@ -19,6 +19,7 @@ export default function DesktopOnePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [companyId, setCompanyId] = useState(4);
+  const [validationResult, setValidationResult] = useState([]);
   
   const paymentSectionRef = useRef(null);
   let SessionId;
@@ -80,10 +81,10 @@ export default function DesktopOnePage() {
   className="flex w-full flex-col items-center gap-[264px] bg-white-a700 md:gap-[198px] sm:gap-[132px] pb-[80px]"
 >
 <div className="flex flex-col gap-[18px] self-stretch">
-<Header setCompanyId={setCompanyId} />
+<Header setCompanyId={setCompanyId} companyId = {companyId} SessionId={SessionId} setValidationResult ={setValidationResult} />
 
           {/* payment management section */}
-          <PaymentManagementSection  ref={paymentSectionRef} companyId={companyId} />
+          <PaymentManagementSection  ref={paymentSectionRef} companyId={companyId} validationResult = {validationResult} />
         </div>
         <div className="fixed-footer z-[1000]">
   <div className="mx-auto flex w-full max-w-[1346px] justify-between pl-0 pr-12 md:pl-0 md:pr-5">

@@ -27,7 +27,7 @@ table {
 border: none;
 background-color: inherit;
 } */
-.clsGridInput:focus{
+.clsGridInput:focus {
   border: 1px solid #888;
   border-radius: 5px;
 }
@@ -78,19 +78,20 @@ background-color: inherit;
   width: 100% !important;
 }
 .filter-red {
-  filter: invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(112%);
+  filter: invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg)
+    brightness(95%) contrast(112%);
 }
 .spinner {
   animation: spin 1s linear infinite;
 }
-input[type="radio"]{
+input[type="radio"] {
   box-shadow: none !important;
 }
 .coverAll {
   z-index: 1000;
-  background-color: #508BC9;
+  background-color: #508bc9;
   margin-bottom: 10px;
-  margin-top:25px;
+  margin-top: 25px;
   color: white;
   font-family: Verdana;
   font-size: 12px;
@@ -141,3 +142,6 @@ input[type="radio"]{
   padding: 4px;
   width: 100%;
 } */
+.auto-complete input[type="text"] {
+  box-shadow: none !important;
+}

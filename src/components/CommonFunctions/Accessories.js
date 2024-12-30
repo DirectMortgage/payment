@@ -3,7 +3,7 @@ import {
   cleanValue,
   formatCurrency,
   handleAPI,
-} from  "../../components/CommonFunctions/CommonFunction.js";
+} from "../../components/CommonFunctions/CommonFunction.js";
 //import Modal from "react-bootstrap/Modal";
 //import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -279,7 +279,6 @@ const DropDownField = ({
   );
 };
 
-
 const DropZone = ({ children, index, onChange = () => {}, style = {} }) => {
   function dragEnter(e) {
     e.preventDefault();
@@ -447,7 +446,34 @@ function useWindowWidth() {
   return windowWidth;
 }
 
-
+const Spinner = ({
+  size = "xs",
+  text = "",
+  color = "#295B9A",
+  className = "",
+  style = {},
+}) => {
+  const sizes = {
+    xxs: "w-5 h-5",
+    xs: "w-10 h-10",
+    sm: "w-12 h-12",
+    md: "w-15 h-15",
+    lg: "w-18 h-18",
+    xl: "w-20 h-20",
+  };
+  return (
+    <div
+      className={`${className} relative w-full h-full flex items-center justify-center overflow-hidden bg-white/60 backdrop-blur-sm`}
+      style={style}
+    >
+      <div
+        className={`${sizes[size]} border-4 border-gray-200 rounded-full animate-spin`}
+        style={{ borderTopColor: color }}
+      ></div>
+      {text && <span className="ml-3">{text}</span>}
+    </div>
+  );
+};
 export {
   Button,
   Input,
@@ -459,4 +485,5 @@ export {
   //ModalBox,
   DropZone,
   useWindowWidth,
+  Spinner,
 };

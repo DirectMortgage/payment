@@ -53,6 +53,7 @@ const PaymentManagementSection = forwardRef(
     const [dropDownOptions, setDropDownOptions] = useState([]);
     const [editingRows, setEditingRows] = useState({});
     const [totalSubTotal, setTotalSubTotal] = useState(0);
+    const [markPaid, setmarkPaid] = useState('');
 
     const tableRef = useRef(null);
     let queryString = queryStringToObject();
@@ -332,18 +333,18 @@ const PaymentManagementSection = forwardRef(
       const currentEmpId = empIdRef.current;
       if (files.length) {
         let details = {
-            LoanId: currentEmpId,
-            DocTypeId: vendorPaymentId,
-            sessionid: SessionId,
-            viewtype: 23,
-            category: vendorPaymentDetailId,
-            description: "",
-            usedoc: 1,
-            entityid: 0,
-            entitytypeid: 0,
-            uploadsource: currentEmpId,
-            conditonid: 0,
-          },
+          LoanId: currentEmpId,
+          DocTypeId: vendorPaymentId,
+          sessionid: SessionId,
+          viewtype: 23,
+          category: vendorPaymentDetailId,
+          description: "",
+          usedoc: 1,
+          entityid: 0,
+          entitytypeid: 0,
+          uploadsource: currentEmpId,
+          conditonid: 0,
+        },
           index = 1;
 
         //return
@@ -701,7 +702,7 @@ const PaymentManagementSection = forwardRef(
           const isHighlighted = validationResult.some(
             (item) =>
               parseInt(item.vendorPaymentId) ===
-                parseInt(rowData.VendorPaymentId) &&
+              parseInt(rowData.VendorPaymentId) &&
               parseInt(item.rowId) === parseInt(rowData.RowId)
           );
 
@@ -744,7 +745,7 @@ const PaymentManagementSection = forwardRef(
           const isHighlighted = validationResult.some(
             (item) =>
               parseInt(item.vendorPaymentId) ===
-                parseInt(rowData.VendorPaymentId) &&
+              parseInt(rowData.VendorPaymentId) &&
               parseInt(item.rowId) === parseInt(rowData.RowId)
           );
 
@@ -1194,6 +1195,7 @@ const PaymentManagementSection = forwardRef(
                   columns={columns}
                   sessionid={SessionId}
                   companyId={companyId}
+                  setmarkPaid={setmarkPaid}
                   EmpId={EmpId}
                   editingRows={editingRows}
                   expandedRows={expandedRows}
@@ -1234,7 +1236,7 @@ const PaymentManagementSection = forwardRef(
                             as="p"
                             className="font-inter text-[12px] font-semibold text-black-900"
                           >
-                            $0.00{" "}
+                            {formatCurrency(markPaid)}
                           </Heading>
                         </div>
                       </div>

@@ -55,7 +55,8 @@ const Table = forwardRef(
       footerContent = <></>,
       expandedRows,
       setExpandedRows,
-      handleRemove = () => {},
+      handleRemove = () => { },
+      setmarkPaid,
       ...props
     },
     ref
@@ -200,18 +201,33 @@ const Table = forwardRef(
         return sum + (parseFloat(subtotal) || 0);
       }, 0);
       setTotalAmount(total);
+      setmarkPaid(total);
     };
 
     // Update your checkbox onChange handler
     const handleCheckboxChange = (row, checked) => {
+      // First remove any existing instances of this row
+      const filteredRows = selectedRows.filter(r => r.RowId !== row.RowId);
+
       let newSelectedRows;
       if (checked) {
-        newSelectedRows = [...selectedRows, row];
+        // Add row only if it's being checked
+        newSelectedRows = [...filteredRows, row];
       } else {
-        newSelectedRows = selectedRows.filter((r) => r.RowId !== row.RowId);
+        // Use filtered rows directly for unchecking
+        newSelectedRows = filteredRows;
       }
+
       setSelectedRows(newSelectedRows);
-      calculateTotal(newSelectedRows);
+
+      // Calculate total from the final selection
+      const total = newSelectedRows.reduce((sum, row) => {
+        const subtotal = FormatValueforCalc(row.SubTotal);
+        return sum + (parseFloat(subtotal) || 0);
+      }, 0);
+
+      setTotalAmount(total);
+      setmarkPaid(total);
     };
     const enhancedColumns = columns.map((col) => {
       if (col.field === "paymentMethodHeader") {
@@ -232,8 +248,8 @@ const Table = forwardRef(
             const selectedValue = rowData.PayACH
               ? "ach"
               : rowData.PayCheck
-              ? "check"
-              : "";
+                ? "check"
+                : "";
             return (
               <RadioGroup
                 name={`payment-${rowData.RowId}`}
@@ -725,7 +741,7 @@ const Table = forwardRef(
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
       console.log({ ChangeXML, jsonString });
-      return;
+      //return;
       let obj = { SaveXml: ChangeXML, changedJSON: jsonString };
       const response = await handleAPI({
         name: "VendorMonthlySave",
@@ -801,43 +817,43 @@ const Table = forwardRef(
     ];
 
     const header = (
-        <div className="table-header">
-          <h6>{tableTitle}</h6>
-          <div className="flex w-full justify-between items-center">
-            <div className="flex-start flex gap-2">
-              <Button
-                leftIcon={
-                  <Img
-                    src="images/img_grid.svg"
-                    alt="Grid"
-                    className="h-[18px] w-[18px]"
-                  />
-                }
-                className="flex h-[38px] min-w-[146px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
-                onClick={addRow}
-              >
-                Add Payment
-              </Button>
-              {/* <Button
+      <div className="table-header">
+        <h6>{tableTitle}</h6>
+        <div className="flex w-full justify-between items-center">
+          <div className="flex-start flex gap-2">
+            <Button
+              leftIcon={
+                <Img
+                  src="images/img_grid.svg"
+                  alt="Grid"
+                  className="h-[18px] w-[18px]"
+                />
+              }
+              className="flex h-[38px] min-w-[146px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
+              onClick={addRow}
+            >
+              Add Payment
+            </Button>
+            {/* <Button
               leftIcon={<Img src="payment/images/img_grid.svg" alt="Grid" className="h-[18px] w-[18px]" />}
               className="flex h-[38px] min-w-[176px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
             >
               Add Payment Split
             </Button> */}
-            </div>
-            <div className="flex-end">
-              {paginator && (
-                <input
-                  className="input-field"
-                  type="search"
-                  onInput={(e) => setGlobalFilter(e.target.value)}
-                  placeholder="Search"
-                />
-              )}
-            </div>
+          </div>
+          <div className="flex-end">
+            {paginator && (
+              <input
+                className="input-field"
+                type="search"
+                onInput={(e) => setGlobalFilter(e.target.value)}
+                placeholder="Search"
+              />
+            )}
           </div>
         </div>
-      ),
+      </div>
+    ),
       footer = () => (
         <div>
           <div>
@@ -1233,8 +1249,8 @@ const Table = forwardRef(
             paginator && isLoading
               ? "empty-page-data-table"
               : isLoading
-              ? "empty-data-table"
-              : "data-table"
+                ? "empty-data-table"
+                : "data-table"
           }
           paginator={false}
           rows={rows}

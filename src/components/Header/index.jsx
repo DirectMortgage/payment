@@ -64,7 +64,14 @@ export default function Header({ setCompanyId, companyId, SessionId, setValidati
                 }));
                 setValidationResults(validations);
                 setValidationResult(duplicates)
-                setEntityInfo(duplicates)
+                const uniqueDuplicates = duplicates.reduce((acc, current) => {
+                    const duplicate = acc.find(item => item.vendorPaymentId === current.vendorPaymentId);
+                    if (!duplicate) {
+                        acc.push(current);
+                    }
+                    return acc;
+                }, []);
+                setEntityInfo(uniqueDuplicates);
             }
         } catch (error) {
             console.error(error);

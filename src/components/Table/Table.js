@@ -1252,15 +1252,15 @@ const Table = forwardRef(
           loading={isLoading}
           loadingIcon={
             <>
-              <tbody className="p-datatable-tbody">
+              <div>
                 <FontAwesomeIcon
                   icon={faRotate}
                   className="spinner"
                   color="#508bc9"
-                  style={{ fontSize: 20 }}
+                  style={{ fontSize: 16, marginRight: 8 }}
                 />
                 Loading...
-              </tbody>
+              </div>
             </>
           }
           sortField={sortField}

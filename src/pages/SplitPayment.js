@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AutoComplete } from "./AutoComplete";
 import {
   cleanValue,
   formatCurrency,
   formatSpecialCharacters,
   handleAPI,
+  handleSaveWindowSize,
   queryStringToObject,
 } from "components/CommonFunctions/CommonFunction";
 import { Spinner } from "components/CommonFunctions/Accessories";
 import { Bounce, ToastContainer, toast } from "react-toastify";
+import { Button } from "components";
 
 const groupByKey = (input, key) => {
   let data = input.reduce((acc, currentValue) => {
@@ -99,7 +101,9 @@ const SplitPayment = () => {
     [accountOptions, setAccountOptions] = useState([]),
     [dragging, setDragging] = useState(false),
     [files, setFiles] = useState([]),
-    [processingStatus, setProcessingStatus] = useState([]);
+    [processingStatus, setProcessingStatus] = useState([]),
+    [isMenuOpen, setIsMenuOpen] = useState(false),
+    menuRef = useRef(null);
 
   const [debouncedSearchInput, setDebouncedSearchInput] = useState("");
 
@@ -119,6 +123,19 @@ const SplitPayment = () => {
       processingStatus.includes("Uploading")
     );
   }, [details, processingStatus]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleGetPayeeDetails = () => {
     handleAPI({
@@ -596,6 +613,40 @@ const SplitPayment = () => {
         pauseOnHover
         transition={Bounce}
       />
+      <div className="fixed-footer z-[1000]">
+        <div className="mx-auto flex w-full max-w-[1346px] justify-between pl-0 pr-12 md:pl-0 md:pr-5">
+          <div className="relative" ref={menuRef}>
+            <Button
+              className="flex h-[36px] min-w-[78px] flex-row items-center justify-center rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[14px] font-bold text-white-a700"
+              onClick={() => setIsMenuOpen((prev) => !prev)}
+            >
+              Menu
+            </Button>
+
+            {isMenuOpen && (
+              <ul
+                className="absolute bottom-[40px] left-0 w-[300px] rounded-lg border border-gray-200 bg-white shadow-lg z-[1000]"
+                style={{ backgroundColor: "white" }}
+              >
+                <li className="cursor-pointer px-4 py-2 hover:bg-gray-100">
+                  <a
+                    href="#"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      handleSaveWindowSize(
+                        sessionId,
+                        "/FeeCollection/Presentation/Webforms/VendorPaymentSplit.aspx"
+                      );
+                    }}
+                  >
+                    Save Window Size and Position
+                  </a>
+                </li>
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

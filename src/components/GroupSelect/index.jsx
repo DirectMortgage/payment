@@ -64,7 +64,7 @@ const GroupSelect = ({
             window.open(
               `../Payment/SplitPayment?SessionID=${sessionid}&VendorId=${VendorId}&EmpNum=${EmpId}&CID=${companyId}&VendorPaymentDetailId=${VendorPaymentDetailId}&VendorPaymentId=${VendorPaymentId}`,
               "_blank",
-              "_blank"
+              "width=600,height=800"
             );
           } else {
             fnOpenWindow(

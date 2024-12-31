@@ -16,6 +16,7 @@ import {
   fnOpenWindow,
   handleShowUploadingStatus,
   formatCurrency,
+  FormatValueforCalc,
 } from "../../components/CommonFunctions/CommonFunction.js";
 import {
   FileUpload,
@@ -37,6 +38,7 @@ const PaymentManagementSection = forwardRef(({ companyId, validationResult }, re
   const [vendors, setVendors] = useState([]);
   const [dropDownOptions, setDropDownOptions] = useState([]);
   const [editingRows, setEditingRows] = useState({});
+  const [totalSubTotal, setTotalSubTotal] = useState(0);
 
   const tableRef = useRef(null);
   let queryString = queryStringToObject();
@@ -79,7 +81,7 @@ const PaymentManagementSection = forwardRef(({ companyId, validationResult }, re
 
   const GetVendorPaymentApprovalData = async (CompanyId, UserId) => {
     setIsLoading(true); // Set loading when starting the request
-
+    setRowData([]);
     let obj = {
       CompanyId: CompanyId,
       UserId: UserId,
@@ -110,6 +112,7 @@ const PaymentManagementSection = forwardRef(({ companyId, validationResult }, re
           setGLAccounts(responseJson.VendorPayment[6].Accounts)
           setRowData(JSON.parse(processedData));
           console.log(JSON.parse(processedData))
+          calculateTotalSubTotal(JSON.parse(processedData));
         }
         setRawXmlData(responseJson);
       }
@@ -140,6 +143,14 @@ const PaymentManagementSection = forwardRef(({ companyId, validationResult }, re
     } finally {
 
     }
+  };
+  const calculateTotalSubTotal = (processedData) => {
+    const total = processedData.reduce((accumulator, row) => {
+      const subtotal = FormatValueforCalc(row.SubTotal)
+      return accumulator + ( parseFloat(subtotal) || 0); // Ensure SubTotal is a number
+    }, 0);
+
+    setTotalSubTotal(total);
   };
   const processPaymentInfo = (paymentInfo) => {
     const rowData = paymentInfo.map((full) => {
@@ -239,12 +250,29 @@ const PaymentManagementSection = forwardRef(({ companyId, validationResult }, re
     //window.open(URL);
     window.open(URL, "", "width=1200,height=1200,resizable=yes,scrollbars=yes");
   };
-  const handleRemove = (rowId) => {
+  const handleRemove = async(rowId) => {
+    // Find the record with the given rowId
+    const recordToRemove = rowData.find(row => row.RowId === rowId);
+    
+    if (recordToRemove) {
+        const { VendorPaymentId,VendorPaymentDetailId } = recordToRemove;
 
-    const updatedData = rowData.filter(row => row.RowId !== rowId);
-    setRowData(updatedData);
+        const updatedData = rowData.filter(row => row.VendorPaymentId !== VendorPaymentId);
+       // console.log(VendorPaymentDetailId)
+        setRowData(updatedData);
 
-  }
+            let obj = { VendorPaymentId: VendorPaymentId,VendorPaymentDetailId: VendorPaymentDetailId };
+            
+            const response = await handleAPI({
+              name: "DeleteVendorMonthlyRecords",
+              params: obj,
+            });
+      
+            
+    } else {
+        console.error("Record with the given RowId not found");
+    }
+};
   function formatDropdownOptions(htmlString) {
     // Create a temporary DOM element
     const parser = new DOMParser();
@@ -653,76 +681,40 @@ const PaymentManagementSection = forwardRef(({ companyId, validationResult }, re
         </Text>
       ),
       style: { width: '136px' },
-      body: (rowData) => {
+//       body: (rowData) => {
 
-        const handlePaymentChange = (value) => {
-          rowData.PayACH = value === "ach";
-          rowData.PayCheck = value === "check";
-        };
+//         const handlePaymentChange = (value) => {
+//           rowData.PayACH = value === "ach";
+//           rowData.PayCheck = value === "check";
+//         };
 
-        const selectedValue = rowData.PayACH ? "ach" : rowData.PayCheck ? "check" : "";
-        return (
-          <RadioGroup
-            name={`payment-${rowData.RowId}`}
-            selectedValue={selectedValue}
-            onChange={handlePaymentChange}
-            className="flex gap-2"
-          >
-            <Radio
-              value="ach"
-              label="ACH"
-              id={`chkACHApproved${rowData.RowId}`}
-              className="text-[12px] text-black-900"
-            />
-            <Radio
-              value="check"
-              label="Check"
-              id={`chkPrintChecks${rowData.RowId}`}
-              className="text-[12px] text-black-900"
-            />
-          </RadioGroup>
-        );
-        // <div className="flex">
-        //     <div className="flex gap-1 py-0.5">
-        //         <input
-        //             type="radio"
-        //             id={`ach-${rowData.RowId}`}
-        //             name={`payment-${rowData.RowId}`}
-        //             value="ach"
-        //             checked={rowData.PayACH === true}
-        //             onChange={() => {
-        //                // setExpandedRows(prev => [...prev, rowData]);
-        //                 rowData.PayACH = true;
-        //             }}
-        //         />
-        //         <label 
-        //             htmlFor={`ach-${rowData.RowId}`}
-        //             className="text-[12px] text-black-900"
-        //         >
-        //             ACH
-        //         </label>
-        //     </div>
-
-        //     <div className="ml-2.5 flex gap-1 py-0.5">
-        //         <input
-        //             type="radio"
-        //             id={`check-${rowData.RowId}`}
-        //             name={`payment-${rowData.RowId}`}
-        //             value="check"
-        //             checked={rowData.PayCheck === true}
-        //             onChange={() => {
-        //                 rowData.PayCheck = true;
-        //             }}
-        //         />
-        //         <label
-        //             htmlFor={`check-${rowData.RowId}`}
-        //             className="text-[12px] text-black-900"
-        //         >
-        //             Check
-        //         </label>
-        //     </div>
-        // </div>
-      }
+//         const selectedValue = rowData.PayACH ? "ach" : rowData.PayCheck ? "check" : "";
+//         return (
+//           <RadioGroup
+//             name={`payment-${rowData.RowId}`}
+//             selectedValue={selectedValue}
+//             onChange={(e) => {
+//               handlePaymentChange(e);
+//               setExpandedRows((prev) => [...prev, rowData]);
+// }}
+//             className="flex gap-2"
+//           >
+//             <Radio
+//               value="ach"
+//               label="ACH"
+//               id={`chkACHApproved${rowData.RowId}`}
+//               className="text-[12px] text-black-900"
+//             />
+//             <Radio
+//               value="check"
+//               label="Check"
+//               id={`chkPrintChecks${rowData.RowId}`}
+//               className="text-[12px] text-black-900"
+//             />
+//           </RadioGroup>
+//         );
+        
+//       }
     },
     {
       field: "MarkPaid",
@@ -1099,7 +1091,7 @@ const PaymentManagementSection = forwardRef(({ companyId, validationResult }, re
                         Total bills:{" "}
                       </Text>
                       <Heading as="p" className="font-inter text-[12px] font-semibold text-black-900">
-                        $97,105.78
+                       {formatCurrency(totalSubTotal)}
                       </Heading>
                     </div>
                     <div className="flex flex-wrap justify-end gap-6">

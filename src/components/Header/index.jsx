@@ -18,9 +18,10 @@ const dropDownOptions = [
     { label: "Direct Mortgage, Corp", value: "4" },
 ];
 
-export default function Header({ setCompanyId, companyId, SessionId,setValidationResult, ...props }) {
+export default function Header({ setCompanyId, companyId, SessionId, setValidationResult, ...props }) {
 
     const [validationResults, setValidationResults] = useState([]);
+    const [EntityInfo, setEntityInfo] = useState([]);
     const [status, setStatus] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -28,7 +29,7 @@ export default function Header({ setCompanyId, companyId, SessionId,setValidatio
     useEffect(() => {
         PaymentValidation();
     }, [companyId]);
-  
+
 
     const PaymentValidation = async () => {
         try {
@@ -58,10 +59,12 @@ export default function Header({ setCompanyId, companyId, SessionId,setValidatio
                     vendorPaymentDetailId: node.getAttribute("VendorPaymentDetailid"),
                     entityId: node.getAttribute("EntityId"),
                     refNo: node.getAttribute("RefNo"),
-                    billId: node.getAttribute("BillId")
-                  }));
+                    billId: node.getAttribute("BillId"),
+                    EntityName: node.getAttribute("EntityName")
+                }));
                 setValidationResults(validations);
                 setValidationResult(duplicates)
+                setEntityInfo(duplicates)
             }
         } catch (error) {
             console.error(error);
@@ -76,7 +79,7 @@ export default function Header({ setCompanyId, companyId, SessionId,setValidatio
     };
     const [isOpen, setIsOpen] = useState(false);
 
-   
+
     const getBackgroundColor = () => {
         if (isLoading) return 'bg-yellow-500';
         return status === "FAIL" ? "bg-red-600" : "bg-green-600";
@@ -91,7 +94,13 @@ export default function Header({ setCompanyId, companyId, SessionId,setValidatio
                     {validationResults.map((result, index) => (
                         <div key={index}>
                             {`${index + 1}. ${result.validation}`}<br />
-                            {result.validationMessage}<br /><br />
+                            {result.validationMessage}<br />
+
+                        </div>
+                    ))}
+                    {EntityInfo.map((result, index) => (
+                        <div className="mt-2">
+                            Payee:   {result.EntityName} <br />
                         </div>
                     ))}
                 </>

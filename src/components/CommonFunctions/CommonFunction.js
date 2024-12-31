@@ -20,7 +20,7 @@ const handleAPI = async ({
       url = "https://www.solutioncenter.biz/LoginCredentialsAPI/api/";
     }
   }
-  if (requestOptions) {
+  if (requestOptions && name !== "Payment_UploadFilesdocs") {
     url = `../../../`;
     if (window.location.href.indexOf("localhost") != -1) {
       url = `https://www.solutioncenter.biz/LoginCredentialsAPI/api/`;

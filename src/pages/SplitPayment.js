@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AutoComplete } from "./AutoComplete";
 import {
+  cleanValue,
+  formatCurrency,
+  formatSpecialCharacters,
   handleAPI,
   queryStringToObject,
 } from "components/CommonFunctions/CommonFunction";
+import { Spinner } from "components/CommonFunctions/Accessories";
+import { Bounce, ToastContainer, toast } from "react-toastify";
 
 const groupByKey = (input, key) => {
   let data = input.reduce((acc, currentValue) => {
@@ -40,7 +45,7 @@ const splitTypeOptions = [
       label: "G/L Account",
       placeholder: "Search G/L Account",
       type: "autoComplete",
-      labelKey: "Account_Name",
+      labelKey: "accountName",
       valueKey: "account",
     },
     {
@@ -71,11 +76,15 @@ const splitTypeOptions = [
     },
   ],
   {
-    SessionId: sessionId,
+    SessionId,
+    SessionID,
     VendorId: vendorId,
     CID: companyId,
     EmpNum: empNumber,
-  } = queryStringToObject();
+    VendorPaymentDetailId = "",
+    VendorPaymentId = "",
+  } = queryStringToObject(),
+  sessionId = SessionId || SessionID;
 
 const SplitPayment = () => {
   const [details, setDetails] = useState({
@@ -87,10 +96,82 @@ const SplitPayment = () => {
       splitType: "",
     }),
     [payeeOptions, setPayeeOptions] = useState([]),
+    [accountOptions, setAccountOptions] = useState([]),
     [dragging, setDragging] = useState(false),
-    [files, setFiles] = useState([]);
+    [files, setFiles] = useState([]),
+    [processingStatus, setProcessingStatus] = useState([]);
 
   const [debouncedSearchInput, setDebouncedSearchInput] = useState("");
+
+  const isDisableSave = useMemo(() => {
+    const {
+      payee = "",
+      account = "",
+      totalAmount = "",
+      splitType = "",
+    } = details;
+
+    return (
+      !payee.trim() ||
+      !account.trim() ||
+      !totalAmount.trim() ||
+      !splitType.trim() ||
+      processingStatus.includes("Uploading")
+    );
+  }, [details, processingStatus]);
+
+  const handleGetPayeeDetails = () => {
+    handleAPI({
+      name: "getPayeeDetails",
+      params: { companyId, vendorId },
+      apiName: "LoginCredentialsAPI",
+      method: "GET",
+    })
+      .then((response) => {
+        // debugger;
+        response = formatSpecialCharacters(response);
+        setPayeeOptions(JSON.parse(response));
+        handleDetailsChange({
+          target: { name: "payee", value: JSON.parse(response)[0] },
+        });
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  };
+  useEffect(() => {
+    if (companyId && vendorId > 1) handleGetPayeeDetails();
+    if (companyId) handleGetAccountDetails();
+  }, [companyId, vendorId]);
+
+  const handleGetAccountDetails = () => {
+    handleAPI({
+      name: "getCompanyAccounts",
+      params: { companyId },
+      apiName: "LoginCredentialsAPI",
+      method: "GET",
+    })
+      .then((response) => {
+        let iAccountOptions = [];
+        try {
+          iAccountOptions = JSON.parse(
+            JSON["parse"](response)["Table"][0]["Column1"]
+          );
+          iAccountOptions = iAccountOptions.map((item) => {
+            item["accountName"] =
+              item["Account_Id"] + " - " + item["Account_Name"].trim();
+            return item;
+          });
+        } catch (error) {}
+        setAccountOptions(iAccountOptions);
+        handleDetailsChange({
+          target: { name: "accountOptions", value: iAccountOptions },
+        });
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  };
 
   useEffect(() => {
     const searchInput = details["payeeSearch"] || "";
@@ -103,7 +184,6 @@ const SplitPayment = () => {
 
   useEffect(() => {
     if (debouncedSearchInput.length > 2) {
-      setPayeeOptions([]);
       handleDetailsChange({
         target: { name: "payeeSearchStatus", value: true },
       });
@@ -113,19 +193,22 @@ const SplitPayment = () => {
         params: { companyId, searchText: debouncedSearchInput },
       })
         .then((response) => {
-          let iPayeeOptions = groupByKey(JSON.parse(response), "category");
-          iPayeeOptions = Object.keys(iPayeeOptions).reduce((acc, key) => {
-            acc = [
-              ...acc,
-              {
-                label: key,
-                options: iPayeeOptions[key],
-              },
-            ];
-            return acc;
-          }, []);
-
-          setPayeeOptions(iPayeeOptions);
+          let iPayeeOptions = [];
+          if (response) {
+            response = formatSpecialCharacters(response);
+            iPayeeOptions = groupByKey(JSON.parse(response), "category");
+            iPayeeOptions = Object.keys(iPayeeOptions).reduce((acc, key) => {
+              acc = [
+                ...acc,
+                {
+                  label: key,
+                  options: iPayeeOptions[key],
+                },
+              ];
+              return acc;
+            }, []);
+          }
+          return iPayeeOptions;
         })
         .catch((error) => {
           console.error("Error fetching data:", error);
@@ -140,22 +223,52 @@ const SplitPayment = () => {
     }
   }, [debouncedSearchInput]);
 
+  const handleAccountSearch = async (searchText = "") => {
+    return searchText.length <= 2
+      ? []
+      : await handleAPI({
+          name: "searchAccountDetails",
+          params: { companyId, searchText: searchText },
+        })
+          .then((response) => {
+            let iPayeeOptions = groupByKey(JSON.parse(response), "category");
+            iPayeeOptions = Object.keys(iPayeeOptions).reduce((acc, key) => {
+              // acc = [
+              //   ...acc,
+              //   {
+              //     label: key,
+              //     options: iPayeeOptions[key],
+              //   },
+              // ];
+              acc = [...acc, { Entity_Name: key, VendorId: -1 }];
+              return acc;
+            }, []);
+          })
+          .catch((error) => {
+            console.error("Error fetching data:", error);
+          });
+  };
+
   const handleSearch = async (searchText = "") => {
-    return searchText.length == 0
+    return searchText.length <= 2
       ? []
       : await handleAPI({
           name: "searchPayeeDetails",
           params: { companyId, searchText: searchText },
         }).then((response) => {
+          response = formatSpecialCharacters(response);
+
           let iPayeeOptions = groupByKey(JSON.parse(response), "category");
           iPayeeOptions = Object.keys(iPayeeOptions).reduce((acc, key) => {
-            acc = [
-              ...acc,
-              {
-                label: key,
-                options: iPayeeOptions[key],
-              },
-            ];
+            // acc = [
+            //   ...acc,
+            //   {
+            //     label: key,
+            //     options: iPayeeOptions[key],
+            //   },
+            // ];
+            acc = [...acc, { Entity_Name: key, VendorId: -1 }];
+            acc = [...acc, ...iPayeeOptions[key]];
             return acc;
           }, []);
 
@@ -164,37 +277,87 @@ const SplitPayment = () => {
   };
 
   const handleDetailsChange = (params) => {
-    if (params["name"] === "payee") {
-      const { VendorId, Account_Id, Account_Name } = params["selectedOption"],
-        account = Account_Id + "-" + Account_Name;
-      params = [
-        { name: "VendorId", value: VendorId },
-        { name: "account", value: account },
-        { name: "Account_Name", value: Account_Name },
-        { name: "Account_Id", value: Account_Id },
-        { name: params["name"] + "Options", value: [params["selectedOption"]] },
-        {
-          name: "accountOptions",
-          value: [
-            {
-              label: Account_Name,
-              value: [{ Account_Name, Account_Id, account }],
-            },
-          ],
-        },
-      ];
-    } else if (params["name"] === "account") {
-      params = [];
-    }
+    try {
+      if (params["target"]["name"] === "payee") {
+        const { VendorId, Account_Id, Account_Name, Entity_Name } =
+            params["target"]["value"],
+          account = (Account_Id + " - " + Account_Name).trim();
+        if (account == "0 -") account = account.replaceAll("0 -", "");
+        params = [
+          { name: "VendorId", value: VendorId },
+          { name: "account", value: account },
+          { name: "accountName", value: account },
+          { name: "Account_Name", value: Account_Name },
+          { name: "Account_Id", value: Account_Id },
+          { name: params["target"]["name"] + "Name", value: Entity_Name },
+          {
+            name: params["target"]["name"] + "Options",
+            value: [params["target"]["value"]],
+          },
+        ];
+      } else if (params["target"]["name"] === "account") {
+        const { Account_Id, Account_Name } = params["target"]["value"],
+          account = (Account_Id + " - " + Account_Name).trim();
+        if (account == "0 -") account = account.replaceAll("0 -", "");
+        params = [
+          {
+            name: "Account_Id",
+            value: Account_Id,
+          },
+          { name: "Account_Name", value: Account_Name },
+          { name: "accountName", value: account },
+        ];
+      }
 
-    const iDetails = Array.isArray(params)
-      ? params.reduce((acc, { name, value }) => {
-          acc[name] = value;
-          return acc;
-        }, {})
-      : { [params.target.name]: params.target.value };
-    setDetails((prevDetails) => {
-      return { ...prevDetails, ...iDetails };
+      const iDetails = Array.isArray(params)
+        ? params.reduce((acc, { name, value }) => {
+            if (typeof value === "string")
+              value = (value || "").toString()?.trim();
+            acc[name] = value;
+            return acc;
+          }, {})
+        : { [params.target.name]: params.target.value };
+
+      setDetails((prevDetails) => {
+        return { ...prevDetails, ...iDetails };
+      });
+    } catch (error) {
+      console.error("Error in handleDetailsChange:", error);
+    }
+  };
+  const handleToast = (message, type) => {
+    toast(message, { type });
+  };
+  const handleSave = () => {
+    handleProcessingStatus("Saving");
+    const {
+      VendorId,
+      Account_Id,
+      totalAmount,
+      invoice,
+      memo,
+      splitType,
+      ScanDocId = "",
+    } = details;
+
+    const xmlInput = `<VendorDetail VendorPaymentId='${VendorPaymentId}' AccountId='${Account_Id}' VendorId='${VendorId}' TotalAmount='${totalAmount}' InvoiceNo='${invoice}' Memo='${memo}' ImageId='${ScanDocId}' SplitType='${splitType}'></VendorDetail>`;
+    // return;
+    handleAPI({
+      name: "saveVendorSplit",
+      params: { xmlInput },
+      apiName: "LoginCredentialsAPI",
+    }).then((response) => {
+      console.log(response);
+      handleToast("Saved Successfully", "success");
+      try {
+        const button = window.opener.document.querySelector(
+          "#refresh-payment-data"
+        );
+        button.setAttribute("data-company-id", companyId);
+        button.setAttribute("data-emp-id", empNumber);
+        button.click();
+      } catch (error) {}
+      handleProcessingStatus("Saving", false);
     });
   };
 
@@ -233,9 +396,66 @@ const SplitPayment = () => {
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
-    handleFileUpload(selectedFiles);
+    // handleFileUpload(selectedFiles);
+    onFileDrop({ files: selectedFiles });
   };
+  const handleProcessingStatus = (status, isAdd = true) => {
+    setProcessingStatus((prevProcessingStatus) => {
+      return isAdd
+        ? [...prevProcessingStatus, status]
+        : prevProcessingStatus.filter((item) => item !== status);
+    });
+  };
+  const onFileDrop = ({ files }) => {
+    handleProcessingStatus("Uploading");
+    if (files.length) {
+      let details = {
+          LoanId: empNumber,
+          DocTypeId: VendorPaymentId,
+          sessionid: sessionId,
+          viewtype: 23,
+          category: VendorPaymentDetailId,
+          description: "",
+          usedoc: 1,
+          entityid: 0,
+          entitytypeid: 0,
+          uploadsource: empNumber,
+          conditonid: 0,
+        },
+        index = 1;
 
+      files.forEach(async (file) => {
+        let formData = new FormData();
+        formData.append("", file);
+
+        let requestOptions = {
+          method: "POST",
+          body: formData,
+          redirect: "follow",
+        };
+
+        await handleAPI({
+          name: "Payment_UploadFilesdocs",
+          params: details || {},
+          requestOptions: requestOptions,
+        })
+          .then((ScanDocId) => {
+            if (ScanDocId) {
+              if (index === files.length) {
+                handleToast("Image Uploaded Successfully", "success");
+                console.log("All files uploaded successfully", ScanDocId);
+                handleDetailsChange({
+                  target: { name: "ScanDocId", value: ScanDocId },
+                });
+                handleProcessingStatus("Uploading", false);
+              }
+            }
+            index++;
+          })
+          .catch((e) => console.error("Error form UploadFilesdocs ====> ", e));
+      });
+    }
+  };
   return (
     <div
       className="w-[600px] p-8 gap-[36px] rounded-[10px] flex justify-self-center justify-center mt-5 flex-col"
@@ -247,7 +467,7 @@ const SplitPayment = () => {
       <div className="flex flex-col gap-[24px] w-full">
         {fields.map(
           (
-            { label, name, type, placeholder, required, labelKey, valueKey },
+            { label, name, type, placeholder, format, labelKey, valueKey },
             index
           ) => (
             <div key={index} className="flex flex-col gap-[10px]">
@@ -269,13 +489,15 @@ const SplitPayment = () => {
                 <AutoComplete
                   className="text-[#333333] auto-complete"
                   name={name}
-                  handleSearch={name === "payee" ? handleSearch : () => {}}
+                  handleSearch={
+                    name === "payee" ? handleSearch : handleAccountSearch
+                  }
                   onChange={handleDetailsChange}
                   loading={details["payeeSearchStatus"] || false}
                   loadingMessage="Searching..."
                   options={details[name + "Options"] || []}
                   placeholder={placeholder}
-                  value={details[name]}
+                  value={details[name + "Name"] || ""}
                   labelKey={labelKey}
                   valueKey={valueKey}
                 />
@@ -286,6 +508,16 @@ const SplitPayment = () => {
                   name={name}
                   placeholder={placeholder}
                   value={details[name] || ""}
+                  onBlur={(event) => {
+                    if (format === "currency") {
+                      event.target.value = formatCurrency(details[name] || "");
+                    }
+                  }}
+                  onFocus={(event) => {
+                    if (format === "currency") {
+                      event.target.value = cleanValue(details[name]) || "";
+                    }
+                  }}
                   onChange={(event) => handleDetailsChange(event)}
                 />
               )}
@@ -307,7 +539,11 @@ const SplitPayment = () => {
             id="file-upload"
             type="file"
             style={{ display: "none" }}
-            onChange={handleFileChange}
+            onChange={
+              !processingStatus.includes("Uploading")
+                ? handleFileChange
+                : () => {}
+            }
             accept=".pdf,.jpg,.jpeg,.png,.gif,.heic,.heif"
             multiple
           />
@@ -315,18 +551,51 @@ const SplitPayment = () => {
             htmlFor="file-upload"
             className="button cursor-pointer p-5 w-full text-center"
           >
-            Upload
+            {processingStatus.includes("Uploading") ? (
+              <>
+                <Spinner text="Uploading..." size="xxs" />
+              </>
+            ) : (
+              <>Upload</>
+            )}
           </label>
         </div>
       </div>
       <div className="flex justify-center gap-[24px]">
-        <button className="bg-[#508BC9] border-[#295B9A] border-[2px] text-[#fff] rounded-[8px] px-7 py-2 ">
-          Save
+        <button
+          className={`border-[2px] text-[#fff] rounded-[8px] px-7 py-2 ${
+            isDisableSave || processingStatus.includes("Saving")
+              ? "bg-[#6c757d] border-[#444d55] cursor-not-allowed"
+              : "bg-[#508BC9] border-[#295B9A] cursor-pointer"
+          }`}
+          onClick={handleSave}
+          disabled={isDisableSave || processingStatus.includes("Saving")}
+        >
+          {processingStatus.includes("Saving") ? (
+            <Spinner text="Saving" size="xxs" color="#6c757d" />
+          ) : (
+            <>Save</>
+          )}
         </button>
-        <button className="border-[#508BC9] border-[3px] text-[#508BC9] rounded-[8px] px-7 py-2 ">
+        <button
+          className="border-[#508BC9] border-[3px] text-[#508BC9] rounded-[8px] px-7 py-2 "
+          onClick={() => window.close()}
+        >
           Cancel
         </button>
       </div>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={8000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss={false}
+        draggable
+        pauseOnHover
+        transition={Bounce}
+      />
     </div>
   );
 };

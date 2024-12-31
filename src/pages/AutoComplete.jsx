@@ -1,243 +1,219 @@
-// import React, { Fragment, useMemo } from "react";
-// import PropTypes from "prop-types";
-// import Select from "react-select";
-// import { Spinner } from "components/CommonFunctions/Accessories";
-
-// const AutoComplete = ({
-//   className = "",
-//   options = [],
-//   shape,
-//   variant = "fill",
-//   size = "xs",
-//   color = "",
-//   value = "",
-//   valueKey = "VendorId",
-//   labelKey = "VendorName",
-//   onChange = () => {},
-//   onInputChange = () => {},
-//   name = "",
-//   label = "",
-//   loading,
-//   loadingMessage = "Loading",
-//   returnAllAttributes = false,
-//   autoFocus = false,
-//   placeholder = "",
-//   searchInput = "",
-//   ...restProps
-// }) => {
-//   const iSelected = useMemo(() => {
-//     try {
-//       return JSON["parse"](JSON["stringify"](options))
-//         .flatMap(({ options: iOptions }) => iOptions)
-//         .filter(({ [valueKey]: iValue }) => iValue == value)[0];
-//     } catch (e) {
-//       return {};
-//     }
-//   }, [value, options]);
-
-//   const formatGroupLabel = (data) => {
-//     return (
-//       <div className="flex items-center justify-between text-sm capitalize">
-//         <span>{data["label"]}</span>
-//         <span className="bg-gray-200 rounded-full text-gray-800 text-xs font-normal leading-none min-w-[1rem] px-2 py-[0.166666rem] text-center">
-//           {data.options.length}
-//         </span>
-//       </div>
-//     );
-//   };
-
-//   return (
-//     <>
-//       <Select
-//         options={options}
-//         name={name}
-//         placeholder={placeholder}
-//         addPlaceholder={label}
-//         clearable={true}
-//         searchable={true}
-//         // isLoading={loading}
-//         onInputChange={onInputChange}
-//         labelField={labelKey}
-//         valueField={valueKey}
-//         searchBy={labelKey}
-//         value={iSelected || ""}
-//         autoFocus={autoFocus}
-//         noOptionsMessage={() =>
-//           loading ? (
-//             <Spinner
-//               size="xxs"
-//               text={
-//                 <>
-//                   Searching for <b>{searchInput}</b>
-//                 </>
-//               }
-//             />
-//           ) : null
-//         }
-//         loadingMessage={() => null}
-//         formatGroupLabel={formatGroupLabel}
-//         onChange={(selectedOption) => {
-//           let params = [
-//             {
-//               name,
-//               value: selectedOption[valueKey],
-//             },
-//           ];
-//           if (returnAllAttributes) {
-//             params = [
-//               ...params,
-//               ...Object.keys(selectedOption).reduce((acc, key) => {
-//                 acc.push({ name: key, value: selectedOption[key] });
-//                 return acc;
-//               }, []),
-//             ];
-//           }
-
-//           if (selectedOption) {
-//             onChange(params);
-//           }
-//         }}
-//         disabled={loading}
-//         styles={{
-//           options: (provided, state) => ({
-//             ...provided,
-//             border: "1px solid #6b7280",
-//           }),
-//           //   option: (provided, state) => ({
-//           //     ...provided,
-//           //     ...(loading
-//           //       ? {
-//           //           backgroundColor: state.isSelected
-//           //             ? "#white"
-//           //             : state.isFocused
-//           //             ? "#white"
-//           //             : "white",
-//           //           color: state.isSelected
-//           //             ? "#fff"
-//           //             : state.isFocused
-//           //             ? "#111"
-//           //             : "",
-//           //         }
-//           //       : {
-//           //           backgroundColor: state.isSelected
-//           //             ? "#428bca"
-//           //             : state.isFocused
-//           //             ? "#e5e7eb"
-//           //             : "white",
-//           //           color: state.isSelected
-//           //             ? "#fff"
-//           //             : state.isFocused
-//           //             ? "#111"
-//           //             : "",
-//           //           cursor: "pointer",
-//           //         }),
-//           //   }),
-//           control: (provided, state) => ({
-//             ...provided,
-//             border: "1px solid #6b7280",
-//             // backgroundColor: state.isFocused ? "#fff" : "#fff",
-//             padding: "0.15rem",
-//           }),
-//           input: (provided, state) => ({
-//             ...provided,
-//             border: "none",
-//             boxShadow: "none",
-//           }),
-//         }}
-//         className={className}
-//         {...restProps}
-//       />
-//     </>
-//   );
-// };
-
-// AutoComplete.propTypes = {
-//   className: PropTypes.string,
-//   options: PropTypes.any,
-//   onChange: PropTypes.func,
-//   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-//   shape: PropTypes.oneOf(["round"]),
-//   size: PropTypes.oneOf(["sm", "xs"]),
-//   variant: PropTypes.oneOf(["fill"]),
-//   color: PropTypes.oneOf(["white_A700"]),
-//   name: PropTypes.string,
-//   label: PropTypes.string,
-//   loading: PropTypes.bool,
-//   loadingMessage: PropTypes.any,
-// };
-
-// export { AutoComplete };
 import { Spinner } from "components/CommonFunctions/Accessories";
-import React, { useState } from "react";
-import AsyncSelect from "react-select/async";
+import { useState, useEffect, useRef, Fragment } from "react";
 
-const AutoComplete = ({
-  options,
-  className,
-  valueKey,
-  labelKey,
-  onChange = () => {},
-  returnAllAttributes,
-  name,
-  value,
-  placeholder,
-  handleSearch = () => {},
-}) => {
-  const [loading, setLoading] = useState(false);
+const AutoComplete = (props) => {
+  const {
+    label,
+    onChange: iOnChange = () => {},
+    value,
+    placeholder,
+    disabled = false,
+    onBlur = () => {},
+    onFocus = () => {},
+    symbol = null,
+    symbolPosition = "left",
+    iProcessingStatus = null,
+    handleSearch = () => {},
+    valueKey = "value",
+    labelKey = "label",
+    name,
+    options = [],
+  } = props;
 
-  const loadOptions = async (inputValue) => {
-    setLoading(true);
-    const results = await handleSearch(inputValue);
-    setLoading(false);
-    return results;
+  const [searchText, setSearchText] = useState(value || "");
+  const [isFocus, setIsFocus] = useState(false);
+  const [elementPosition, setElementPosition] = useState({ top: 0, width: 0 });
+  const [filteredOption, setFilteredOption] = useState(options || []);
+  const [processingStatus, setProcessingStatus] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const inputRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    setSearchText(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (options.length > 0) {
+      setFilteredOption(options);
+    }
+  }, [options]);
+  const onChange = (e) => {
+    setIsFocus(false);
+    iOnChange(e);
   };
-  console.log({ options, value, labelKey, valueKey });
 
-  return (
-    <AsyncSelect
-      className={className}
-      loadOptions={loadOptions}
-      defaultOptions={options}
-      placeholder={placeholder}
-      styles={{
-        options: (provided, state) => ({
-          ...provided,
-          border: "1px solid #6b7280",
-        }),
-        groupHeading: (provided, state) => ({
-          ...provided,
-          textTransform: "capitalize",
-          fontSize: 18,
-          padding: 10,
-          color: "#478fca",
-          backgroundColor: "#eef4f9",
-        }),
-        option: (provided, state) => ({
-          ...provided,
-          backgroundColor: state.isFocused ? "#e5e7eb" : "white",
-          color: "#111",
-          cursor: "pointer",
-        }),
-        control: (provided, state) => ({
-          ...provided,
-          border: "1px solid #6b7280",
-          padding: "0.15rem",
-        }),
-        input: (provided, state) => ({
-          ...provided,
-          border: "none",
-          boxShadow: "none",
-        }),
-      }}
-      noOptionsMessage={() =>
-        loading ? <Spinner size="xxs" text="Searching..." /> : null
+  useEffect(() => {
+    setProcessingStatus(iProcessingStatus);
+  }, [iProcessingStatus]);
+
+  useEffect(() => {
+    const handler = setTimeout(async () => {
+      if (
+        searchText !== value &&
+        searchText?.length > 2 &&
+        !searchText.includes(",")
+      ) {
+        setProcessingStatus("searching");
+        const results = await handleSearch(searchText);
+        setFilteredOption(results || []);
+        setProcessingStatus(null);
       }
-      loadingMessage={() => <Spinner size="xxs" text="Searching..." />}
-      value={options.find((option) => option[valueKey] === value)} // Find selected option by valueKey
-      onChange={(selectedOption) => {
-        onChange({ name, selectedOption });
-      }}
-    />
+      if (searchText === "") {
+        setFilteredOption([]);
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchText]);
+
+  useEffect(() => {
+    if (isFocus && filteredOption.length > 0) {
+      setSelectedIndex(
+        (filteredOption || []).findIndex((item) => item[labelKey] === value)
+      );
+    } else {
+      setSelectedIndex(0);
+    }
+  }, [isFocus, filteredOption]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "ArrowDown") {
+      setSelectedIndex((prev) => {
+        let nextIndex = prev === null ? 0 : prev + 1;
+
+        while (
+          nextIndex < filteredOption.length &&
+          filteredOption[nextIndex][valueKey] === -1
+        ) {
+          nextIndex++;
+        }
+
+        if (nextIndex >= filteredOption.length) {
+          nextIndex = 1;
+        }
+
+        return nextIndex;
+      });
+    } else if (e.key === "ArrowUp") {
+      setSelectedIndex((prev) => {
+        let prevIndex = prev === null ? filteredOption.length - 1 : prev - 1;
+
+        while (prevIndex >= 0 && filteredOption[prevIndex][valueKey] === -1) {
+          prevIndex--;
+        }
+
+        if (prevIndex < 0) {
+          prevIndex = filteredOption.length - 1;
+        }
+
+        return prevIndex;
+      });
+    } else if (e.key === "Enter" && selectedIndex !== null) {
+      onChange({
+        target: { name: name, value: filteredOption[selectedIndex] },
+      });
+    }
+  };
+
+  const handleClickOption = (index) => {
+    onChange({ target: { name: name, value: filteredOption[index] } });
+  };
+  useEffect(() => {
+    if (selectedIndex !== null) {
+      const selectedItem = dropdownRef.current?.children[selectedIndex];
+      if (selectedItem) {
+        selectedItem.scrollIntoView({
+          // behavior: "smooth",
+          block: "center",
+        });
+      }
+    }
+  }, [selectedIndex]);
+  return (
+    <div>
+      <span>{label || ""}</span>
+      {symbolPosition === "left" && symbol}
+      <input
+        ref={inputRef}
+        disabled={disabled}
+        onChange={({ target }) => setSearchText(target.value)}
+        value={searchText || ""}
+        placeholder={placeholder || ""}
+        className={`border border-gray-500 rounded-md ${
+          disabled ? "bg-gray-300 cursor-not-allowed" : ""
+        } ${symbol && symbolPosition === "left" ? "pl-8" : ""} ${
+          symbol && symbolPosition === "right" ? "pr-8" : ""
+        }`}
+        onBlur={(e) => {
+          setTimeout(() => setIsFocus(false), 300);
+          onBlur(e);
+        }}
+        onFocus={(e) => {
+          setIsFocus(true);
+          const boundary = e?.currentTarget?.getBoundingClientRect();
+          setElementPosition({
+            top: boundary.bottom + 5,
+            width: boundary.width,
+          });
+          onFocus(e);
+        }}
+        onKeyDown={handleKeyDown}
+      />
+      {symbolPosition === "right" && symbol}
+      {processingStatus === "searching" && (
+        <span className="spinner absolute right-3"></span>
+      )}
+
+      {searchText?.length > 2 && isFocus && (
+        <div
+          ref={dropdownRef}
+          className="absolute bg-[#fff] max-h-[300px] overflow-auto border border-gray-500 rounded-md"
+          style={{
+            top: elementPosition.top,
+            width: elementPosition.width,
+            zIndex: 10,
+          }}
+        >
+          {processingStatus === "searching" ? (
+            <div className="p-3">
+              <Spinner text="Searching..." size="xxs" />
+            </div>
+          ) : filteredOption.length > 0 ? (
+            filteredOption.map((item, index) => (
+              <Fragment key={index}>
+                {item[valueKey] === -1 ? (
+                  <div
+                    key={index}
+                    onClick={() => handleClickOption(index)}
+                    className={`py-2 px-4 cursor-pointer text-[#478fca] bg-[#eef4f9]    `}
+                  >
+                    <span>{item[labelKey]}</span>
+                  </div>
+                ) : (
+                  <div
+                    key={index}
+                    onClick={() => handleClickOption(index)}
+                    className={`py-2 cursor-pointer px-4 cursor-pointer hover:bg-indigo-400 hover:text-[#fff] ${
+                      index % 2 === 0 ? "bg-gray-100" : "bg-[#fff]"
+                    } ${
+                      selectedIndex === index ? "bg-indigo-400 text-[#fff]" : ""
+                    }`}
+                  >
+                    <span>{item[labelKey]}</span>
+                  </div>
+                )}
+              </Fragment>
+            ))
+          ) : (
+            <div className="text-center p-4">No result found.</div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 

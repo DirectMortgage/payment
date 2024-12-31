@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import Select from "react-dropdown-select";
 import { Heading } from "../Heading";
-import Close from '../../components/Images/close.png';
-import Add from '../../components/Images/add.png';
+import Close from "../../components/Images/close.png";
+import Add from "../../components/Images/add.png";
 import { fnOpenWindow } from "../../components/CommonFunctions/CommonFunction.js";
 
 const shapes = {
@@ -29,7 +29,7 @@ const GroupSelect = ({
   name = "",
   labelKey = "VendorName",
   valueKey = "VendorId",
-  sessionid ="",
+  sessionid = "",
   placeholder = "Search for vendor",
   shape,
   variant = "fill",
@@ -41,10 +41,12 @@ const GroupSelect = ({
   RowId,
   VendorId,
   handleRemove,
-  showAddPaymentSplit = false,  // Add these new props
+  showAddPaymentSplit = false, // Add these new props
   showRemoveRow = false,
   companyId,
   EmpId,
+  VendorPaymentDetailId,
+  VendorPaymentId,
   ...restProps
 }) => {
   const [customOptions, setCustomOptions] = useState([]);
@@ -58,11 +60,19 @@ const GroupSelect = ({
         value: "add-payment-split",
         icon: Add,
         onClick: () => {
-         
-          fnOpenWindow(`FeeCollection/Presentation/Webforms/VendorPaymentSplit.aspx?SessionID=${sessionid}&VendorId=${VendorId}&EmpNum=${EmpId}&CID=${companyId}`,
-          "/FeeCollection/Presentation/Webforms/VendorPaymentSplit.aspx",
-          sessionid
-          )
+          if (window["location"]["host"].includes("localhost")) {
+            window.open(
+              `../Payment/SplitPayment?SessionID=${sessionid}&VendorId=${VendorId}&EmpNum=${EmpId}&CID=${companyId}&VendorPaymentDetailId=${VendorPaymentDetailId}&VendorPaymentId=${VendorPaymentId}`,
+              "_blank",
+              "_blank"
+            );
+          } else {
+            fnOpenWindow(
+              `../Payment/SplitPayment?SessionID=${sessionid}&VendorId=${VendorId}&EmpNum=${EmpId}&CID=${companyId}&VendorPaymentDetailId=${VendorPaymentDetailId}&VendorPaymentId=${VendorPaymentId}`,
+              "/FeeCollection/Presentation/Webforms/VendorPaymentSplit.aspx",
+              sessionid
+            );
+          }
         },
       });
     }
@@ -123,34 +133,45 @@ const GroupSelect = ({
         dropdownGap={0}
         searchInputProps={{
           style: {
-            width: '100%',
-            minWidth: '200px',
-            padding: '8px',
-            border: 'none',
-            outline: 'none'
-          }
+            width: "100%",
+            minWidth: "200px",
+            padding: "8px",
+            border: "none",
+            outline: "none",
+          },
         }}
         {...restProps}
       />
-      
+
       {!!label && (
-        <Heading as="h4" className="text-[14px] mt-[5px] font-semibold text-black-900">
+        <Heading
+          as="h4"
+          className="text-[14px] mt-[5px] font-semibold text-black-900"
+        >
           {label}
         </Heading>
       )}
 
-<div className="custom-options-container">
-  {customOptions.map((option, index) => (
-    <div
-      key={index}
-      className="custom-option px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
-      onClick={option.onClick}
-    >
-      {option.icon && <img src={option.icon} alt="" className={`w-4 h-4 mr-2 ${option.value === 'remove-row' ? 'filter-red' : ''}`}  />}
-      {option.label}
-    </div>
-  ))}
-</div>
+      <div className="custom-options-container">
+        {customOptions.map((option, index) => (
+          <div
+            key={index}
+            className="custom-option px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+            onClick={option.onClick}
+          >
+            {option.icon && (
+              <img
+                src={option.icon}
+                alt=""
+                className={`w-4 h-4 mr-2 ${
+                  option.value === "remove-row" ? "filter-red" : ""
+                }`}
+              />
+            )}
+            {option.label}
+          </div>
+        ))}
+      </div>
     </>
   );
 };
@@ -159,7 +180,8 @@ GroupSelect.propTypes = {
   className: PropTypes.string,
   options: PropTypes.arrayOf(
     PropTypes.shape({
-      VendorId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      VendorId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+        .isRequired,
       VendorName: PropTypes.string.isRequired,
     })
   ),

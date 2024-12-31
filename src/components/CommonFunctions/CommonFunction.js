@@ -7,18 +7,16 @@ const handleAPI = async ({
   body,
   requestOptions = null,
 }) => {
-  let url = ""
+  let url = "";
   if (name === "GetSessionData" || name === "GetSetWindowSize") {
-     url ="../../../GenericAPI/api/";
-  }
-  else{
+    url = "../../../GenericAPI/api/";
+  } else {
     url = "../../../LoginCredentialsAPI/api/";
   }
   if (window.location.href.indexOf("localhost") != -1) {
     if (name === "GetSessionData" || name === "GetSetWindowSize") {
       url = "https://www.solutioncenter.biz/GenericAPI/api/";
-    }
-    else{
+    } else {
       url = "https://www.solutioncenter.biz/LoginCredentialsAPI/api/";
     }
   }
@@ -107,8 +105,8 @@ const handleSaveWindowSize = async (SessionId, FormName) => {
   var obj = {
     SessionId: SessionId,
     ViewJson: JSON.stringify(viewPosition),
-   // UpdateFlag: 0,
-     UpdateFlag: FormName === "/PaymentApproval" ? 1 : 0,
+    // UpdateFlag: 0,
+    UpdateFlag: FormName === "/PaymentApproval" ? 1 : 0,
     FormID: 0,
     FormName: FormName,
   };
@@ -120,6 +118,9 @@ const handleSaveWindowSize = async (SessionId, FormName) => {
   });
 };
 const fnOpenWindow = async (link, FormName, SessionId) => {
+  const { SessionId: iSessionId } = queryStringToObject();
+  debugger;
+  SessionId = SessionId ? SessionId : iSessionId;
   let hostName = "../../../";
   if (window.location?.href?.indexOf("localhost") != -1)
     hostName = "https://www.directcorp.com/";
@@ -130,20 +131,20 @@ const fnOpenWindow = async (link, FormName, SessionId) => {
   let Height = position?.Height;
   let Left = position?.Left;
   let Top = position?.Top;
- 
-    window.open(
-      link,
-      "",
-      "resizable=yes,top=" +
-        Top +
-        ",left=" +
-        Left +
-        ",width=" +
-        Width +
-        "px,height=" +
-        Height +
-        "px,resizable=1,scrollbars=yes"
-    );
+
+  window.open(
+    link,
+    "",
+    "resizable=yes,top=" +
+      Top +
+      ",left=" +
+      Left +
+      ",width=" +
+      Width +
+      "px,height=" +
+      Height +
+      "px,resizable=1,scrollbars=yes"
+  );
 };
 function cleanUrl(url) {
   return decodeURIComponent(url)
@@ -265,20 +266,57 @@ const formatCurrency = (value) => {
   return val;
 };
 const FormatValueforCalc = (val) => {
-  if (val === '' || val === null || val === undefined) return 0;
+  if (val === "" || val === null || val === undefined) return 0;
 
   val = val.toString();
-  val = val.replace(/\$/g, '').replace(/,/g, '').replace(/%/g, '');
+  val = val.replace(/\$/g, "").replace(/,/g, "").replace(/%/g, "");
 
-  if (val.includes('(')) { // Negative value
-    val = val.replace(/\(/g, '').replace(/\)/g, '');
+  if (val.includes("(")) {
+    // Negative value
+    val = val.replace(/\(/g, "").replace(/\)/g, "");
     return -1 * parseFloat(val);
   }
 
   return parseFloat(val).toFixed(2);
 };
+const formatSpecialCharacters = (text) => {
+  const entitiesMap = {
+    "&amp;": "&",
+    "&apos;": "'",
+    "&quot;": '"',
+    "&lt;": "<",
+    "&gt;": ">",
+    "&copy;": "©",
+    "&reg;": "®",
+    "&euro;": "€",
+    "&pound;": "£",
+    "&yen;": "¥",
+    "&cent;": "¢",
+    "&sect;": "§",
+    "&deg;": "°",
+    "&ndash;": "–",
+    "- ": "",
+    "&mdash;": "—",
+    "&trade;": "™",
+    "&hellip;": "…",
+    "&#169;": "©",
+    "&#174;": "®",
+  };
 
+  // Replace HTML entities using the map
+  let formattedText = text.replace(
+    /&[a-zA-Z#0-9]+;/g,
+    (entity) => entitiesMap[entity] || entity
+  );
 
+  // Replace \n with <br> tags for HTML, or leave as newlines for plain text
+  formattedText = formattedText
+    .replace(/\n/g, "<br>")
+    // .replaceAll("-", "")
+    .replace(/•/g, "•&nbsp;&nbsp;"); // For HTML display
+
+  return formattedText;
+};
 export {
   handleAPI,
   fnGetIndex,
@@ -296,4 +334,5 @@ export {
   cleanValue,
   formatCurrency,
   FormatValueforCalc,
+  formatSpecialCharacters,
 };

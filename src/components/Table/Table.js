@@ -57,6 +57,7 @@ const Table = forwardRef(
       setExpandedRows,
       handleRemove = () => { },
       setmarkPaid,
+      setSelectedCount,
       ...props
     },
     ref
@@ -74,7 +75,11 @@ const Table = forwardRef(
     const [sortField, setSortField] = useState(null);
     const [sortOrder, setSortOrder] = useState(null);
     const [selectedRows, setSelectedRows] = useState([]);
-    const [totalAmount, setTotalAmount] = useState(0);
+
+    //hidden fields
+
+    const [payStatusHtml, setPayStatusHtml] = useState("");
+    const [payStatusVendorID, setPayStatusVendorID] = useState("");
 
     // Sorting handler
     const onSort = (event) => {
@@ -180,7 +185,64 @@ const Table = forwardRef(
       setOnloadData(structuredClone(updatedParentRows));
       // }
       setLocalData(sortedParentRows);
+      setSelectedRows([]);
     }, [tableData]);
+
+    const handlePaymentProcess = async () => {
+
+
+
+      let tBody = '';
+      let VendorPayArray = [];
+      let VendorPaymentId = '';
+
+      selectedRows.forEach(row => {
+        // Check if VendorPaymentId is not already processed
+        if (!VendorPayArray.includes(row.VendorPaymentId)) {
+          // Append VendorPaymentId with separator
+          VendorPaymentId += `${row.VendorPaymentId}~`;
+          const strVendorPaymentId = row.VendorPaymentId.toString();
+
+          // Construct table row
+          tBody += `<tr>
+        <td>
+          <a href="#" 
+            RowId="${row.RowId}" 
+            VendorId="${row.VendorId}" 
+            ContactFileId="0" 
+            OtherId="0" 
+            ActualVendorStatus="" 
+            VendorStatus="" 
+            AccountingVendorApproved=0 
+            VendorStatusMsg="" 
+            onclick="fnOpenPayeeWrapper(this)" 
+            VendorStatus="">
+            ${row.Payee}
+          </a>
+        </td>
+        <td class="clsACHStatus" id="tdACHStatus${strVendorPaymentId}">
+          Processing... 
+          <span id="spnACHSpinner${strVendorPaymentId}" style="display:inline-block">
+            &nbsp;<i class="glyphicon glyphicon-refresh bigger-150 fa-spin blue"></i>
+          </span>
+        </td>
+        <td id="tdACHResult${strVendorPaymentId}">&nbsp;</td>
+        <td id="tdACHOptions${strVendorPaymentId}"></td>
+      </tr>`;
+
+          VendorPayArray.push(row.VendorPaymentId);
+        }
+      });
+
+
+
+      setPayStatusHtml(tBody);
+      setPayStatusVendorID(VendorPayArray);
+
+
+      window.open('http://localhost:3000/FeeCollection/Presentation/Webforms/PaymentStaus.aspx?SessionID={34D43D3B-40AC-49C7-8E7A-DD3C5D757214}&ProcessType=1', 'test', '_blank')
+    }
+
     const handlePaymentChange = (rowData, value) => {
       // Update the parent row
       rowData.PayACH = value === "ach";
@@ -195,45 +257,45 @@ const Table = forwardRef(
       }
       setLocalData([...localData]);
     };
-    const calculateTotal = (selectedRows) => {
-      const total = selectedRows.reduce((sum, row) => {
-        const subtotal = FormatValueforCalc(row.SubTotal);
-        return sum + (parseFloat(subtotal) || 0);
-      }, 0);
-      setTotalAmount(total);
-      setmarkPaid(total);
-    };
 
-    // Update your checkbox onChange handler
+
     const handleCheckboxChange = (row, checked) => {
-      // First remove any existing instances of this row
-      const filteredRows = selectedRows.filter(r => r.RowId !== row.RowId);
+      const childRow = groupedData[row.VendorPaymentId] || [];
+      const childRows = childRow.filter((r) => r.RowId !== row.RowId);
+
+      const filteredRows = selectedRows.filter(r =>
+        r.RowId !== row.RowId &&
+        !childRows.some(child => child.RowId === r.RowId)
+      );
 
       let newSelectedRows;
       if (checked) {
-        // Add row only if it's being checked
-        newSelectedRows = [...filteredRows, row];
+        // Add parent row and all child rows
+        newSelectedRows = [...filteredRows, row, ...childRows];
       } else {
         // Use filtered rows directly for unchecking
         newSelectedRows = filteredRows;
       }
 
+
       setSelectedRows(newSelectedRows);
 
-      // Calculate total from the final selection
       const total = newSelectedRows.reduce((sum, row) => {
         const subtotal = FormatValueforCalc(row.SubTotal);
         return sum + (parseFloat(subtotal) || 0);
       }, 0);
 
-      setTotalAmount(total);
+      const selectedCount = newSelectedRows.length;
+      // setTotalAmount(total);
       setmarkPaid(total);
+      setSelectedCount(selectedCount);
     };
     const enhancedColumns = columns.map((col) => {
       if (col.field === "paymentMethodHeader") {
         return {
           ...col,
           body: (rowData) => {
+
             const childRows = groupedData[rowData.VendorPaymentId] || [];
             const FilterchildRows = childRows.filter(
               (row) => row.RowId !== rowData.RowId
@@ -244,6 +306,23 @@ const Table = forwardRef(
             if (hasChildRows && rowData === childRows[0]) {
               return null;
             }
+
+            if (rowData.VendorId === 166624) {
+              return (
+                <button className="btnCustom">
+                  PayHUD
+                </button>
+              );
+            }
+
+            if (rowData.VendorId === 167753) {
+              return (
+                <button className="btnCustom">
+                  PayVA
+                </button>
+              );
+            }
+
 
             const selectedValue = rowData.PayACH
               ? "ach"
@@ -741,7 +820,7 @@ const Table = forwardRef(
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
       console.log({ ChangeXML, jsonString });
-      //return;
+      // return;
       let obj = { SaveXml: ChangeXML, changedJSON: jsonString };
       const response = await handleAPI({
         name: "VendorMonthlySave",
@@ -756,6 +835,7 @@ const Table = forwardRef(
     useImperativeHandle(ref, () => ({
       addRow,
       savevendorPayment,
+      handlePaymentProcess,
     }));
     const createNewRow = async () => {
       let obj = {
@@ -1313,6 +1393,8 @@ const Table = forwardRef(
           </div>
         )}
         <Toast ref={toast} />
+        <input type="hidden" value={payStatusHtml} id="hdnPayStatusHtml" />
+        <input type="hidden" value={payStatusVendorID} id="hdnPayStatusVendorID" />
       </div>
     );
   }

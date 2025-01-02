@@ -54,6 +54,8 @@ const PaymentManagementSection = forwardRef(
     const [editingRows, setEditingRows] = useState({});
     const [totalSubTotal, setTotalSubTotal] = useState(0);
     const [markPaid, setmarkPaid] = useState('');
+    const [markedCount, setSelectedCount] = useState(0);
+
 
     const tableRef = useRef(null);
     let queryString = queryStringToObject();
@@ -99,6 +101,8 @@ const PaymentManagementSection = forwardRef(
       if (isOnload) {
         setIsLoading(true); // Set loading when starting the request
         setRowData([]);
+        setmarkPaid('');
+        setSelectedCount(0);
       }
       let obj = {
         CompanyId: CompanyId,
@@ -1005,6 +1009,12 @@ const PaymentManagementSection = forwardRef(
         setColumns([...iColumns]);
       }
     }, [validationResult]);
+    const handlePayment = () => {
+      if (tableRef.current) {
+        tableRef.current.handlePaymentProcess();
+      }
+    };
+
     // const tableColumns = React.useMemo(() => {
     //   const tableColumnHelper = createColumnHelper();
     //   return [
@@ -1196,6 +1206,7 @@ const PaymentManagementSection = forwardRef(
                   sessionid={SessionId}
                   companyId={companyId}
                   setmarkPaid={setmarkPaid}
+                  setSelectedCount={setSelectedCount}
                   EmpId={EmpId}
                   editingRows={editingRows}
                   expandedRows={expandedRows}
@@ -1230,7 +1241,7 @@ const PaymentManagementSection = forwardRef(
                             style={{ marginRight: "27px" }}
                           >
                             <span>Bills marked to pay&nbsp;</span>
-                            <span className="font-bold">(1):</span>
+                            <span className="font-bold">({markedCount}):</span>
                           </Text>
                           <Heading
                             as="p"
@@ -1275,6 +1286,7 @@ const PaymentManagementSection = forwardRef(
                               className="h-[18px] w-[18px]"
                             />
                           }
+                          onClick={handlePayment}
                           className="flex h-[38px] min-w-[118px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
                         >
                           Pay ACH

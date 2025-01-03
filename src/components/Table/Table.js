@@ -242,51 +242,67 @@ const Table = forwardRef(
     };
 
     const handlePaymentChange = (rowData, value) => {
-      // Update the parent row
-      rowData.PayACH = value === "ach";
-      rowData.PayCheck = value === "check";
+    
 
-      // Update all child rows
+      localData.forEach((row) => {
+        if (row.RowId === rowData.RowId) {
+          row.PayACH = value === "ach";
+          row.PayCheck = value === "check";
+        } else {
+          row.PayACH = false;
+          row.PayCheck = false;
+        }
+      });
+
       if (groupedData[rowData.VendorPaymentId]) {
         groupedData[rowData.VendorPaymentId].forEach((childRow) => {
-          childRow.PayACH = value === "ach";
-          childRow.PayCheck = value === "check";
+          if (childRow.RowId === rowData.RowId) {
+            childRow.PayACH = value === "ach";
+            childRow.PayCheck = value === "check";
+          } else {
+            childRow.PayACH = false;
+            childRow.PayCheck = false;
+          }
         });
       }
-      setLocalData([...localData]);
+    
+      setLocalData([...localData]); 
+      updateSelectedRows();
+      // rowData.PayACH = value === "ach";
+      // rowData.PayCheck = value === "check";
+
+      // if (groupedData[rowData.VendorPaymentId]) {
+      //   groupedData[rowData.VendorPaymentId].forEach((childRow) => {
+      //     childRow.PayACH = value === "ach";
+      //     childRow.PayCheck = value === "check";
+      //   });
+      // }
+      // setLocalData([...localData]);
     };
-
+    
     const handleCheckboxChange = (row, checked) => {
-      const childRow = groupedData[row.VendorPaymentId] || [];
-      const childRows = childRow.filter((r) => r.RowId !== row.RowId);
-
+      const childRows = groupedData[row.VendorPaymentId] || [];
       const filteredRows = selectedRows.filter(
         (r) =>
           r.RowId !== row.RowId &&
           !childRows.some((child) => child.RowId === r.RowId)
       );
-
-      let newSelectedRows;
-      if (checked) {
-        // Add parent row and all child rows
-        newSelectedRows = [...filteredRows, row, ...childRows];
-      } else {
-        // Use filtered rows directly for unchecking
-        newSelectedRows = filteredRows;
-      }
-
+    
+      const newSelectedRows = checked
+        ? [...filteredRows, row, ...childRows]
+        : filteredRows;
+    
       setSelectedRows(newSelectedRows);
-
+    
       const total = newSelectedRows.reduce((sum, row) => {
         const subtotal = FormatValueforCalc(row.SubTotal);
         return sum + (parseFloat(subtotal) || 0);
       }, 0);
-
-      const selectedCount = newSelectedRows.length;
-      // setTotalAmount(total);
+    
       setmarkPaid(total);
-      setSelectedCount(selectedCount);
+      setSelectedCount(newSelectedRows.length);
     };
+    
     const enhancedColumns = columns.map((col) => {
       if (col.field === "paymentMethodHeader") {
         return {
@@ -297,34 +313,34 @@ const Table = forwardRef(
               (row) => row.RowId !== rowData.RowId
             );
             const hasChildRows = childRows.length > 0;
-
-            // Skip radio buttons for first child row when child rows exist
+    
             if (hasChildRows && rowData === childRows[0]) {
-              return null;
+              return null; // Skip the first child row
             }
-
+    
             if (rowData.VendorId === 166624) {
               return <button className="btnCustom">PayHUD</button>;
             }
-
+    
             if (rowData.VendorId === 167753) {
               return <button className="btnCustom">PayVA</button>;
             }
-
+    
             const selectedValue = rowData.PayACH
               ? "ach"
               : rowData.PayCheck
               ? "check"
               : "";
+    
             return (
               <RadioGroup
                 name={`payment-${rowData.RowId}`}
                 selectedValue={selectedValue}
                 onChange={(e) => {
-                  if (FilterchildRows.length !== 0) {
+                 // if (FilterchildRows.length !== 0) {
                     handlePaymentChange(rowData, e);
                     setExpandedRows((prev) => [...prev, rowData]);
-                  }
+                //  }
                   handleCheckboxChange(rowData, true);
                 }}
                 className="flex gap-2"
@@ -348,6 +364,21 @@ const Table = forwardRef(
       }
       return col;
     });
+    const updateSelectedRows = () => {
+      const newSelectedRows = localData.filter(
+        (row) => row.PayACH || row.PayCheck
+      );
+    
+      setSelectedRows(newSelectedRows);
+    
+      const total = newSelectedRows.reduce((sum, row) => {
+        const subtotal = FormatValueforCalc(row.SubTotal);
+        return sum + (parseFloat(subtotal) || 0);
+      }, 0);
+    
+      setmarkPaid(total);
+      setSelectedCount(newSelectedRows.length);
+    };    
 
     const toggleRow = (data) => {
       setExpandedRows((prev) => {

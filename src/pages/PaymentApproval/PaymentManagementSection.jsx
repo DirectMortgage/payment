@@ -58,6 +58,11 @@ const PaymentManagementSection = forwardRef(
     const [totalSubTotal, setTotalSubTotal] = useState(0);
     const [markPaid, setmarkPaid] = useState("");
     const [markedCount, setSelectedCount] = useState(0);
+    const [printOrder, setPrintOrder] = useState([
+      { label: "Select", value: "0" },
+      { label: "Back to Front", value: "1" },
+      { label: "Front to Back", value: "2" }
+    ]);
 
     const tableRef = useRef(null);
     let queryString = queryStringToObject();
@@ -339,18 +344,18 @@ const PaymentManagementSection = forwardRef(
       const currentEmpId = empIdRef.current;
       if (files.length) {
         let details = {
-            LoanId: currentEmpId,
-            DocTypeId: vendorPaymentId,
-            sessionid: SessionId,
-            viewtype: 23,
-            category: vendorPaymentDetailId,
-            description: "",
-            usedoc: 1,
-            entityid: 0,
-            entitytypeid: 0,
-            uploadsource: currentEmpId,
-            conditonid: 0,
-          },
+          LoanId: currentEmpId,
+          DocTypeId: vendorPaymentId,
+          sessionid: SessionId,
+          viewtype: 23,
+          category: vendorPaymentDetailId,
+          description: "",
+          usedoc: 1,
+          entityid: 0,
+          entitytypeid: 0,
+          uploadsource: currentEmpId,
+          conditonid: 0,
+        },
           index = 1;
 
         //return
@@ -1245,72 +1250,103 @@ const PaymentManagementSection = forwardRef(
                   setExpandedRows={setExpandedRows}
                   handleRemove={handleRemove}
                   footerContent={
-                    <div className="flex items-center border-b border-solid border-gray-600 py-2.5 ">
-                      {/* Left section remains unchanged */}
-                      <div className="flex md:w-[310px] lg:w-[310px] w-[335px] flex-col gap-2 ">
-                        <div className="flex flex-wrap justify-end gap-6">
-                          <Text
-                            as="p"
-                            className="font-inter text-[12px] font-normal text-black-900"
-                          >
-                            Total bills:{" "}
-                          </Text>
-                          <Heading
-                            as="p"
-                            className="font-inter text-[12px] font-semibold text-black-900"
-                          >
-                            {formatCurrency(totalSubTotal)}
-                          </Heading>
-                        </div>
-                        <div className="flex flex-wrap justify-end gap-6">
-                          <Text
-                            as="p"
-                            className="font-inter text-[12px] font-normal text-black-900"
-                          >
-                            <span>Bills marked to pay&nbsp;</span>
-                            <span className="font-bold">(1):</span>
-                          </Text>
-                          <Heading
-                            as="p"
-                            className="font-inter text-[12px] font-semibold text-black-900"
-                          >
-                            {formatCurrency(markPaid)}
-                          </Heading>
-                        </div>
-                      </div>
+                    <>
+                      {/* First Row - Existing Content */}
+                      <div className="border-b border-solid border-gray-600">
+                        <div className="flex flex-col gap-4 py-2.5">
+                          {/* First Row */}
+                          <div className="flex items-center">
+                            <div className="flex md:w-[310px] lg:w-[310px] w-[335px] flex-col gap-2">
+                              <div className="flex flex-wrap justify-end gap-6">
+                                <Text as="p" className="font-inter text-[12px] font-normal text-black-900">
+                                  Total bills:{" "}
+                                </Text>
+                                <Heading as="p" className="font-inter text-[12px] font-semibold text-black-900">
+                                  {formatCurrency(totalSubTotal)}
+                                </Heading>
+                              </div>
+                              <div className="flex flex-wrap justify-end gap-6">
+                                <Text as="p" className="font-inter text-[12px] font-normal text-black-900">
+                                  <span>Bills marked to pay&nbsp;</span>
+                                  <span className="font-bold">(1):</span>
+                                </Text>
+                                <Heading as="p" className="font-inter text-[12px] font-semibold text-black-900">
+                                  {formatCurrency(markPaid)}
+                                </Heading>
+                              </div>
+                            </div>
 
-                      <div
-                        className="flex items-end justify-end gap-8 md:self-stretch sm:flex-col md:flex-col w-8/12"
-                        style={{ position: "relative" }}
-                      >
-                        <div className="flex flex-col items-start justify-center gap-0.5 w-[250px]">
-                          <Text
-                            as="p"
-                            className="font-inter text-[14px] font-normal text-black-900 mb-1"
-                          >
-                            Pay From Account
-                          </Text>
-                          <SelectBox
-                            wClassName="s-wrap w-full"
-                            name="Account Dropdown"
-                            options={dropDownOptions}
-                            // className="flex h-[42px] w-full min-w-[250px] gap-[26px] rounded border border-solid border-black-900 bg-white-a700 px-3 py-1.5 font-inter text-[14px] text-blue_gray-900"
-                          />
+                            <div className="flex items-end justify-end gap-8 md:self-stretch sm:flex-col md:flex-col w-8/12" style={{ position: "relative" }}>
+                              <div className="flex flex-col items-start justify-center gap-0.5 w-[250px]">
+                                <Text as="p" className="font-inter text-[14px] font-normal text-black-900 mb-1">
+                                  Pay From Account
+                                </Text>
+                                <SelectBox
+                                  wClassName="s-wrap w-full"
+                                  name="Account Dropdown"
+                                  options={dropDownOptions}
+                                />
+                              </div>
+                              <Button
+                                leftIcon={
+                                  <Img
+                                    src="images/img_arrowright.svg"
+                                    alt="Arrow Right"
+                                    className="h-[18px] w-[18px]"
+                                  />
+                                }
+                                className="flex h-[38px] min-w-[118px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
+                              >
+                                Pay ACH
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Second Row */}
+                          <div className="flex items-center w-full">
+                          <div className="flex items-center gap-4 ml-[660px]">
+                              <div className="w-[250px]">
+                                <input
+                                  type="text"
+                                  className="w-full h-[42px] rounded border border-solid border-black-900 bg-white-a700 px-3 py-1.5 font-inter text-[14px]"
+                                  placeholder="Enter Check Number"
+                                />
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <SelectBox
+                                  wClassName="s-wrap w-[250px]"
+                                  name="Second Dropdown"
+                                  options={printOrder}
+                                />
+                                <Button
+                                  className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 ml-4"
+                                >
+                                  Go
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Third Row */}
+                          <div className="flex items-center w-full">
+                          <div className="flex items-center gap-4 ml-[960px]">
+                              <Text as="p" className="font-inter text-[14px] font-normal text-black-900">
+                                Did checks print successfully?
+                              </Text>
+                              <input
+                                type="checkbox"
+                                className="h-5 w-5 rounded border border-solid border-black-900"
+                              />
+                              <Button
+                                className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 ml-4"
+                              >
+                                Save
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                        <Button
-                          leftIcon={
-                            <Img
-                              src="images/img_arrowright.svg"
-                              alt="Arrow Right"
-                              className="h-[18px] w-[18px]"
-                            />
-                          }
-                          className="flex h-[38px] min-w-[118px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
-                        >
-                          Pay ACH
-                        </Button>
                       </div>
-                    </div>
+                    </>
                   }
                 />
               </div>

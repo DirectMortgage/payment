@@ -21,7 +21,7 @@
     border: 1px solid #e1e1e1;
     border-radius: 12px;
     box-shadow: 0 8px 16px #00000026; */
-  padding: 2em;
+  /* padding: 2em 2em 0 2em; */
   font-size: 12px;
 }
 .p-datatable table tr td {
@@ -183,4 +183,5 @@ select {
 } */
 .p-datatable-loading-overlay {
   align-items: flex-end;
+  padding-bottom: 20px;
 }

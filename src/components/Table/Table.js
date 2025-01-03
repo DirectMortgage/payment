@@ -55,7 +55,7 @@ const Table = forwardRef(
       footerContent = <></>,
       expandedRows,
       setExpandedRows,
-      handleRemove = () => { },
+      handleRemove = () => {},
       setmarkPaid,
       setSelectedCount,
       ...props
@@ -189,14 +189,11 @@ const Table = forwardRef(
     }, [tableData]);
 
     const handlePaymentProcess = async () => {
-
-
-
-      let tBody = '';
+      let tBody = "";
       let VendorPayArray = [];
-      let VendorPaymentId = '';
+      let VendorPaymentId = "";
 
-      selectedRows.forEach(row => {
+      selectedRows.forEach((row) => {
         // Check if VendorPaymentId is not already processed
         if (!VendorPayArray.includes(row.VendorPaymentId)) {
           // Append VendorPaymentId with separator
@@ -234,14 +231,15 @@ const Table = forwardRef(
         }
       });
 
-
-
       setPayStatusHtml(tBody);
       setPayStatusVendorID(VendorPayArray);
 
-
-      window.open('http://localhost:3000/FeeCollection/Presentation/Webforms/PaymentStaus.aspx?SessionID={34D43D3B-40AC-49C7-8E7A-DD3C5D757214}&ProcessType=1', 'test', '_blank')
-    }
+      window.open(
+        "http://localhost:3000/FeeCollection/Presentation/Webforms/PaymentStaus.aspx?SessionID={34D43D3B-40AC-49C7-8E7A-DD3C5D757214}&ProcessType=1",
+        "test",
+        "_blank"
+      );
+    };
 
     const handlePaymentChange = (rowData, value) => {
       // Update the parent row
@@ -258,14 +256,14 @@ const Table = forwardRef(
       setLocalData([...localData]);
     };
 
-
     const handleCheckboxChange = (row, checked) => {
       const childRow = groupedData[row.VendorPaymentId] || [];
       const childRows = childRow.filter((r) => r.RowId !== row.RowId);
 
-      const filteredRows = selectedRows.filter(r =>
-        r.RowId !== row.RowId &&
-        !childRows.some(child => child.RowId === r.RowId)
+      const filteredRows = selectedRows.filter(
+        (r) =>
+          r.RowId !== row.RowId &&
+          !childRows.some((child) => child.RowId === r.RowId)
       );
 
       let newSelectedRows;
@@ -276,7 +274,6 @@ const Table = forwardRef(
         // Use filtered rows directly for unchecking
         newSelectedRows = filteredRows;
       }
-
 
       setSelectedRows(newSelectedRows);
 
@@ -295,7 +292,6 @@ const Table = forwardRef(
         return {
           ...col,
           body: (rowData) => {
-
             const childRows = groupedData[rowData.VendorPaymentId] || [];
             const FilterchildRows = childRows.filter(
               (row) => row.RowId !== rowData.RowId
@@ -308,27 +304,18 @@ const Table = forwardRef(
             }
 
             if (rowData.VendorId === 166624) {
-              return (
-                <button className="btnCustom">
-                  PayHUD
-                </button>
-              );
+              return <button className="btnCustom">PayHUD</button>;
             }
 
             if (rowData.VendorId === 167753) {
-              return (
-                <button className="btnCustom">
-                  PayVA
-                </button>
-              );
+              return <button className="btnCustom">PayVA</button>;
             }
-
 
             const selectedValue = rowData.PayACH
               ? "ach"
               : rowData.PayCheck
-                ? "check"
-                : "";
+              ? "check"
+              : "";
             return (
               <RadioGroup
                 name={`payment-${rowData.RowId}`}
@@ -820,7 +807,7 @@ const Table = forwardRef(
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
       console.log({ ChangeXML, jsonString });
-      // return;
+      //return;
       let obj = { SaveXml: ChangeXML, changedJSON: jsonString };
       const response = await handleAPI({
         name: "VendorMonthlySave",
@@ -897,43 +884,43 @@ const Table = forwardRef(
     ];
 
     const header = (
-      <div className="table-header">
-        <h6>{tableTitle}</h6>
-        <div className="flex w-full justify-between items-center">
-          <div className="flex-start flex gap-2">
-            <Button
-              leftIcon={
-                <Img
-                  src="images/img_grid.svg"
-                  alt="Grid"
-                  className="h-[18px] w-[18px]"
-                />
-              }
-              className="flex h-[38px] min-w-[146px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
-              onClick={addRow}
-            >
-              Add Payment
-            </Button>
-            {/* <Button
+        <div className="table-header">
+          <h6>{tableTitle}</h6>
+          <div className="flex w-full justify-between items-center">
+            <div className="flex-start flex gap-2">
+              <Button
+                leftIcon={
+                  <Img
+                    src="images/img_grid.svg"
+                    alt="Grid"
+                    className="h-[18px] w-[18px]"
+                  />
+                }
+                className="flex h-[38px] min-w-[146px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
+                onClick={addRow}
+              >
+                Add Payment
+              </Button>
+              {/* <Button
               leftIcon={<Img src="payment/images/img_grid.svg" alt="Grid" className="h-[18px] w-[18px]" />}
               className="flex h-[38px] min-w-[176px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
             >
               Add Payment Split
             </Button> */}
-          </div>
-          <div className="flex-end">
-            {paginator && (
-              <input
-                className="input-field"
-                type="search"
-                onInput={(e) => setGlobalFilter(e.target.value)}
-                placeholder="Search"
-              />
-            )}
+            </div>
+            <div className="flex-end">
+              {paginator && (
+                <input
+                  className="input-field"
+                  type="search"
+                  onInput={(e) => setGlobalFilter(e.target.value)}
+                  placeholder="Search"
+                />
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    ),
+      ),
       footer = () => (
         <div>
           <div>
@@ -1327,10 +1314,10 @@ const Table = forwardRef(
           rowExpansionTemplate={rowExpansionTemplate}
           className={
             paginator && isLoading
-              ? "empty-page-data-table"
+              ? "empty-page-data-table pb-[5em]"
               : isLoading
-                ? "empty-data-table"
-                : "data-table"
+              ? "empty-data-table"
+              : "data-table py-[0em] px-[2em]"
           }
           paginator={false}
           rows={rows}
@@ -1376,7 +1363,7 @@ const Table = forwardRef(
           ))}
         </DataTable>
         {paginator && (
-          <div className="custom-footer mt-2">
+          <div className="custom-footer">
             <div className="footer-content-wrapper">
               <div className="footer-divider"></div>
               {footerContent}
@@ -1394,7 +1381,11 @@ const Table = forwardRef(
         )}
         <Toast ref={toast} />
         <input type="hidden" value={payStatusHtml} id="hdnPayStatusHtml" />
-        <input type="hidden" value={payStatusVendorID} id="hdnPayStatusVendorID" />
+        <input
+          type="hidden"
+          value={payStatusVendorID}
+          id="hdnPayStatusVendorID"
+        />
       </div>
     );
   }

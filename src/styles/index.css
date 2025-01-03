@@ -88,7 +88,8 @@ background-color: inherit;
 }
 
 .filter-red {
-  filter: invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(112%);
+  filter: invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg)
+    brightness(95%) contrast(112%);
 }
 
 .spinner {
@@ -178,4 +179,14 @@ input[type="radio"] {
 } */
 .auto-complete input[type="text"] {
   box-shadow: none !important;
+}
+.s-wrap {
+  height: auto;
+  text-wrap: auto;
+  line-height: 18px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none;
+  font-size: 14px;
 }

@@ -28,7 +28,10 @@ import {
   formatCurrency,
   FormatValueforCalc,
 } from "../../components/CommonFunctions/CommonFunction.js";
-import { FileUpload } from "../../components/CommonFunctions/Accessories";
+import {
+  FileUpload,
+  Spinner,
+} from "../../components/CommonFunctions/Accessories";
 import React, {
   useEffect,
   useState,
@@ -53,9 +56,8 @@ const PaymentManagementSection = forwardRef(
     const [dropDownOptions, setDropDownOptions] = useState([]);
     const [editingRows, setEditingRows] = useState({});
     const [totalSubTotal, setTotalSubTotal] = useState(0);
-    const [markPaid, setmarkPaid] = useState('');
+    const [markPaid, setmarkPaid] = useState("");
     const [markedCount, setSelectedCount] = useState(0);
-
 
     const tableRef = useRef(null);
     let queryString = queryStringToObject();
@@ -101,7 +103,7 @@ const PaymentManagementSection = forwardRef(
       if (isOnload) {
         setIsLoading(true); // Set loading when starting the request
         setRowData([]);
-        setmarkPaid('');
+        setmarkPaid("");
         setSelectedCount(0);
       }
       let obj = {
@@ -337,18 +339,18 @@ const PaymentManagementSection = forwardRef(
       const currentEmpId = empIdRef.current;
       if (files.length) {
         let details = {
-          LoanId: currentEmpId,
-          DocTypeId: vendorPaymentId,
-          sessionid: SessionId,
-          viewtype: 23,
-          category: vendorPaymentDetailId,
-          description: "",
-          usedoc: 1,
-          entityid: 0,
-          entitytypeid: 0,
-          uploadsource: currentEmpId,
-          conditonid: 0,
-        },
+            LoanId: currentEmpId,
+            DocTypeId: vendorPaymentId,
+            sessionid: SessionId,
+            viewtype: 23,
+            category: vendorPaymentDetailId,
+            description: "",
+            usedoc: 1,
+            entityid: 0,
+            entitytypeid: 0,
+            uploadsource: currentEmpId,
+            conditonid: 0,
+          },
           index = 1;
 
         //return
@@ -459,6 +461,27 @@ const PaymentManagementSection = forwardRef(
         });
       }
     };
+    const [viewAllPDFStatus, setViewAllPDFStatus] = useState([]);
+    const handleViewAllPDF = () => {
+      setViewAllPDFStatus(["loading"]);
+      const linkIds = [
+        ...new Set(rowData.map(({ LinkId = "" }) => LinkId).filter((_) => _)),
+      ].join(",");
+      handleAPI({
+        name: "getMergedInvoice",
+        params: { linkIds },
+        apiName: "LoginCredentialsAPI",
+        method: "GET",
+      }).then((url) => {
+        if (window.location.host.includes("localhost")) {
+          url = url.replace("../../../", "https://www.directcorp.com/");
+        }
+        setTimeout(() => {
+          window.open(url, "_blank");
+        }, 500);
+        setViewAllPDFStatus([]);
+      });
+    };
 
     const iColumns = [
       {
@@ -493,6 +516,8 @@ const PaymentManagementSection = forwardRef(
             ? rowData.LastPaidDetails.replace(/<b>/g, "").replace(/<\/b>/g, "")
             : "";
           const handlePayeeClick = (VendorId, rowData, rowIndex) => {
+            console.log({ rowData });
+
             setEditingRows((prevState) => ({
               ...prevState,
               [rowIndex]: false, // Enable editing for the specific row
@@ -702,16 +727,17 @@ const PaymentManagementSection = forwardRef(
           whiteSpace: "normal",
           wordWrap: "break-word",
         },
-        body: (rowData) => {
+        bodyClassName: ({ VendorPaymentId, RowId }) => {
           const isHighlighted = validationResult.some(
             (item) =>
-              parseInt(item.vendorPaymentId) ===
-              parseInt(rowData.VendorPaymentId) &&
-              parseInt(item.rowId) === parseInt(rowData.RowId)
+              parseInt(item.vendorPaymentId) === parseInt(VendorPaymentId) &&
+              parseInt(item.rowId) === parseInt(RowId)
           );
 
+          return isHighlighted ? "bg-[#FFFF66]" : "";
+        },
+        body: (rowData) => {
           const bodyStyle = {
-            backgroundColor: isHighlighted ? "#FFFF66" : "inherit",
             padding: "0.5rem",
             whiteSpace: "normal",
           };
@@ -745,16 +771,17 @@ const PaymentManagementSection = forwardRef(
           whiteSpace: "normal",
           wordWrap: "break-word",
         },
-        body: (rowData) => {
+        bodyClassName: ({ VendorPaymentId, RowId }) => {
           const isHighlighted = validationResult.some(
             (item) =>
-              parseInt(item.vendorPaymentId) ===
-              parseInt(rowData.VendorPaymentId) &&
-              parseInt(item.rowId) === parseInt(rowData.RowId)
+              parseInt(item.vendorPaymentId) === parseInt(VendorPaymentId) &&
+              parseInt(item.rowId) === parseInt(RowId)
           );
 
+          return isHighlighted ? "bg-[#FFFF66]" : "";
+        },
+        body: (rowData) => {
           const bodyStyle = {
-            backgroundColor: isHighlighted ? "#FFFF66" : "inherit",
             padding: "0.5rem",
             whiteSpace: "normal",
           };
@@ -953,14 +980,19 @@ const PaymentManagementSection = forwardRef(
             className="text-[12px] font-semibold text-indigo-700"
           >
             <span
-              // onClick={handlePayeeClick}
-              className="cursor-pointer hover:underline"
+              onClick={handleViewAllPDF}
+              className="cursor-pointer hover:underline flex items-center"
             >
-              {"View All PDF"}
+              View All PDF
+              {viewAllPDFStatus.includes("loading") && (
+                <span className="ml-1">
+                  <Spinner size="xxs" />
+                </span>
+              )}
             </span>
           </Text>
         ),
-        style: { width: "100px" },
+        style: { width: "130px" },
         body: (rowData) => {
           return (
             <div className="flex gap-2 justify-center items-center">
@@ -1008,7 +1040,7 @@ const PaymentManagementSection = forwardRef(
       if (validationResult.length > 0) {
         setColumns([...iColumns]);
       }
-    }, [validationResult]);
+    }, [validationResult, viewAllPDFStatus]);
     const handlePayment = () => {
       if (tableRef.current) {
         tableRef.current.handlePaymentProcess();
@@ -1213,17 +1245,13 @@ const PaymentManagementSection = forwardRef(
                   setExpandedRows={setExpandedRows}
                   handleRemove={handleRemove}
                   footerContent={
-                    <div
-                      className="flex items-center border-b border-solid border-gray-600 py-2.5 md:flex-col"
-                      style={{ paddingLeft: "110px" }}
-                    >
+                    <div className="flex items-center border-b border-solid border-gray-600 py-2.5 ">
                       {/* Left section remains unchanged */}
-                      <div className="flex w-[20%] flex-col gap-2 md:w-full">
-                        <div className="flex flex-wrap justify-end gap-[25px]">
+                      <div className="flex md:w-[310px] lg:w-[310px] w-[335px] flex-col gap-2 ">
+                        <div className="flex flex-wrap justify-end gap-6">
                           <Text
                             as="p"
                             className="font-inter text-[12px] font-normal text-black-900"
-                            style={{ marginRight: "27px" }}
                           >
                             Total bills:{" "}
                           </Text>
@@ -1238,10 +1266,9 @@ const PaymentManagementSection = forwardRef(
                           <Text
                             as="p"
                             className="font-inter text-[12px] font-normal text-black-900"
-                            style={{ marginRight: "27px" }}
                           >
                             <span>Bills marked to pay&nbsp;</span>
-                            <span className="font-bold">({markedCount}):</span>
+                            <span className="font-bold">(1):</span>
                           </Text>
                           <Heading
                             as="p"
@@ -1252,12 +1279,11 @@ const PaymentManagementSection = forwardRef(
                         </div>
                       </div>
 
-                      {/* Right section with adjusted sizes */}
                       <div
-                        className="flex flex-1 items-end justify-end gap-8 px-14 md:self-stretch md:px-5 sm:flex-col ml-4"
-                        style={{ left: "-200px", position: "relative" }}
+                        className="flex items-end justify-end gap-8 md:self-stretch sm:flex-col md:flex-col w-8/12"
+                        style={{ position: "relative" }}
                       >
-                        <div className="flex w-[25%] flex-col items-start justify-center gap-0.5 sm:w-full">
+                        <div className="flex flex-col items-start justify-center gap-0.5 w-[250px]">
                           <Text
                             as="p"
                             className="font-inter text-[14px] font-normal text-black-900 mb-1"
@@ -1265,17 +1291,10 @@ const PaymentManagementSection = forwardRef(
                             Pay From Account
                           </Text>
                           <SelectBox
-                            indicator={
-                              <Img
-                                src="images/img_arrowdown.svg"
-                                alt="Arrow Down"
-                                className="h-[18px] w-[18px]"
-                              />
-                            }
+                            wClassName="s-wrap w-full"
                             name="Account Dropdown"
-                            placeholder={`1091 - Goldenwest Checking`}
                             options={dropDownOptions}
-                            className="flex h-[42px] w-full min-w-[250px] gap-[26px] rounded border border-solid border-black-900 bg-white-a700 px-3 py-1.5 font-inter text-[14px] text-blue_gray-900"
+                            // className="flex h-[42px] w-full min-w-[250px] gap-[26px] rounded border border-solid border-black-900 bg-white-a700 px-3 py-1.5 font-inter text-[14px] text-blue_gray-900"
                           />
                         </div>
                         <Button
@@ -1286,7 +1305,6 @@ const PaymentManagementSection = forwardRef(
                               className="h-[18px] w-[18px]"
                             />
                           }
-                          onClick={handlePayment}
                           className="flex h-[38px] min-w-[118px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
                         >
                           Pay ACH

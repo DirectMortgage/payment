@@ -12,11 +12,12 @@ import {
 } from "../../components/CommonFunctions/CommonFunction.js";
 import { Bounce, ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+const { CID: iCompanyId = 4 } = queryStringToObject();
 
 export default function DesktopOnePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const [companyId, setCompanyId] = useState(4);
+  const [companyId, setCompanyId] = useState(iCompanyId);
   const [validationResult, setValidationResult] = useState([]);
 
   const paymentSectionRef = useRef(null);

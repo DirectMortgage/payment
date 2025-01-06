@@ -40,6 +40,9 @@ import React, {
   useImperativeHandle,
 } from "react";
 import Table from "../../components/Table/Table.js";
+import DatePicker from "react-datepicker";
+
+import "react-datepicker/dist/react-datepicker.css";
 
 let SessionId;
 
@@ -58,11 +61,20 @@ const PaymentManagementSection = forwardRef(
     const [totalSubTotal, setTotalSubTotal] = useState(0);
     const [markPaid, setmarkPaid] = useState("");
     const [markedCount, setSelectedCount] = useState(0);
+    const [showPaymentSection, setShowPaymentSection] = useState(false);
+    const [showSecondRow, setShowSecondRow] = useState(false);
+    const [showThirdRow, setShowThirdRow] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState(null);
+
+    const [selectedBank, setSelectedBank] = useState(null);
+    const [selectedPrintOrder, setSelectedPrintOrder] = useState('0');
+    const [checknumber, setChecknumber] = useState('');
     const [printOrder, setPrintOrder] = useState([
       { label: "Select", value: "0" },
-      { label: "Back to Front", value: "1" },
-      { label: "Front to Back", value: "2" }
+      { label: "Back to Front", value: "2" },
+      { label: "Front to Back", value: "1" },
     ]);
+    const [printSuccess, setIsPrintSuccess] = useState(0);
 
     const tableRef = useRef(null);
     let queryString = queryStringToObject();
@@ -110,6 +122,31 @@ const PaymentManagementSection = forwardRef(
         setRowData([]);
         setmarkPaid("");
         setSelectedCount(0);
+
+        setShowPaymentSection(false);
+        setShowSecondRow(false);
+        setShowThirdRow(false);
+        setPaymentMethod(null);
+        setSelectedBank(null);
+        setSelectedPrintOrder('0');
+        setChecknumber('');
+        //setPrintOrder('0');
+        setIsPrintSuccess(0);
+
+      }
+      else{
+        setmarkPaid("");
+        setSelectedCount(0);
+        setShowPaymentSection(false);
+        setShowSecondRow(false);
+        setShowThirdRow(false);
+        setPaymentMethod(null);
+        setSelectedBank(null);
+        setSelectedPrintOrder('0');
+        setChecknumber('');
+        //setPrintOrder('0');
+        setIsPrintSuccess(0);
+
       }
       let obj = {
         CompanyId: CompanyId,
@@ -278,13 +315,15 @@ const PaymentManagementSection = forwardRef(
     // }, [companyId]);
     const handleImageClick = (LinkId) => {
       // Handle the click event here
-      const URL =
+      let URL =
         "../../../NewDMAcct/GetUploadedImage.aspx?CompanyId=" +
         4 +
         "&LinkId=" +
         LinkId;
 
-      //window.open(URL);
+      if (window.location.host.includes("localhost")) {
+        URL = URL.replace("../../../", "https://www.directcorp.com/");
+      }
       window.open(
         URL,
         "",
@@ -472,6 +511,7 @@ const PaymentManagementSection = forwardRef(
       const linkIds = [
         ...new Set(rowData.map(({ LinkId = "" }) => LinkId).filter((_) => _)),
       ].join(",");
+
       handleAPI({
         name: "getMergedInvoice",
         params: { linkIds },
@@ -482,12 +522,18 @@ const PaymentManagementSection = forwardRef(
           url = url.replace("../../../", "https://www.directcorp.com/");
         }
         setTimeout(() => {
-          window.open(url, "_blank");
+          window.open(
+            url,
+            "_blank",
+            "width=1200,height=1200,resizable=yes,scrollbars=yes"
+          );
         }, 500);
         setViewAllPDFStatus([]);
       });
     };
-
+    const handleCheckboxChange = (event) => {
+      setIsPrintSuccess(event.target.checked ? 1 : 0); // `checked` will be true or false
+    };
     const iColumns = [
       {
         field: "Payee",
@@ -1048,7 +1094,22 @@ const PaymentManagementSection = forwardRef(
     }, [validationResult, viewAllPDFStatus]);
     const handlePayment = () => {
       if (tableRef.current) {
-        tableRef.current.handlePaymentProcess();
+        const selectedPaymentType = rowData.find(row => row.PayACH || row.PayCheck);
+        const paymentFlag = selectedPaymentType?.PayACH ? 'ACH' : 'CHECK';
+        console.log(paymentFlag)
+        tableRef.current.handlePaymentProcess(paymentFlag);
+      }
+    };
+    const handleCheckPaymentGo = () => {
+      if (tableRef.current) {
+
+        tableRef.current.ProcessPrintChecks();
+      }
+    };
+    const handleSaveCheckPayment = () => {
+      if (tableRef.current) {
+
+        tableRef.current.SavePrintCheckPayment();
       }
     };
 
@@ -1205,6 +1266,10 @@ const PaymentManagementSection = forwardRef(
     //     }),
     //   ];
     // }, []);
+    const getButtonLabel = () => {
+      return paymentMethod === 'ach' ? 'Pay ACH' : 'Print Checks';
+    };
+
 
     return (
       <>
@@ -1244,11 +1309,20 @@ const PaymentManagementSection = forwardRef(
                   companyId={companyId}
                   setmarkPaid={setmarkPaid}
                   setSelectedCount={setSelectedCount}
+                  setShowPaymentSection={setShowPaymentSection}
+                  setShowSecondRow={setShowSecondRow}
+                  setShowThirdRow={setShowThirdRow}
+                  setPaymentMethod={setPaymentMethod}
+                  selectedBank={selectedBank}
+                  selectedPrintOrder={selectedPrintOrder}
+                  BankOptions={dropDownOptions}
                   EmpId={EmpId}
+                  printSuccess={printSuccess}
                   editingRows={editingRows}
                   expandedRows={expandedRows}
                   setExpandedRows={setExpandedRows}
                   handleRemove={handleRemove}
+                  getVendorPaymentApprovalData={GetVendorPaymentApprovalData}
                   footerContent={
                     <>
                       {/* First Row - Existing Content */}
@@ -1258,92 +1332,135 @@ const PaymentManagementSection = forwardRef(
                           <div className="flex items-center">
                             <div className="flex md:w-[310px] lg:w-[310px] w-[335px] flex-col gap-2">
                               <div className="flex flex-wrap justify-end gap-6">
-                                <Text as="p" className="font-inter text-[12px] font-normal text-black-900">
+                                <Text
+                                  as="p"
+                                  className="font-inter text-[12px] font-normal text-black-900"
+                                >
                                   Total bills:{" "}
                                 </Text>
-                                <Heading as="p" className="font-inter text-[12px] font-semibold text-black-900">
+                                <Heading
+                                  as="p"
+                                  className="font-inter text-[12px] font-semibold text-black-900"
+                                >
                                   {formatCurrency(totalSubTotal)}
                                 </Heading>
                               </div>
                               <div className="flex flex-wrap justify-end gap-6">
-                                <Text as="p" className="font-inter text-[12px] font-normal text-black-900">
+                                <Text
+                                  as="p"
+                                  className="font-inter text-[12px] font-normal text-black-900"
+                                >
                                   <span>Bills marked to pay&nbsp;</span>
-                                  <span className="font-bold">(1):</span>
+                                  <span className="font-bold">({markedCount}):</span>
                                 </Text>
-                                <Heading as="p" className="font-inter text-[12px] font-semibold text-black-900">
+                                <Heading
+                                  as="p"
+                                  className="font-inter text-[12px] font-semibold text-black-900"
+                                >
                                   {formatCurrency(markPaid)}
                                 </Heading>
                               </div>
                             </div>
-
-                            <div className="flex items-end justify-end gap-8 md:self-stretch sm:flex-col md:flex-col w-8/12" style={{ position: "relative" }}>
-                              <div className="flex flex-col items-start justify-center gap-0.5 w-[250px]">
-                                <Text as="p" className="font-inter text-[14px] font-normal text-black-900 mb-1">
-                                  Pay From Account
-                                </Text>
-                                <SelectBox
-                                  wClassName="s-wrap w-full"
-                                  name="Account Dropdown"
-                                  options={dropDownOptions}
-                                />
-                              </div>
-                              <Button
-                                leftIcon={
-                                  <Img
-                                    src="images/img_arrowright.svg"
-                                    alt="Arrow Right"
-                                    className="h-[18px] w-[18px]"
-                                  />
-                                }
-                                className="flex h-[38px] min-w-[118px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
+                            {showPaymentSection && (
+                              <div
+                                className="flex items-end justify-end gap-8 md:self-stretch sm:flex-col md:flex-col w-8/12"
+                                style={{ position: "relative" }}
                               >
-                                Pay ACH
-                              </Button>
-                            </div>
+                                <div className="flex flex-col items-start justify-center gap-0.5 w-[250px]">
+                                  <Text
+                                    as="p"
+                                    className="font-inter text-[14px] font-normal text-black-900 mb-1"
+                                  >
+                                    Pay From Account
+                                  </Text>
+                                  <SelectBox
+                                    wClassName="s-wrap w-full"
+                                    name="Account Dropdown"
+                                    options={dropDownOptions}
+                                    onChange={(selectedOption) => {
+                                      setSelectedBank(selectedOption);
+                                      const selectedBankOption = dropDownOptions?.find(option => option?.value === selectedOption?.value) || {
+                                        checkNum: 0,
+                                        label: '',
+                                        selected: false,
+                                        value: ''
+                                      };
+                                      setChecknumber(selectedBankOption.checkNum || 0)
+
+                                    }}
+                                  // onChange={setSelectedBank}
+                                  />
+                                </div>
+                                <Button
+                                  onClick={handlePayment}
+                                  leftIcon={
+                                    <Img
+                                      src="images/img_arrowright.svg"
+                                      alt="Arrow Right"
+                                      className="h-[18px] w-[18px]"
+                                    />
+                                  }
+                                  className="flex h-[38px] min-w-[118px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
+                                  data-payment-type={paymentMethod}
+                                >
+                                  {getButtonLabel()}
+                                </Button>
+                              </div>
+                            )}
                           </div>
 
                           {/* Second Row */}
-                          <div className="flex items-center w-full">
-                          <div className="flex items-center gap-4 ml-[660px]">
-                              <div className="w-[250px]">
-                                <input
-                                  type="text"
-                                  className="w-full h-[42px] rounded border border-solid border-black-900 bg-white-a700 px-3 py-1.5 font-inter text-[14px]"
-                                  placeholder="Enter Check Number"
-                                />
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <SelectBox
-                                  wClassName="s-wrap w-[250px]"
-                                  name="Second Dropdown"
-                                  options={printOrder}
-                                />
-                                <Button
-                                  className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 ml-4"
-                                >
-                                  Go
-                                </Button>
+                          {showSecondRow && (
+                            <div className="flex items-center w-full justify-end px-[185px]">
+                              <div className="flex items-center gap-4 ">
+                                <div className="w-[250px]">
+                                  <input
+                                    type="text"
+                                    className="w-full h-[38px] rounded border border-solid border-black-900 bg-white-a700 px-3 py-1 font-inter text-[14px]"
+                                    placeholder="Enter Check Number"
+                                    value={checknumber}
+                                  />
+                                </div>
+                                <div className="flex items-center gap-8">
+                                  <SelectBox
+                                    wClassName="s-wrap w-[250px]"
+                                    name="Second Dropdown"
+                                    options={printOrder}
+                                    onChange={setSelectedPrintOrder}
+                                  />
+                                  <div className="min-w-[115px]">
+                                    <Button onClick={handleCheckPaymentGo} className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 ">
+                                      Go
+                                    </Button>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-
+                          )}
                           {/* Third Row */}
-                          <div className="flex items-center w-full">
-                          <div className="flex items-center gap-4 ml-[960px]">
-                              <Text as="p" className="font-inter text-[14px] font-normal text-black-900">
-                                Did checks print successfully?
-                              </Text>
-                              <input
-                                type="checkbox"
-                                className="h-5 w-5 rounded border border-solid border-black-900"
-                              />
-                              <Button
-                                className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 ml-4"
-                              >
-                                Save
-                              </Button>
+                          {showThirdRow && (
+                            <div className="flex items-center w-full justify-end px-[185px]">
+                              <div className="flex items-center gap-8">
+                                <Text
+                                  as="p"
+                                  className="font-inter text-[14px] font-normal text-black-900"
+                                >
+                                  Did checks print successfully?
+                                </Text>
+                                <input
+                                  type="checkbox"
+                                  checked={printSuccess}
+                                  onChange={handleCheckboxChange}
+                                  className="h-5 w-5 rounded border border-solid border-black-900"
+                                />
+                                <div className="min-w-[115px]">
+                                  <Button onClick={handleSaveCheckPayment} className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700">
+                                    Save
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                     </>

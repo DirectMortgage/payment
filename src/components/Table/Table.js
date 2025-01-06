@@ -55,9 +55,18 @@ const Table = forwardRef(
       footerContent = <></>,
       expandedRows,
       setExpandedRows,
-      handleRemove = () => {},
+      handleRemove = () => { },
+      getVendorPaymentApprovalData, 
       setmarkPaid,
       setSelectedCount,
+      setShowPaymentSection,
+      setShowSecondRow,
+      setShowThirdRow,
+      setPaymentMethod,
+      selectedBank,
+      selectedPrintOrder,
+      BankOptions,
+      printSuccess,
       ...props
     },
     ref
@@ -188,7 +197,119 @@ const Table = forwardRef(
       setSelectedRows([]);
     }, [tableData]);
 
-    const handlePaymentProcess = async () => {
+    const handlePaymentProcess = (paymentType) => {
+      const selectedBankOption = BankOptions?.find(option => option?.value === selectedBank?.value) || {
+        checkNum: 0,
+        label: '',
+        selected: false,
+        value: ''
+      };
+      if (selectedBankOption.value === '') { return; }
+
+      if (paymentType === 'ACH') {
+        ProcessACHPayment();
+      }
+      if (paymentType === 'CHECK') {
+        setShowSecondRow(true);
+      }
+
+    };
+
+    const ProcessPrintChecks = async () => {
+
+      let VendorPayArray = [];
+      let VendorPaymentId = "";
+
+      const selectedBankOption = BankOptions?.find(option => option?.value === selectedBank?.value) || {
+        checkNum: 0,
+        label: '',
+        selected: false,
+        value: ''
+      };
+
+      const checkNum = selectedBankOption.checkNum || 0;
+      const BankAccount = selectedBankOption.value || 0;
+
+
+      selectedRows.forEach((row) => {
+        // Check if VendorPaymentId is not already processed
+        if (!VendorPayArray.includes(row.VendorPaymentId)) {
+          // Append VendorPaymentId with separator
+          VendorPaymentId += `${row.VendorPaymentId}~`;
+          VendorPayArray.push(row.VendorPaymentId);
+        }
+      });
+
+
+      let obj = {
+        VendorPaymentId: VendorPaymentId,
+        CheckNum: checkNum,
+        BankAccountId: BankAccount,
+        PrintOrder: selectedPrintOrder.value,
+        EmpNum: EmpId,
+
+      };
+       return
+      const response = await handleAPI({
+        name: "VendorPaymentApprovalPrintChecks",
+        params: {},
+        method: "POST",
+        body: JSON.stringify(obj),
+      });
+
+
+      if (
+        response && 
+        response.trim() !== "{}" && 
+        response.trim() !== "[]" 
+      ) {
+        setShowThirdRow(true);
+        const currentURL = window.location.href;
+        const baseURL = currentURL.split("Payment")[0];
+      
+        const finalURL = baseURL + response;
+      
+        window.open(finalURL, "", "width=1200,height=1200,resizable=yes,scrollbars=yes");
+      }
+
+    }
+    const SavePrintCheckPayment = async () => {
+
+      let VendorPayArray = [];
+      let VendorPaymentId = "";
+      selectedRows.forEach((row) => {
+        // Check if VendorPaymentId is not already processed
+        if (!VendorPayArray.includes(row.VendorPaymentId)) {
+          // Append VendorPaymentId with separator
+          VendorPaymentId += `${row.VendorPaymentId}~`;
+          VendorPayArray.push(row.VendorPaymentId);
+        }
+      });
+      let obj = {
+        VendorPaymentId: VendorPaymentId,
+        PrintCheckStatus: printSuccess,
+        EmpNum: EmpId,
+
+      };
+     return
+      const response = await handleAPI({
+        name: "VendorPaymentMarkPrintChecks",
+        params: {},
+        method: "POST",
+        body: JSON.stringify(obj),
+      });
+      if (
+        response && 
+        response.trim() !== "{}" && 
+        response.trim() !== "[]" 
+      ) {
+
+        getVendorPaymentApprovalData(companyId, EmpId, false);
+      }
+
+
+    }
+    const ProcessACHPayment = async () => {
       let tBody = "";
       let VendorPayArray = [];
       let VendorPaymentId = "";
@@ -239,70 +360,102 @@ const Table = forwardRef(
         "test",
         "_blank"
       );
-    };
+
+    }
 
     const handlePaymentChange = (rowData, value) => {
-    
 
-      localData.forEach((row) => {
-        if (row.RowId === rowData.RowId) {
-          row.PayACH = value === "ach";
-          row.PayCheck = value === "check";
-        } else {
-          row.PayACH = false;
-          row.PayCheck = false;
+      setPaymentMethod(value);
+      setShowPaymentSection(true);
+      setShowSecondRow(false);
+      setShowThirdRow(false);
+
+      // Get all rows including child rows flattened into single array
+      const allRows = [...localData];
+      Object.values(groupedData).forEach(childRows => {
+        allRows.push(...childRows);
+      });
+
+      // Check if there are any existing selections in main or child rows
+      const existingSelections = allRows.find(row =>
+        (row.PayACH || row.PayCheck) && row.RowId !== rowData.RowId
+      );
+
+      // If there are existing selections, ensure new selection matches the payment type
+      if (existingSelections) {
+        const existingMethod = existingSelections.PayACH ? "ach" : "check";
+        if (value !== existingMethod) {
+          // Reset all selections in main data
+          localData.forEach((row) => {
+            row.PayACH = false;
+            row.PayCheck = false;
+          });
+
+          // Reset all selections in child rows
+          Object.values(groupedData).forEach((childRows) => {
+            childRows.forEach((childRow) => {
+              childRow.PayACH = false;
+              childRow.PayCheck = false;
+            });
+          });
+        }
+      }
+
+      // Set the new selection in main data
+      const targetRow = localData.find(row => row.RowId === rowData.RowId);
+      if (targetRow) {
+        targetRow.PayACH = value === "ach";
+        targetRow.PayCheck = value === "check";
+
+        // If this is a parent row, set the same payment method for all its child rows
+        if (groupedData[rowData.VendorPaymentId]) {
+          groupedData[rowData.VendorPaymentId].forEach((childRow) => {
+            childRow.PayACH = value === "ach";
+            childRow.PayCheck = value === "check";
+          });
+        }
+      }
+
+      // Set the new selection in child rows if it's a child row being selected
+      Object.values(groupedData).forEach((childRows) => {
+        const targetChildRow = childRows.find(row => row.RowId === rowData.RowId);
+        if (targetChildRow) {
+          targetChildRow.PayACH = value === "ach";
+          targetChildRow.PayCheck = value === "check";
         }
       });
 
-      if (groupedData[rowData.VendorPaymentId]) {
-        groupedData[rowData.VendorPaymentId].forEach((childRow) => {
-          if (childRow.RowId === rowData.RowId) {
-            childRow.PayACH = value === "ach";
-            childRow.PayCheck = value === "check";
-          } else {
-            childRow.PayACH = false;
-            childRow.PayCheck = false;
-          }
-        });
-      }
-    
-      setLocalData([...localData]); 
+      setLocalData([...localData]);
       updateSelectedRows();
-      // rowData.PayACH = value === "ach";
-      // rowData.PayCheck = value === "check";
-
-      // if (groupedData[rowData.VendorPaymentId]) {
-      //   groupedData[rowData.VendorPaymentId].forEach((childRow) => {
-      //     childRow.PayACH = value === "ach";
-      //     childRow.PayCheck = value === "check";
-      //   });
-      // }
-      // setLocalData([...localData]);
     };
-    
     const handleCheckboxChange = (row, checked) => {
       const childRows = groupedData[row.VendorPaymentId] || [];
+
+      // Get existing payment method
+      const existingPaymentMethod = localData.find(r => r.PayACH || r.PayCheck);
+      const paymentType = existingPaymentMethod?.PayACH ? "ach" :
+        existingPaymentMethod?.PayCheck ? "check" : null;
+
+      if (checked && paymentType) {
+        row[paymentType === "ach" ? "PayACH" : "PayCheck"] = true;
+        childRows.forEach(childRow => {
+          childRow[paymentType === "ach" ? "PayACH" : "PayCheck"] = true;
+        });
+      }
+
       const filteredRows = selectedRows.filter(
-        (r) =>
-          r.RowId !== row.RowId &&
+        (r) => r.RowId !== row.RowId &&
           !childRows.some((child) => child.RowId === r.RowId)
       );
-    
+
       const newSelectedRows = checked
-        ? [...filteredRows, row, ...childRows]
+        ? [...filteredRows, row]
         : filteredRows;
-    
+
       setSelectedRows(newSelectedRows);
-    
-      const total = newSelectedRows.reduce((sum, row) => {
-        const subtotal = FormatValueforCalc(row.SubTotal);
-        return sum + (parseFloat(subtotal) || 0);
-      }, 0);
-    
-      setmarkPaid(total);
-      setSelectedCount(newSelectedRows.length);
+      updateSelectedRows();
     };
-    
+
     const enhancedColumns = columns.map((col) => {
       if (col.field === "paymentMethodHeader") {
         return {
@@ -313,34 +466,35 @@ const Table = forwardRef(
               (row) => row.RowId !== rowData.RowId
             );
             const hasChildRows = childRows.length > 0;
-    
+
             if (hasChildRows && rowData === childRows[0]) {
               return null; // Skip the first child row
             }
-    
+
             if (rowData.VendorId === 166624) {
               return <button className="btnCustom">PayHUD</button>;
             }
-    
+
             if (rowData.VendorId === 167753) {
               return <button className="btnCustom">PayVA</button>;
             }
-    
+
             const selectedValue = rowData.PayACH
               ? "ach"
               : rowData.PayCheck
-              ? "check"
-              : "";
-    
+                ? "check"
+                : "";
+
             return (
               <RadioGroup
                 name={`payment-${rowData.RowId}`}
                 selectedValue={selectedValue}
                 onChange={(e) => {
-                 // if (FilterchildRows.length !== 0) {
-                    handlePaymentChange(rowData, e);
+                  handlePaymentChange(rowData, e);
+                  if (FilterchildRows.length !== 0) {
+
                     setExpandedRows((prev) => [...prev, rowData]);
-                //  }
+                  }
                   handleCheckboxChange(rowData, true);
                 }}
                 className="flex gap-2"
@@ -365,21 +519,48 @@ const Table = forwardRef(
       return col;
     });
     const updateSelectedRows = () => {
-      const newSelectedRows = localData.filter(
-        (row) => row.PayACH || row.PayCheck
-      );
-    
-      setSelectedRows(newSelectedRows);
-    
-      const total = newSelectedRows.reduce((sum, row) => {
+      const selectedRows = [];
+
+      localData.forEach(row => {
+        if (row.PayACH || row.PayCheck) {
+          selectedRows.push(row);
+
+          // Get and filter child rows
+          const childRow = groupedData[row.VendorPaymentId] || [];
+          const childRows = childRow.filter((r) => r.RowId !== row.RowId);
+
+          childRows.forEach(childRow => {
+            childRow.PayACH = row.PayACH;
+            childRow.PayCheck = row.PayCheck;
+            selectedRows.push(childRow);
+          });
+        }
+      });
+
+      // Handle individually selected child rows
+      Object.values(groupedData).forEach(groupChildren => {
+        const filteredChildren = groupChildren.filter(child =>
+          (child.PayACH || child.PayCheck) &&
+          !selectedRows.some(r => r.RowId === child.RowId)
+        );
+        selectedRows.push(...filteredChildren);
+      });
+
+      setSelectedRows(selectedRows);
+
+      const total = selectedRows.reduce((sum, row) => {
         const subtotal = FormatValueforCalc(row.SubTotal);
         return sum + (parseFloat(subtotal) || 0);
       }, 0);
-    
-      setmarkPaid(total);
-      setSelectedCount(newSelectedRows.length);
-    };    
 
+      //  unique count based on VendorPaymentId
+      const uniqueVendorPayments = new Set(
+        selectedRows.map(row => row.VendorPaymentId)
+      );
+
+      setmarkPaid(total);
+      setSelectedCount(uniqueVendorPayments.size);
+    };
     const toggleRow = (data) => {
       setExpandedRows((prev) => {
         if (prev.some((row) => row.RowId === data.RowId)) {
@@ -838,7 +1019,7 @@ const Table = forwardRef(
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
       console.log({ ChangeXML, jsonString });
-      //return;
+      return;
       let obj = { SaveXml: ChangeXML, changedJSON: jsonString };
       const response = await handleAPI({
         name: "VendorMonthlySave",
@@ -854,6 +1035,8 @@ const Table = forwardRef(
       addRow,
       savevendorPayment,
       handlePaymentProcess,
+      ProcessPrintChecks,
+      SavePrintCheckPayment,
     }));
     const createNewRow = async () => {
       let obj = {
@@ -915,43 +1098,43 @@ const Table = forwardRef(
     ];
 
     const header = (
-        <div className="table-header">
-          <h6>{tableTitle}</h6>
-          <div className="flex w-full justify-between items-center">
-            <div className="flex-start flex gap-2">
-              <Button
-                leftIcon={
-                  <Img
-                    src="images/img_grid.svg"
-                    alt="Grid"
-                    className="h-[18px] w-[18px]"
-                  />
-                }
-                className="flex h-[38px] min-w-[146px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
-                onClick={addRow}
-              >
-                Add Payment
-              </Button>
-              {/* <Button
+      <div className="table-header">
+        <h6>{tableTitle}</h6>
+        <div className="flex w-full justify-between items-center">
+          <div className="flex-start flex gap-2">
+            <Button
+              leftIcon={
+                <Img
+                  src="images/img_grid.svg"
+                  alt="Grid"
+                  className="h-[18px] w-[18px]"
+                />
+              }
+              className="flex h-[38px] min-w-[146px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
+              onClick={addRow}
+            >
+              Add Payment
+            </Button>
+            {/* <Button
               leftIcon={<Img src="payment/images/img_grid.svg" alt="Grid" className="h-[18px] w-[18px]" />}
               className="flex h-[38px] min-w-[176px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
             >
               Add Payment Split
             </Button> */}
-            </div>
-            <div className="flex-end">
-              {paginator && (
-                <input
-                  className="input-field"
-                  type="search"
-                  onInput={(e) => setGlobalFilter(e.target.value)}
-                  placeholder="Search"
-                />
-              )}
-            </div>
+          </div>
+          <div className="flex-end">
+            {paginator && (
+              <input
+                className="input-field"
+                type="search"
+                onInput={(e) => setGlobalFilter(e.target.value)}
+                placeholder="Search"
+              />
+            )}
           </div>
         </div>
-      ),
+      </div>
+    ),
       footer = () => (
         <div>
           <div>
@@ -1347,8 +1530,8 @@ const Table = forwardRef(
             paginator && isLoading
               ? "empty-page-data-table pb-[5em]"
               : isLoading
-              ? "empty-data-table"
-              : "data-table py-[0em] px-[2em]"
+                ? "empty-data-table"
+                : "data-table py-[0em] px-[2em]"
           }
           paginator={false}
           rows={rows}

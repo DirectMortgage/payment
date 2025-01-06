@@ -75,6 +75,8 @@ const PaymentManagementSection = forwardRef(
       { label: "Front to Back", value: "1" },
     ]);
     const [printSuccess, setIsPrintSuccess] = useState(0);
+    const [isLoadingGo, setIsLoadingGo] = useState(false);
+    const [isLoadingSave, setIsLoadingSave] = useState(false);
 
     const tableRef = useRef(null);
     let queryString = queryStringToObject();
@@ -134,7 +136,7 @@ const PaymentManagementSection = forwardRef(
         setIsPrintSuccess(0);
 
       }
-      else{
+      else {
         setmarkPaid("");
         setSelectedCount(0);
         setShowPaymentSection(false);
@@ -178,6 +180,16 @@ const PaymentManagementSection = forwardRef(
             const vendors = responseJson.VendorPayment[1].Vendors;
             const dropDownOptions = formatDropdownOptions(htmlString);
             setDropDownOptions(dropDownOptions);
+            if (companyId === '4') {
+              setSelectedBank(dropDownOptions.find(option => option.value === '8'));
+              const dropdownList = dropDownOptions.find(option => option.value === '8')
+              setChecknumber(dropdownList.checkNum);
+            }
+            if (companyId === '2') {
+              setSelectedBank(dropDownOptions.find(option => option.value === '2'));
+              const dropdownList = dropDownOptions.find(option => option.value === '2')
+              setChecknumber(dropdownList.checkNum);
+            }
             setVendors(vendors);
             setClass(responseJson.VendorPayment[5].Class);
             setGLAccounts(responseJson.VendorPayment[6].Accounts);
@@ -1322,6 +1334,8 @@ const PaymentManagementSection = forwardRef(
                   expandedRows={expandedRows}
                   setExpandedRows={setExpandedRows}
                   handleRemove={handleRemove}
+                  setIsLoadingGo = {setIsLoadingGo}
+                  setIsLoadingSave = {setIsLoadingSave}
                   getVendorPaymentApprovalData={GetVendorPaymentApprovalData}
                   footerContent={
                     <>
@@ -1377,6 +1391,7 @@ const PaymentManagementSection = forwardRef(
                                     wClassName="s-wrap w-full"
                                     name="Account Dropdown"
                                     options={dropDownOptions}
+                                    value={selectedBank.value}
                                     onChange={(selectedOption) => {
                                       setSelectedBank(selectedOption);
                                       const selectedBankOption = dropDownOptions?.find(option => option?.value === selectedOption?.value) || {
@@ -1432,6 +1447,19 @@ const PaymentManagementSection = forwardRef(
                                     <Button onClick={handleCheckPaymentGo} className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 ">
                                       Go
                                     </Button>
+                                    {isLoadingGo && (
+                                      <FontAwesomeIcon
+                                        icon={faRotate}
+                                        className="spinner"
+                                        color="#508BC9"
+                                        style={{
+                                          fontSize: 16,
+                                          marginLeft: 5,
+                                          marginTop: 3,
+                                          animation: "spin 1s linear infinite",
+                                        }}
+                                      />
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -1457,6 +1485,19 @@ const PaymentManagementSection = forwardRef(
                                   <Button onClick={handleSaveCheckPayment} className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700">
                                     Save
                                   </Button>
+                                  {isLoadingSave && (
+                                    <FontAwesomeIcon
+                                      icon={faRotate}
+                                      className="spinner"
+                                      color="#508BC9"
+                                      style={{
+                                        fontSize: 16,
+                                        marginLeft: 5,
+                                        marginTop: 3,
+                                        animation: "spin 1s linear infinite",
+                                      }}
+                                    />
+                                  )}
                                 </div>
                               </div>
                             </div>

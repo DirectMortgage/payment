@@ -67,6 +67,8 @@ const Table = forwardRef(
       selectedPrintOrder,
       BankOptions,
       printSuccess,
+      setIsLoadingGo,
+      setIsLoadingSave,
       ...props
     },
     ref
@@ -216,7 +218,7 @@ const Table = forwardRef(
     };
 
     const ProcessPrintChecks = async () => {
-
+      setIsLoadingGo(true);
       let VendorPayArray = [];
       let VendorPaymentId = "";
 
@@ -249,7 +251,7 @@ const Table = forwardRef(
         EmpNum: EmpId,
 
       };
-       return
+     // return
       const response = await handleAPI({
         name: "VendorPaymentApprovalPrintChecks",
         params: {},
@@ -264,6 +266,7 @@ const Table = forwardRef(
         response.trim() !== "[]" 
       ) {
         setShowThirdRow(true);
+        setIsLoadingGo(false);
         const currentURL = window.location.href;
         const baseURL = currentURL.split("Payment")[0];
       
@@ -274,7 +277,7 @@ const Table = forwardRef(
 
     }
     const SavePrintCheckPayment = async () => {
-
+      setIsLoadingSave(true);
       let VendorPayArray = [];
       let VendorPaymentId = "";
       selectedRows.forEach((row) => {
@@ -291,7 +294,7 @@ const Table = forwardRef(
         EmpNum: EmpId,
 
       };
-     return
+    // return
       const response = await handleAPI({
         name: "VendorPaymentMarkPrintChecks",
         params: {},
@@ -303,7 +306,7 @@ const Table = forwardRef(
         response.trim() !== "{}" && 
         response.trim() !== "[]" 
       ) {
-
+        setIsLoadingSave(false);
         getVendorPaymentApprovalData(companyId, EmpId, false);
       }
 
@@ -1019,7 +1022,7 @@ const Table = forwardRef(
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
       console.log({ ChangeXML, jsonString });
-      return;
+     // return;
       let obj = { SaveXml: ChangeXML, changedJSON: jsonString };
       const response = await handleAPI({
         name: "VendorMonthlySave",

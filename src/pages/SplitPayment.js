@@ -23,6 +23,25 @@ const groupByKey = (input, key) => {
   }, {});
   return data;
 };
+const getValue = ({ value, format }) => {
+  return format === "currency" ? formatCurrency(value) : value;
+};
+const Input = ({ type, name, placeholder, value, onChange, format }) => {
+  const [isFocused, setIsFocused] = useState(false);
+
+  return (
+    <input
+      className="border-[1px] border-[#333333] rounded-[5px] p-[10px] text-[#333333] "
+      type={type}
+      name={name}
+      placeholder={placeholder}
+      value={isFocused ? value : getValue({ value, format })}
+      onChange={onChange}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
+    />
+  );
+};
 
 const splitTypeOptions = [
     { TypeOption: "0", TypeDesc: "Select Type" },
@@ -519,23 +538,13 @@ const SplitPayment = () => {
                   valueKey={valueKey}
                 />
               ) : (
-                <input
-                  className="border-[1px] border-[#333333] rounded-[5px] p-[10px] text-[#333333] "
+                <Input
                   type={type}
                   name={name}
+                  format={format}
                   placeholder={placeholder}
                   value={details[name] || ""}
-                  onBlur={(event) => {
-                    if (format === "currency") {
-                      event.target.value = formatCurrency(details[name] || "");
-                    }
-                  }}
-                  onFocus={(event) => {
-                    if (format === "currency") {
-                      event.target.value = cleanValue(details[name]) || "";
-                    }
-                  }}
-                  onChange={(event) => handleDetailsChange(event)}
+                  onChange={handleDetailsChange}
                 />
               )}
             </div>

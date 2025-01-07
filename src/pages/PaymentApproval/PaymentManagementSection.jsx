@@ -17,6 +17,7 @@ import { faPencil, faRotate } from "@fortawesome/free-solid-svg-icons";
 import uploadPdfImage from "../../components/Images/upload-pdf.png";
 import OpenPdfImage from "../../components/Images/open_in_new.png";
 import Close from "../../components/Images/close.png";
+import PrintIcon from "../../components/Images/Print-Icon.png";
 import {
   handleAPI,
   queryStringToObject,
@@ -77,7 +78,7 @@ const PaymentManagementSection = forwardRef(
     const [printSuccess, setIsPrintSuccess] = useState(0);
     const [isLoadingGo, setIsLoadingGo] = useState(false);
     const [isLoadingSave, setIsLoadingSave] = useState(false);
-
+    const [isButtonEnabled, setIsButtonEnabled] = useState(false);
     const tableRef = useRef(null);
     let queryString = queryStringToObject();
     const [EmpId, SetEmpID] = useState("0");
@@ -1334,8 +1335,8 @@ const PaymentManagementSection = forwardRef(
                   expandedRows={expandedRows}
                   setExpandedRows={setExpandedRows}
                   handleRemove={handleRemove}
-                  setIsLoadingGo = {setIsLoadingGo}
-                  setIsLoadingSave = {setIsLoadingSave}
+                  setIsLoadingGo={setIsLoadingGo}
+                  setIsLoadingSave={setIsLoadingSave}
                   getVendorPaymentApprovalData={GetVendorPaymentApprovalData}
                   footerContent={
                     <>
@@ -1377,7 +1378,7 @@ const PaymentManagementSection = forwardRef(
                             </div>
                             {showPaymentSection && (
                               <div
-                                className="flex items-end justify-end gap-8 md:self-stretch sm:flex-col md:flex-col w-8/12"
+                                className="flex items-end justify-end gap-8 md:self-stretch sm:flex-col md:flex-col w-9/12"
                                 style={{ position: "relative" }}
                               >
                                 <div className="flex flex-col items-start justify-center gap-0.5 w-[250px]">
@@ -1408,12 +1409,33 @@ const PaymentManagementSection = forwardRef(
                                 </div>
                                 <Button
                                   onClick={handlePayment}
+                                  disabled={isButtonEnabled}
+                                  style={{
+                                   
+                                    cursor: isButtonEnabled ? 'not-allowed' : 'pointer',
+                                    opacity: isButtonEnabled ? 0.8 : 1
+                                  }}
                                   leftIcon={
-                                    <Img
-                                      src="images/img_arrowright.svg"
-                                      alt="Arrow Right"
-                                      className="h-[18px] w-[18px]"
-                                    />
+                                    paymentMethod === 'ach' ? (
+                                      <Img
+                                        src="images/img_arrowright.svg"
+                                        alt="Arrow Right"
+                                        className="h-[18px] w-[18px]"
+                                      />
+                                    ) : (
+                                      <img
+                                        src={PrintIcon}
+                                        alt="Print Check"
+                                        className="cursor-pointer"
+                                        style={{
+                                          width: "25px",
+                                          height: "25px",
+                                          objectFit: "contain",
+                                          filter: "brightness(0) invert(1)"
+                                        }}
+                                        onClick={() => handleImageClick(rowData.LinkId)}
+                                      />
+                                    )
                                   }
                                   className="flex h-[38px] min-w-[118px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
                                   data-payment-type={paymentMethod}

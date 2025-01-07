@@ -104,6 +104,20 @@ export default function DesktopOnePage() {
                   <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 border-b">
                     <a
                       href="#"
+                      onClick={() =>
+                        fnOpenWindow(
+                          `FeeCollection/Presentation/WebForms/NewPaymentApproval.aspx?SessionID=${SessionId}&CID=${companyId}`,
+                          "/FeeCollection/Presentation/Webforms/NewPaymentApproval.aspx",
+                          SessionId
+                        )
+                      }
+                    >
+                     Old Payment Approval
+                    </a>
+                  </li>
+                  <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 border-b">
+                    <a
+                      href="#"
                       onClick={async () => {
                         const {
                           VendorPaymentDetailId = "",

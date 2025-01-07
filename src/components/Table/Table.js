@@ -33,6 +33,7 @@ import {
   queryStringToObject,
   handleGetSessionData,
   FormatValueforCalc,
+  fnOpenWindow,
 } from "../../components/CommonFunctions/CommonFunction.js";
 
 const Table = forwardRef(
@@ -56,7 +57,7 @@ const Table = forwardRef(
       expandedRows,
       setExpandedRows,
       handleRemove = () => { },
-      getVendorPaymentApprovalData, 
+      getVendorPaymentApprovalData,
       setmarkPaid,
       setSelectedCount,
       setShowPaymentSection,
@@ -91,6 +92,9 @@ const Table = forwardRef(
 
     const [payStatusHtml, setPayStatusHtml] = useState("");
     const [payStatusVendorID, setPayStatusVendorID] = useState("");
+    const [hdnpayCheck, sethdnpayCheck] = useState("");
+    const [hdnGlo_Hud_VA, sethdnGlo_Hud_VA] = useState("");
+    const [hdnBankAcountId, sethdnBankAcountId] = useState("");
 
     // Sorting handler
     const onSort = (event) => {
@@ -251,7 +255,7 @@ const Table = forwardRef(
         EmpNum: EmpId,
 
       };
-     // return
+      // return
       const response = await handleAPI({
         name: "VendorPaymentApprovalPrintChecks",
         params: {},
@@ -261,17 +265,17 @@ const Table = forwardRef(
 
 
       if (
-        response && 
-        response.trim() !== "{}" && 
-        response.trim() !== "[]" 
+        response &&
+        response.trim() !== "{}" &&
+        response.trim() !== "[]"
       ) {
         setShowThirdRow(true);
         setIsLoadingGo(false);
         const currentURL = window.location.href;
         const baseURL = currentURL.split("Payment")[0];
-      
+
         const finalURL = baseURL + response;
-      
+
         window.open(finalURL, "", "width=1200,height=1200,resizable=yes,scrollbars=yes");
       }
 
@@ -294,7 +298,7 @@ const Table = forwardRef(
         EmpNum: EmpId,
 
       };
-    // return
+      //return
       const response = await handleAPI({
         name: "VendorPaymentMarkPrintChecks",
         params: {},
@@ -302,9 +306,9 @@ const Table = forwardRef(
         body: JSON.stringify(obj),
       });
       if (
-        response && 
-        response.trim() !== "{}" && 
-        response.trim() !== "[]" 
+        response &&
+        response.trim() !== "{}" &&
+        response.trim() !== "[]"
       ) {
         setIsLoadingSave(false);
         getVendorPaymentApprovalData(companyId, EmpId, false);
@@ -357,12 +361,51 @@ const Table = forwardRef(
 
       setPayStatusHtml(tBody);
       setPayStatusVendorID(VendorPayArray);
+      sethdnBankAcountId(selectedBank.value);
+      // window.open(
+      //   "http://localhost:3000/FeeCollection/Presentation/Webforms/PaymentStaus.aspx?SessionID={34D43D3B-40AC-49C7-8E7A-DD3C5D757214}&ProcessType=1",
+      //   "test",
+      //   "_blank"
+      // );
+      // return
 
-      window.open(
-        "http://localhost:3000/FeeCollection/Presentation/Webforms/PaymentStaus.aspx?SessionID={34D43D3B-40AC-49C7-8E7A-DD3C5D757214}&ProcessType=1",
-        "test",
-        "_blank"
+      fnOpenWindow(
+        `FeeCollection/Presentation/Webforms/PaymentStaus.aspx?SessionID=${sessionid}&ProcessType=1&CompanyId=${companyId}`,
+        "/FeeCollection/Presentation/Webforms/PaymentStaus.aspx",
+        sessionid
       );
+
+      const selectedBankOption = BankOptions?.find(option => option?.value === selectedBank?.value) || {
+        checkNum: 0,
+        label: '',
+        selected: false,
+        value: ''
+      };
+
+      const BankAccountId = selectedBankOption.value || 0;
+
+      let obj = {
+        VendorPaymentId: VendorPaymentId,
+        BankAccountId: BankAccountId,
+        EmpNum: EmpId,
+
+      };
+      // return
+      const response = await handleAPI({
+        name: "VendorPaymentApprovalACHPayments",
+        params: {},
+        method: "POST",
+        body: JSON.stringify(obj),
+      });
+      if (
+        response &&
+        response.trim() !== "{}" &&
+        response.trim() !== "[]"
+      ) {
+        //setIsLoadingSave(false);
+
+      }
+
 
     }
 
@@ -475,11 +518,19 @@ const Table = forwardRef(
             }
 
             if (rowData.VendorId === 166624) {
-              return <button className="btnCustom">PayHUD</button>;
+              return (
+                <div className="center-container">
+                  <button className="btnCustom" onClick={() => handlePayHUD(rowData.VendorPaymentId)} >Pay HUD</button>
+                </div>
+              );
             }
 
             if (rowData.VendorId === 167753) {
-              return <button className="btnCustom">PayVA</button>;
+              return (
+                <div className="center-container">
+                  <button className="btnCustom" onClick={() => handlePayVA(rowData.VendorPaymentId)} >Pay VA</button>
+                </div>
+              );
             }
 
             const selectedValue = rowData.PayACH
@@ -502,12 +553,24 @@ const Table = forwardRef(
                 }}
                 className="flex gap-2"
               >
-                <Radio
-                  value="ach"
-                  label="ACH"
-                  id={`chkACHApproved${rowData.RowId}`}
-                  className="text-[12px] text-black-900"
-                />
+                {rowData.ACHApproved === 2 ? (
+                  <span
+                    style={{
+                      color: "red",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Refused
+                  </span>
+                ) : (
+                  <Radio
+                    value="ach"
+                    label="ACH"
+                    id={`chkACHApproved${rowData.RowId}`}
+                    className="text-[12px] text-black-900"
+                  />
+                )}
                 <Radio
                   value="check"
                   label="Check"
@@ -521,6 +584,29 @@ const Table = forwardRef(
       }
       return col;
     });
+    const handlePayHUD = (VendorPaymentId) => {
+
+      const HudVendorPaymentId = VendorPaymentId + "~"
+      sethdnGlo_Hud_VA(HudVendorPaymentId);
+      sethdnpayCheck("0");
+      //console.log(HudVendorPaymentId)
+      fnOpenWindow(
+        `FeeCollection/Presentation/Webforms/PaymentStaus.aspx?SessionID=${sessionid}&ProcessType=2&CompanyId=${companyId}`,
+        "/FeeCollection/Presentation/Webforms/PaymentStaus.aspx",
+        sessionid
+      );
+
+    }
+    const handlePayVA = (VendorPaymentId) => {
+      const VAVendorPaymentId = VendorPaymentId + "~"
+      sethdnGlo_Hud_VA(VAVendorPaymentId);
+      sethdnpayCheck("1");
+      fnOpenWindow(
+        `FeeCollection/Presentation/Webforms/PaymentStaus.aspx?SessionID=${sessionid}&ProcessType=3&CompanyId=${companyId}`,
+        "/FeeCollection/Presentation/Webforms/PaymentStaus.aspx",
+        sessionid
+      );
+    }
     const updateSelectedRows = () => {
       const selectedRows = [];
 
@@ -742,33 +828,45 @@ const Table = forwardRef(
                         {childRow[col.field] || ""}
                       </span>
                     )
-                  ) : col.field === "TotalAmount" ||
-                    col.field === "ClassName" ||
-                    col.field === "InvoiceDate" ||
-                    col.field === "Invoice" ||
-                    col.field === "Memo" ? (
+                  ) : col.field === "ClassName" ? (
                     editingCell === `${childRow.RowId}-${col.field}` ? (
-                      <input
-                        type="text"
-                        value={
-                          col.field === "TotalAmount"
-                            ? childRow.SubTotal
-                            : childRow[col.field] || ""
-                        }
-                        onChange={(e) => {
-                          const newValue = e.target.value;
-                          if (col.field === "TotalAmount") {
-                            childRow.SubTotal = newValue;
-                          } else {
-                            childRow[col.field] = newValue;
-                          }
+                      <GroupSelect
+                        size="sm"
+                        shape="round"
+                        options={Class.map((opt) => ({
+                          label: `${opt.label}`,
+                          value: opt.Class_Id,
+                          Class_Id: opt.Class_Id,
+                          Class_Name: opt.Class_Name,
+                        }))}
+                        name="Class"
+                        valueKey="Class_Id"
+                        labelKey="label"
+                        sessionid={sessionid}
+                        values={[
+                          {
+                            Class_Id: parseInt( childRow[col.field]),
+                            label: childRow[col.field] || "",
+                          },
+                        ]}
+                        Class_Id={parseInt(childRow[col.field])}
+                        RowId={childRow.RowId}
+                        handleRemove={handleRemove}
+                        onChange={(selected) => {
+                          const selectedEntityLabel = selected[1];
+                          childRow[col.field] = `${selectedEntityLabel.value}`;
                           childRow.Change = 1;
                           setLocalData([...localData]);
+                          setEditingCell(null);
                         }}
-                        className="text-[12px] font-normal text-black-900 clsGridInput w-full"
-                        onBlur={() => setEditingCell(null)}
-                        onClick={(e) => e.stopPropagation()}
-                        autoFocus
+                        showSearch={true}
+                        placeholder="Search Department"
+                        showAddPaymentSplit={false}
+                        showRemoveRow={false}
+                        style={{
+                          margin: 0,
+                          border: "none",
+                        }}
                       />
                     ) : (
                       <span
@@ -778,16 +876,56 @@ const Table = forwardRef(
                         }}
                         className="text-[14px] font-normal text-black-900 cursor-pointer"
                       >
-                        {col.field === "TotalAmount"
-                          ? childRow.SubTotal
-                          : childRow[col.field] || ""}
+                        {childRow[col.field] || ""}
                       </span>
                     )
-                  ) : col.body ? (
-                    col.body(childRow)
-                  ) : (
-                    childRow[col.field]
-                  )}
+                  )
+
+                    : col.field === "TotalAmount" ||
+                      col.field === "InvoiceDate" ||
+                      col.field === "Invoice" ||
+                      col.field === "Memo" ? (
+                      editingCell === `${childRow.RowId}-${col.field}` ? (
+                        <input
+                          type="text"
+                          value={
+                            col.field === "TotalAmount"
+                              ? childRow.SubTotal
+                              : childRow[col.field] || ""
+                          }
+                          onChange={(e) => {
+                            const newValue = e.target.value;
+                            if (col.field === "TotalAmount") {
+                              childRow.SubTotal = newValue;
+                            } else {
+                              childRow[col.field] = newValue;
+                            }
+                            childRow.Change = 1;
+                            setLocalData([...localData]);
+                          }}
+                          className="text-[12px] font-normal text-black-900 clsGridInput w-full"
+                          onBlur={() => setEditingCell(null)}
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCell(`${childRow.RowId}-${col.field}`);
+                          }}
+                          className="text-[14px] font-normal text-black-900 cursor-pointer"
+                        >
+                          {col.field === "TotalAmount"
+                            ? childRow.SubTotal
+                            : childRow[col.field] || ""}
+                        </span>
+                      )
+                    ) : col.body ? (
+                      col.body(childRow)
+                    ) : (
+                      childRow[col.field]
+                    )}
                 </div>
               ))}
             </tr>
@@ -1016,13 +1154,13 @@ const Table = forwardRef(
 
         ChangeXML += `<row VendorPaymentId="${VendorPaymentId}" VendorId="${VendorId}" TotalAmount="${TotalAmount}" InvoiceDate="${InvDate}" InvoiceDue="${DueDate}" RefNo="${RefNo}" Memo="${InvNum}" Payon="${PayOn}" Status="${Status}" ApprovedBy="${ApprovedBy}" ApprovedOn="" VendorPaymentDetailId="${VendorPaymentDetailId}" AccountId="${Accounts}" Class="${ClassId}" Amount="${ClassAmount}" Change="${Change}" Paid="${Paid}" PayACH="${PayACH}" EntityType="${EntityType}"/>`;
       });
-      ChangeXML = `<PaymentSave BankAccountId="${8}">${ChangeXML}</PaymentSave>`;
+      ChangeXML = `<PaymentSave BankAccountId="${selectedBank.value}">${ChangeXML}</PaymentSave>`;
 
       // Replace quotes for proper formatting
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
-      console.log({ ChangeXML, jsonString });
-     // return;
+      // console.log({ ChangeXML, jsonString });
+      //return;
       let obj = { SaveXml: ChangeXML, changedJSON: jsonString };
       const response = await handleAPI({
         name: "VendorMonthlySave",
@@ -1364,7 +1502,7 @@ const Table = forwardRef(
         );
       }
       if (options.field === "ClassName") {
-        console.log(Class);
+        //console.log(Class);
         return (
           <GroupSelect
             size="sm"
@@ -1602,6 +1740,41 @@ const Table = forwardRef(
           type="hidden"
           value={payStatusVendorID}
           id="hdnPayStatusVendorID"
+        />
+        <input
+          type="hidden"
+          value={EmpId}
+          id="hdnEmpNum"
+        />
+        <input
+          type="hidden"
+          value={hdnBankAcountId}
+          id="drpBankAccounts"
+        />
+        <input
+          type="hidden"
+          value={hdnGlo_Hud_VA}
+          id="Glo_Hud_VA"
+        />
+        <input
+          type="hidden"
+          value={'0'}
+          id="hdnPayStatus"
+        />
+        <input
+          type="hidden"
+          value={'5'}
+          id="hdnPaymentType"
+        />
+        <input
+          type="hidden"
+          value={hdnpayCheck}
+          id="hdnPayByCheck"
+        />
+        <input
+          type="hidden"
+          value={'1'}
+          id="hdnFromReactForm"
         />
       </div>
     );

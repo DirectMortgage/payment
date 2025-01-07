@@ -136,7 +136,12 @@ input[type="radio"] {
 .white {
   color: white;
 }
-
+.center-container {
+  display: flex;
+  justify-content: center; /* Centers horizontally */
+  align-items: center;     /* Centers vertically */
+  height: 100%;            /* Optional, depending on the parent height */
+}
 .btnCustom {
   background-color: #fff !important;
   border: 2px solid #508bc9 !important;

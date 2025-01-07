@@ -54,7 +54,7 @@ export default function DesktopOnePage() {
   }, []);
 
   const fnUpdateWinSize = () => {
-    handleSaveWindowSize(SessionId, "/PaymentApproval");
+    handleSaveWindowSize(SessionId, "/Payment/");
   };
 
   const fnOpenMenu = () => {

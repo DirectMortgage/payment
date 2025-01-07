@@ -1432,6 +1432,7 @@ const Table = forwardRef(
                 ...options.rowData,
                 VendorId: selectedEntity.value,
                 Payee: selectedEntityLabel.value,
+                Change: 1
               };
 
               // Update the groupedData by finding the right VendorPaymentId and RowId

@@ -106,7 +106,7 @@ const handleSaveWindowSize = async (SessionId, FormName) => {
     SessionId: SessionId,
     ViewJson: JSON.stringify(viewPosition),
     // UpdateFlag: 0,
-    UpdateFlag: FormName === "/PaymentApproval" ? 1 : 0,
+    UpdateFlag: FormName === "/Payment/" ? 1 : 0,
     FormID: 0,
     FormName: FormName,
   };

@@ -17,8 +17,8 @@ const variants = {
 };
 
 const sizes = {
-  sm: "h-[68px] pl-2.5 text-[14px]", //48 16px
-  xs: "h-[24px] px-2.5 text-[14px]",
+  sm: "pl-2.5 text-[14px]", //48 16px
+  xs: "px-2.5 text-[14px]",
 };
 
 const GroupSelect = ({

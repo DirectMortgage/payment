@@ -255,7 +255,7 @@ const Table = forwardRef(
         EmpNum: EmpId,
 
       };
-      // return
+       return
       const response = await handleAPI({
         name: "VendorPaymentApprovalPrintChecks",
         params: {},
@@ -298,7 +298,7 @@ const Table = forwardRef(
         EmpNum: EmpId,
 
       };
-      //return
+      return
       const response = await handleAPI({
         name: "VendorPaymentMarkPrintChecks",
         params: {},
@@ -390,7 +390,7 @@ const Table = forwardRef(
         EmpNum: EmpId,
 
       };
-      // return
+       return
       const response = await handleAPI({
         name: "VendorPaymentApprovalACHPayments",
         params: {},
@@ -845,7 +845,7 @@ const Table = forwardRef(
                         sessionid={sessionid}
                         values={[
                           {
-                            Class_Id: parseInt(childRow[col.field]),
+                            Class_Id: parseInt( childRow[col.field]),
                             label: childRow[col.field] || "",
                           },
                         ]}
@@ -1160,7 +1160,7 @@ const Table = forwardRef(
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
       // console.log({ ChangeXML, jsonString });
-      //return;
+      return;
       let obj = { SaveXml: ChangeXML, changedJSON: jsonString };
       const response = await handleAPI({
         name: "VendorMonthlySave",
@@ -1310,19 +1310,34 @@ const Table = forwardRef(
       //  console.log(options)
       const rowId = options.rowData.RowId;
       const isEditing = editingRows[rowId] ?? false;
-      const isEditable =
-        options.column.props.editable === undefined ||
-        (typeof options.column.props.editable === "function"
-          ? options.column.props.editable(options.rowData)
-          : options.column.props.editable);
 
-      // Handle non-editable fields
-      if (!isEditing || !isEditable) {
+      if (!isEditing && !(options.column.props.editable ?? true)) {
         return options.column.props.body(options.rowData);
       }
+
+      // if (!isEditing && !(options.rowData.VendorId === 0)) {
+      //   return options.column.props.body(options.rowData);
+      // }
       if (options.field === "GLAccount") {
         return (
-        
+          // <AutoCompleteInputBox
+          //     value={options.value}
+          //     options={accounts.map(opt => ({
+          //       label: `${opt.Account_Id} - ${opt.Account_Name}`,
+          //       value: opt.Account_Id
+          //   }))}
+          //     onSelect={(selectedItem) => {
+          //         options.editorCallback(selectedItem.label);
+          //     }}
+          //     placeholder="Search GL Account"
+          //     style={{ margin: 0, border: 'none' }}
+          //     inputBoxStyle={{
+          //         padding: '2px 8px',
+          //         fontSize: '12px',
+          //         height: '28px'
+          //     }}
+          // />
+
           <GroupSelect
             size="sm"
             shape="round"
@@ -1380,7 +1395,6 @@ const Table = forwardRef(
           toggleRow(options.rowData);
         }
         const { VendorPaymentDetailId, VendorPaymentId } = options.rowData;
-
         return (
           <GroupSelect
             size="sm"
@@ -1409,7 +1423,6 @@ const Table = forwardRef(
               const selectedEntity = selected[0];
               const selectedEntityLabel = selected[1];
 
-               const selectedVendor = vendors.find((vendor) => vendor.VendorId === selectedEntity.value);
               // Log to verify what's being selected
               console.log("Selected Vendor:", selectedEntity.value);
               console.log("Selected Payee:", selectedEntityLabel.value);
@@ -1422,10 +1435,6 @@ const Table = forwardRef(
                 ...options.rowData,
                 VendorId: selectedEntity.value,
                 Payee: selectedEntityLabel.value,
-               GLAccount:selectedVendor.Account_Id +' - '+selectedVendor.Account_Name,
-               Account_Id: parseInt(
-                 selectedVendor.Account_Id
-               ),
                 Change: 1
               };
 
@@ -1491,6 +1500,7 @@ const Table = forwardRef(
                 options.onRowUpdate(updatedData);
               }
             }}
+            
             loading={isLoading}
             loadingMessage="Loading Payee"
           />
@@ -1707,7 +1717,136 @@ const Table = forwardRef(
               {...columnProps}
               sortable={columnProps.sortable}
               sortFunction={columnProps.sortFunction}
-              editor={(options) => cellEditor(options)}
+              editor={(options) => {
+                if (
+                  columnProps.field === "Payee" && 
+                  options.rowData.VendorId === 0 // Check if VendorId is 0
+                ) {
+
+                  const hasChildRows = (
+                    groupedData[options.rowData.VendorPaymentId] || []
+                  ).some((row) => row.RowId !== options.rowData.RowId);
+          
+                  if (
+                    hasChildRows &&
+                    !expandedRows.some((row) => row.RowId === options.rowData.RowId)
+                  ) {
+                    toggleRow(options.rowData);
+                  }
+                  const { VendorPaymentDetailId, VendorPaymentId } = options.rowData;
+                  return (
+                    <GroupSelect
+                      size="sm"
+                      shape="round"
+                      options={vendors}
+                      VendorPaymentDetailId={VendorPaymentDetailId}
+                      VendorPaymentId={VendorPaymentId}
+                      name="Vendors"
+                      valueKey="VendorId"
+                      labelKey="label"
+                      sessionid={sessionid}
+                      values={[
+                        {
+                          VendorId: options.rowData.VendorId,
+                          label: options.rowData.Payee,
+                        },
+                      ]}
+                      VendorId={options.rowData.VendorId}
+                      RowId={options.rowData.RowId}
+                      companyId={companyId}
+                      EmpId={EmpId}
+                      handleRemove={handleRemove}
+                      showAddPaymentSplit={true} // Control visibility of Add Payment Split
+                      showRemoveRow={true}
+                      onChange={(selected) => {
+                        const selectedEntity = selected[0];
+                        const selectedEntityLabel = selected[1];
+          
+                        // Log to verify what's being selected
+                        console.log("Selected Vendor:", selectedEntity.value);
+                        console.log("Selected Payee:", selectedEntityLabel.value);
+          
+                        // Update the Payee value in the editor callback
+                        options.editorCallback(`${selectedEntityLabel.value}`);
+          
+                        // Create an updated row data object
+                        const updatedData = {
+                          ...options.rowData,
+                          VendorId: selectedEntity.value,
+                          Payee: selectedEntityLabel.value,
+                          Change: 1
+                        };
+          
+                        // Update the groupedData by finding the right VendorPaymentId and RowId
+                        const updatedGroupedData = { ...groupedData };
+                        const paymentId = options.rowData.VendorPaymentId;
+          
+                        if (updatedGroupedData[paymentId]) {
+                          // Find the index of the current row in the grouped data
+                          const rowIndex = updatedGroupedData[paymentId].findIndex(
+                            (row) => row.RowId === options.rowData.RowId
+                          );
+          
+                          if (rowIndex !== -1) {
+                            // Update the row in groupedData
+                            updatedGroupedData[paymentId][rowIndex] = updatedData;
+                          }
+                        }
+          
+                        // Log to verify updated grouped data
+                        console.log("Updated Grouped Data:", updatedGroupedData);
+          
+                        // Now, update the localData state to reflect the changes
+                        const updatedLocalData = Object.entries(updatedGroupedData).map(
+                          ([paymentId, rows]) => {
+                            const parentRow = rows.reduce((minRow, currentRow) =>
+                              currentRow.RowId < minRow.RowId ? currentRow : minRow
+                            );
+          
+                            // Create a display copy of the parent row
+                            const displayParentRow = { ...parentRow };
+          
+                            if (rows.length > 1) {
+                              displayParentRow.ClassName = "";
+                              displayParentRow.GLAccount = "";
+                              displayParentRow.InvoiceDate = "";
+                              displayParentRow.Invoice = "";
+                              displayParentRow.Memo = "";
+                            }
+          
+                            return {
+                              ...displayParentRow,
+                              originalClassName: fieldMaps.classNameMap[paymentId],
+                              originalGLAccount: fieldMaps.glAccountMap[paymentId],
+                              originalInvoiceDate: fieldMaps.invoiceDateMap[paymentId],
+                              originalInvoice: fieldMaps.invoiceMap[paymentId],
+                              originalMemo: fieldMaps.memoMap[paymentId],
+                            };
+                          }
+                        );
+          
+                        console.log("Updated Local Data:", updatedLocalData);
+          
+                        const sortedParentRows = [...updatedLocalData].sort(
+                          (a, b) =>
+                            paymentIdOrder.indexOf(a.VendorPaymentId) -
+                            paymentIdOrder.indexOf(b.VendorPaymentId)
+                        );
+          
+                        setLocalData(sortedParentRows);
+          
+                        if (options.onRowUpdate) {
+                          options.onRowUpdate(updatedData);
+                        }
+                      }}
+                      
+                      loading={isLoading}
+                      loadingMessage="Loading Payee"
+                    />
+                  );
+                }
+                return cellEditor(options);
+              }}
               onCellEditComplete={onCellEditComplete}
             />
           ))}

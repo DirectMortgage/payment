@@ -69,6 +69,7 @@ const SelectBox = React.forwardRef(
           components={{
             IndicatorSeparator: () => null, // Removes the separator
           }}
+          menuPlacement="auto"
           styles={{
             dropdownIndicator: (provided, state) => ({
               ...provided,
@@ -121,6 +122,7 @@ const SelectBox = React.forwardRef(
               boxShadow: "none",
               width: optionWidth,
               margin: 0,
+              zIndex:9999
             }),
             menuList: (provided, state) => ({
               ...provided,
@@ -128,6 +130,7 @@ const SelectBox = React.forwardRef(
               width: optionWidth,
               margin: 0,
               border: "1px solid #6b7280",
+              zIndex:9999
             }),
           }}
           onChange={(selectedOption) => {

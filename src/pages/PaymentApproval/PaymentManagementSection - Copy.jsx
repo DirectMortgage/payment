@@ -548,53 +548,11 @@ const PaymentManagementSection = forwardRef(
     const handleCheckboxChange = (event) => {
       setIsPrintSuccess(event.target.checked ? 1 : 0); // `checked` will be true or false
     };
-    const handleTriggerPayee = (selector) => {
-      const element = document.getElementById('payee_' + selector);
-      if (element) {
-        element.click();
-      }
-      else {
-        setTimeout(() => {
-          handleTriggerPayee(selector);
-        }, 500);
-      }
-
-    }
-    useEffect(() => {
-      if (rowData.length > 0) {
-        // rowData.forEach((item) => {
-        //   if (item.VendorId === 0) {
-        //     //acc[item.RowId] = true
-        //     handleTriggerPayee(item.RowId);
-        //   }
-        //   //return acc
-        // })
-
-        const editing = rowData.reduce((acc, item) => {
-          if (item.VendorId === 0) {
-            acc[item.RowId] = true
-            // handleTriggerPayee(item.RowId);
-          }
-          return acc
-        }, {})
-        console.log('testing')
-        setEditingRows((prevState) => ({
-          ...prevState,
-          ...editing
-        }));
-      }
-    }, [rowData.length])
-
-    useEffect(() => {
-      console.log(editingRows)
-
-    }, [editingRows])
-
     const iColumns = [
       {
         field: "Payee",
         //editable: false,//(rowData) => rowData.paymentDetails === "",
-        editable: (rowData) => { return editingRows[rowData.RowId] && rowData.VendorId == 0 },// Change this to true
+        editable: false, // Change this to true
         editor: (options) => options.editorCallback(options.value), // Add this line
         "data-field": "Payee",
         header: () => (
@@ -684,13 +642,14 @@ const PaymentManagementSection = forwardRef(
                 onChange={(selected) => {
                   const selectedEntity = selected[0];
                   const selectedEntityLabel = selected[1];
-
+                  
                 }}
                 loading={isLoading}
                 loadingMessage="Loading Payee"
               />
             );
           }
+        
           return (
             <div className="flex flex-col items-start justify-center h-full px-4">
               <Heading
@@ -706,13 +665,11 @@ const PaymentManagementSection = forwardRef(
                 >
                   {rowData.Payee}
                 </span>
-                <span className='pointer' id={'payee_' + rowData.RowId} onClick={(e) => handleEditClick(e, rowData, rowData.RowId)}>
-                  <FontAwesomeIcon
-                    icon={faPencil}
-                    className="ml-1 text-[10px] text-gray-600"
-                  //onClick={(e) => handleEditClick(e, rowData, rowData.RowId)}
-                  />
-                </span>
+                <FontAwesomeIcon
+                  icon={faPencil}
+                  className="ml-1 text-[10px] text-gray-600"
+                  onClick={(e) => handleEditClick(e, rowData, rowData.RowId)}
+                />
               </Heading>
               {/* <div className="flex items-center gap-2">
                   <Text size="textxs" as="p" className="text-[10px] font-normal leading-[13px] text-black-900">
@@ -1183,7 +1140,7 @@ const PaymentManagementSection = forwardRef(
       if (validationResult.length > 0) {
         setColumns([...iColumns]);
       }
-    }, [validationResult, viewAllPDFStatus, editingRows]);
+    }, [validationResult, viewAllPDFStatus]);
     const handlePayment = () => {
       if (tableRef.current) {
         const selectedPaymentType = rowData.find(row => row.PayACH || row.PayCheck);
@@ -1490,7 +1447,7 @@ const PaymentManagementSection = forwardRef(
                                   onClick={handlePayment}
                                   disabled={isButtonEnabled}
                                   style={{
-
+                                   
                                     cursor: isButtonEnabled ? 'not-allowed' : 'pointer',
                                     opacity: isButtonEnabled ? 0.8 : 1
                                   }}

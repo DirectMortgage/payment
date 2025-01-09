@@ -157,6 +157,15 @@ input[type="radio"] {
   border: 2px solid #3872af !important;
   color: #fff !important;
 }
+.react-dropdown-select-content.react-dropdown-select-type-single{
+  min-height: inherit;
+  align-content: flex-start;
+}
+.react-dropdown-select-input{
+  box-shadow: none !important;
+  padding: 5px 0 !important;
+  margin-top: 5px;
+}
 
 @keyframes spin {
   from {

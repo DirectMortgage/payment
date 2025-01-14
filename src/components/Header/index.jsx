@@ -2,7 +2,7 @@ import { Heading, SelectBox, Img } from "./..";
 import { React, useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faRotate } from "@fortawesome/free-solid-svg-icons";
 import {
   handleAPI,
   queryStringToObject,
@@ -150,7 +150,7 @@ export default function Header({
                 <span className="whitespace-nowrap">Duplicate payments</span>
                 {isLoading ? (
                   <FontAwesomeIcon
-                    icon={faSpinner}
+                    icon={faRotate}
                     className="text-white-a700 text-xs ml-1 animate-spin"
                   />
                 ) : (

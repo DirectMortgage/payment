@@ -96,10 +96,6 @@ background-color: inherit;
   animation: spin 1s linear infinite;
 }
 
-input[type="radio"] {
-  box-shadow: none !important;
-}
-
 .coverAll {
   z-index: 1000;
   background-color: #508bc9;
@@ -139,8 +135,8 @@ input[type="radio"] {
 .center-container {
   display: flex;
   justify-content: center; /* Centers horizontally */
-  align-items: center;     /* Centers vertically */
-  height: 100%;            /* Optional, depending on the parent height */
+  align-items: center; /* Centers vertically */
+  height: 100%; /* Optional, depending on the parent height */
 }
 .btnCustom {
   background-color: #fff !important;
@@ -157,11 +153,11 @@ input[type="radio"] {
   border: 2px solid #3872af !important;
   color: #fff !important;
 }
-.react-dropdown-select-content.react-dropdown-select-type-single{
+.react-dropdown-select-content.react-dropdown-select-type-single {
   min-height: inherit;
   align-content: flex-start;
 }
-.react-dropdown-select-input{
+.react-dropdown-select-input {
   box-shadow: none !important;
   padding: 5px 0 !important;
   margin-top: 5px;
@@ -182,15 +178,29 @@ input[type="radio"] {
   min-height: 24px;
   white-space: normal;
   word-wrap: break-word;
+}*/
+.clsGridInput:focus,
+.react-dropdown-select :focus,
+.file-upload:focus {
+  border: none;
 }
-
-.clsGridInput {
-  border: 1px solid #888;
-  border-radius: 5px;
-  background-color: white;
-  padding: 4px;
-  width: 100%;
-} */
+.clsGridInput,
+.react-dropdown-select,
+.file-upload:focus {
+  border: 2px solid #999 !important;
+  border-radius: 5px !important;
+  box-shadow: none !important;
+}
+.check-box:focus {
+  outline: 3px solid black !important;
+  box-shadow: none !important;
+}
+input[type="radio"]:focus {
+  outline: 3px solid black !important;
+  border-radius: 50px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+}
 .auto-complete input[type="text"] {
   box-shadow: none !important;
 }

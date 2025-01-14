@@ -119,7 +119,6 @@ const handleSaveWindowSize = async (SessionId, FormName) => {
 };
 const fnOpenWindow = async (link, FormName, SessionId) => {
   const { SessionId: iSessionId } = queryStringToObject();
-  debugger;
   SessionId = SessionId ? SessionId : iSessionId;
   let hostName = "../../../";
   if (window.location?.href?.indexOf("localhost") != -1)
@@ -247,6 +246,47 @@ const cleanValue = (value = 0) => {
 
   return Number(value);
 };
+const formatDate = (date) => {
+  if (date === "" || !date) return "";
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear().toString();
+
+  let [month, day, year] = date.split("/");
+
+  if (!day) {
+    day = month;
+    month = currentDate.getMonth() + 1;
+  }
+
+  const parsedMonth = parseInt(month);
+  const parsedDay = parseInt(day);
+
+  const isValidMonth =
+    !isNaN(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12;
+  const isValidDay = !isNaN(parsedDay) && parsedDay >= 1 && parsedDay <= 31;
+
+  if (!isValidMonth || !isValidDay) {
+    const formattedCurrentMonth = (currentDate.getMonth() + 1)
+      .toString()
+      .padStart(2, "0");
+    const formattedCurrentDay = currentDate
+      .getDate()
+      .toString()
+      .padStart(2, "0");
+    return `${formattedCurrentMonth}/${formattedCurrentDay}/${currentYear}`;
+  }
+
+  if (year && year.length === 2) {
+    year = currentYear.slice(0, 2) + year;
+  } else if (!year) {
+    year = currentYear;
+  }
+
+  const formattedMonth = parsedMonth.toString().padStart(2, "0");
+  const formattedDay = parsedDay.toString().padStart(2, "0");
+
+  return `${formattedMonth}/${formattedDay}/${year}`;
+};
 const formatCurrency = (value) => {
   let num = parseFloat(
       (value || "").toString().replace("$", "").replace(",", "")
@@ -282,6 +322,7 @@ const FormatValueforCalc = (val) => {
 const formatSpecialCharacters = (text) => {
   const entitiesMap = {
     "&amp;": "&",
+    "amp;": "&",
     "&apos;": "'",
     "&quot;": '"',
     "&lt;": "<",
@@ -312,7 +353,7 @@ const formatSpecialCharacters = (text) => {
   // Replace \n with <br> tags for HTML, or leave as newlines for plain text
   formattedText = formattedText
     .replace(/\n/g, "<br>")
-    // .replaceAll("-", "")
+    .replaceAll("amp;", "&")
     .replace(/•/g, "•&nbsp;&nbsp;"); // For HTML display
 
   return formattedText;
@@ -335,4 +376,5 @@ export {
   formatCurrency,
   FormatValueforCalc,
   formatSpecialCharacters,
+  formatDate,
 };

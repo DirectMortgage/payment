@@ -332,6 +332,7 @@ const FileUpload = ({
   style = {},
   className = "primary",
   id,
+  tabIndex = 0,
 }) => {
   return (
     <Fragment key={id}>
@@ -345,7 +346,7 @@ const FileUpload = ({
       />
       <label
         htmlFor={id}
-        className={`button ${className}`}
+        className={`button file-upload ${className}`}
         style={{
           whiteSpace: "nowrap",
           minWidth: "inherit",

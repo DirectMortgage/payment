@@ -10,27 +10,35 @@ const sizes = {
 };
 
 const Checkbox = React.forwardRef(
-    ({ className = "", name = "", label = "", id = "checkbox_id", variant = "primary", size = "xs", ...restProps }, ref) => {
-      return (
-        <label className={`flex items-center gap-2 cursor-pointer ${className}`}>
-          <input
-            className={`
-              appearance-none border border-gray-400 focus:ring-0 focus:ring-offset-0
-              ${(size && sizes[size]) || ""} 
-              ${(variant && variants[variant]) || ""}
-              cursor-pointer
-            `}
-            ref={ref}
-            type="checkbox"
-            name={name}
-            id={id}
-            {...restProps}
-          />
-          <span className="text-sm">{label}</span>
-        </label>
-      );
-    }
-  );
+  (
+    {
+      className = "",
+      name = "",
+      label = "",
+      id = "checkbox_id",
+      variant = "primary",
+      size = "xs",
+      ...restProps
+    },
+    ref
+  ) => {
+    return (
+      <label className={`flex items-center gap-2 cursor-pointer ${className}`}>
+        <input
+          className={`appearance-none border border-gray-400 focus:ring-0 focus:ring-offset-0 check-box ${
+            (size && sizes[size]) || ""
+          } ${(variant && variants[variant]) || ""} cursor-pointer`}
+          ref={ref}
+          type="checkbox"
+          name={name}
+          id={id}
+          {...restProps}
+        />
+        <span className="text-sm">{label}</span>
+      </label>
+    );
+  }
+);
 
 Checkbox.propTypes = {
   className: PropTypes.string,

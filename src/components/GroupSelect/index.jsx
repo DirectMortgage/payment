@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import Select from "react-dropdown-select";
 import { Heading } from "../Heading";
@@ -47,6 +47,7 @@ const GroupSelect = ({
   EmpId,
   VendorPaymentDetailId,
   VendorPaymentId,
+  defaultMenuIsOpen = true,
   ...restProps
 }) => {
   const [customOptions, setCustomOptions] = useState([]);
@@ -112,14 +113,41 @@ const GroupSelect = ({
     })
     .filter(Boolean);
 
+  const selectRef = useRef(null);
+
+  const handleKeyDown = (e) => {
+    const select = selectRef.current;
+
+    if (!select) return;
+
+    if ([32, 9].includes(e.event.keyCode) && !e.event.shiftKey) {
+      e.event.preventDefault(); // Prevent scrolling or default space behavior
+      const currentHighlightedIndex = select.state.cursor;
+      if (![null, undefined].includes(currentHighlightedIndex)) {
+        const currentOption =
+          select.state.searchResults[currentHighlightedIndex];
+
+        if (currentOption) {
+          handleChange([currentOption]); // Update the selected value
+        }
+        //debugger;
+        e.event.target.blur();
+      }
+    }
+  };
+
   return (
     <>
       <Select
+        defaultMenuIsOpen={defaultMenuIsOpen}
+        handleKeyDownFn={handleKeyDown}
         options={validatedOptions}
         name={name}
         placeholder={placeholder}
         clearable={true}
         searchable={true}
+        //autoFocus={true}
+        ref={selectRef}
         labelField={labelKey}
         valueField={valueKey}
         values={value ? [value] : []} // Change value to values and ensure it's an array
@@ -152,7 +180,7 @@ const GroupSelect = ({
         </Heading>
       )}
 
-      <div className="custom-options-container">
+      <div tabIndex={-1} className="custom-options-container">
         {customOptions.map((option, index) => (
           <div
             key={index}

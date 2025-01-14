@@ -164,7 +164,7 @@ const SplitPayment = () => {
       method: "GET",
     })
       .then((response) => {
-        // debugger;
+        //
         response = formatSpecialCharacters(response);
         setPayeeOptions(JSON.parse(response));
         handleDetailsChange({

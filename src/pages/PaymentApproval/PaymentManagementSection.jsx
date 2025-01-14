@@ -29,6 +29,7 @@ import {
   handleShowUploadingStatus,
   formatCurrency,
   FormatValueforCalc,
+  formatSpecialCharacters,
 } from "../../components/CommonFunctions/CommonFunction.js";
 import {
   FileUpload,
@@ -69,8 +70,8 @@ const PaymentManagementSection = forwardRef(
     const [paymentMethod, setPaymentMethod] = useState(null);
 
     const [selectedBank, setSelectedBank] = useState(null);
-    const [selectedPrintOrder, setSelectedPrintOrder] = useState('0');
-    const [checknumber, setChecknumber] = useState('');
+    const [selectedPrintOrder, setSelectedPrintOrder] = useState("0");
+    const [checknumber, setChecknumber] = useState("");
     const [printOrder, setPrintOrder] = useState([
       { label: "Select", value: "0" },
       { label: "Back to Front", value: "2" },
@@ -132,13 +133,11 @@ const PaymentManagementSection = forwardRef(
         setShowThirdRow(false);
         setPaymentMethod(null);
         setSelectedBank(null);
-        setSelectedPrintOrder('0');
-        setChecknumber('');
+        setSelectedPrintOrder("0");
+        setChecknumber("");
         //setPrintOrder('0');
         setIsPrintSuccess(0);
-
-      }
-      else {
+      } else {
         setmarkPaid("");
         setSelectedCount(0);
         setShowPaymentSection(false);
@@ -146,11 +145,10 @@ const PaymentManagementSection = forwardRef(
         setShowThirdRow(false);
         setPaymentMethod(null);
         setSelectedBank(null);
-        setSelectedPrintOrder('0');
-        setChecknumber('');
+        setSelectedPrintOrder("0");
+        setChecknumber("");
         //setPrintOrder('0');
         setIsPrintSuccess(0);
-
       }
       let obj = {
         CompanyId: CompanyId,
@@ -182,21 +180,35 @@ const PaymentManagementSection = forwardRef(
             const vendors = responseJson.VendorPayment[1].Vendors;
             const dropDownOptions = formatDropdownOptions(htmlString);
             setDropDownOptions(dropDownOptions);
-            if (companyId === '4') {
-              setSelectedBank(dropDownOptions.find(option => option.value === '8'));
-              const dropdownList = dropDownOptions.find(option => option.value === '8')
+            if (companyId === "4") {
+              setSelectedBank(
+                dropDownOptions.find((option) => option.value === "8")
+              );
+              const dropdownList = dropDownOptions.find(
+                (option) => option.value === "8"
+              );
               setChecknumber(dropdownList.checkNum);
             }
-            if (companyId === '2') {
-              setSelectedBank(dropDownOptions.find(option => option.value === '2'));
-              const dropdownList = dropDownOptions.find(option => option.value === '2')
+            if (companyId === "2") {
+              setSelectedBank(
+                dropDownOptions.find((option) => option.value === "2")
+              );
+              const dropdownList = dropDownOptions.find(
+                (option) => option.value === "2"
+              );
               setChecknumber(dropdownList.checkNum);
             }
-            setVendors(vendors);
+            setVendors(
+              JSON["parse"](formatSpecialCharacters(JSON["stringify"](vendors)))
+            );
             setClass(responseJson.VendorPayment[5].Class);
             setGLAccounts(responseJson.VendorPayment[6].Accounts);
-            setRowData([...JSON.parse(processedData)]);
-            console.log(JSON.parse(processedData));
+            const iRowData = JSON.parse(processedData).map((item) => {
+              item["GLAccount"] = item["GLAccount"]?.replace("0-", "").trim();
+              return item;
+            });
+            setRowData(iRowData);
+            console.log(iRowData);
             calculateTotalSubTotal(JSON.parse(processedData));
           }
           setRawXmlData(responseJson);
@@ -397,18 +409,18 @@ const PaymentManagementSection = forwardRef(
       const currentEmpId = empIdRef.current;
       if (files.length) {
         let details = {
-          LoanId: currentEmpId,
-          DocTypeId: vendorPaymentId,
-          sessionid: SessionId,
-          viewtype: 23,
-          category: vendorPaymentDetailId,
-          description: "",
-          usedoc: 1,
-          entityid: 0,
-          entitytypeid: 0,
-          uploadsource: currentEmpId,
-          conditonid: 0,
-        },
+            LoanId: currentEmpId,
+            DocTypeId: vendorPaymentId,
+            sessionid: SessionId,
+            viewtype: 23,
+            category: vendorPaymentDetailId,
+            description: "",
+            usedoc: 1,
+            entityid: 0,
+            entitytypeid: 0,
+            uploadsource: currentEmpId,
+            conditonid: 0,
+          },
           index = 1;
 
         //return
@@ -549,17 +561,15 @@ const PaymentManagementSection = forwardRef(
       setIsPrintSuccess(event.target.checked ? 1 : 0); // `checked` will be true or false
     };
     const handleTriggerPayee = (selector) => {
-      const element = document.getElementById('payee_' + selector);
+      const element = document.getElementById("payee_" + selector);
       if (element) {
         element.click();
-      }
-      else {
+      } else {
         setTimeout(() => {
           handleTriggerPayee(selector);
         }, 500);
       }
-
-    }
+    };
     useEffect(() => {
       if (rowData.length > 0) {
         // rowData.forEach((item) => {
@@ -572,29 +582,30 @@ const PaymentManagementSection = forwardRef(
 
         const editing = rowData.reduce((acc, item) => {
           if (item.VendorId === 0) {
-            acc[item.RowId] = true
-            // handleTriggerPayee(item.RowId);
+            acc[item.RowId] = true;
+            handleTriggerPayee(item.RowId);
           }
-          return acc
-        }, {})
-        console.log('testing')
+          return acc;
+        }, {});
+        console.log("testing");
         setEditingRows((prevState) => ({
           ...prevState,
-          ...editing
+          ...editing,
         }));
       }
-    }, [rowData.length])
+    }, [rowData.length]);
 
     useEffect(() => {
-      console.log(editingRows)
-
-    }, [editingRows])
+      console.log(editingRows);
+    }, [editingRows]);
 
     const iColumns = [
       {
         field: "Payee",
-        //editable: false,//(rowData) => rowData.paymentDetails === "",
-        editable: (rowData) => { return editingRows[rowData.RowId] && rowData.VendorId == 0 },// Change this to true
+        editable: editingRows[rowData.RowId] || false, //(rowData) => rowData.paymentDetails === "",
+        //editable: (rowData) => {
+        //  return editingRows[rowData.RowId] && rowData.VendorId == 0;
+        //}, // Change this to true
         editor: (options) => options.editorCallback(options.value), // Add this line
         "data-field": "Payee",
         header: () => (
@@ -656,7 +667,7 @@ const PaymentManagementSection = forwardRef(
             //debugger
             //  rowData.isEditing = true; // Set the row's edit state
           };
-          if (rowData.VendorId === 0) {
+          if (rowData.VendorId === 0 && false) {
             return (
               <GroupSelect
                 size="sm"
@@ -684,7 +695,6 @@ const PaymentManagementSection = forwardRef(
                 onChange={(selected) => {
                   const selectedEntity = selected[0];
                   const selectedEntityLabel = selected[1];
-
                 }}
                 loading={isLoading}
                 loadingMessage="Loading Payee"
@@ -706,11 +716,16 @@ const PaymentManagementSection = forwardRef(
                 >
                   {rowData.Payee}
                 </span>
-                <span className='pointer' id={'payee_' + rowData.RowId} onClick={(e) => handleEditClick(e, rowData, rowData.RowId)}>
+                <span
+                  className="pointer"
+                  id={"payee_" + rowData.RowId}
+                  onClick={(e) => handleEditClick(e, rowData, rowData.RowId)}
+                  //tabIndex={0}
+                >
                   <FontAwesomeIcon
                     icon={faPencil}
                     className="ml-1 text-[10px] text-gray-600"
-                  //onClick={(e) => handleEditClick(e, rowData, rowData.RowId)}
+                    //onClick={(e) => handleEditClick(e, rowData, rowData.RowId)}
                   />
                 </span>
               </Heading>
@@ -732,6 +747,7 @@ const PaymentManagementSection = forwardRef(
         field: "TotalAmount",
         "data-field": "TotalAmount",
         sortable: true,
+        editable: true,
         header: () => (
           <Text
             size="textmd"
@@ -770,6 +786,7 @@ const PaymentManagementSection = forwardRef(
       {
         field: "GLAccount",
         "data-field": "GLAccount",
+        editable: true,
         header: () => (
           <Text
             size="textmd"
@@ -798,6 +815,7 @@ const PaymentManagementSection = forwardRef(
       {
         field: "ClassName",
         "data-field": "ClassName",
+        editable: true,
         header: () => (
           <Text
             size="textmd"
@@ -826,6 +844,7 @@ const PaymentManagementSection = forwardRef(
       {
         field: "InvoiceDate",
         "data-field": "InvoiceDate",
+        editable: true,
         sortable: true,
         header: () => (
           <Text
@@ -855,6 +874,7 @@ const PaymentManagementSection = forwardRef(
       {
         field: "Invoice",
         "data-field": "Invoice",
+        editable: true,
         header: () => (
           <Text
             size="textmd"
@@ -899,6 +919,7 @@ const PaymentManagementSection = forwardRef(
       {
         field: "Memo",
         "data-field": "Memo",
+        editable: true,
         header: () => (
           <Text
             size="textmd"
@@ -941,81 +962,7 @@ const PaymentManagementSection = forwardRef(
           );
         },
       },
-      {
-        field: "paymentMethodHeader",
-        "data-field": "paymentMethodHeader",
-        editable: false,
-        header: () => (
-          <Text
-            size="textmd"
-            as="p"
-            className="pb-3 pt-4 text-left text-[14px] font-normal text-black-900"
-          >
-            Payment Method
-          </Text>
-        ),
-        style: { width: "136px" },
-        //       body: (rowData) => {
 
-        //         const handlePaymentChange = (value) => {
-        //           rowData.PayACH = value === "ach";
-        //           rowData.PayCheck = value === "check";
-        //         };
-
-        //         const selectedValue = rowData.PayACH ? "ach" : rowData.PayCheck ? "check" : "";
-        //         return (
-        //           <RadioGroup
-        //             name={`payment-${rowData.RowId}`}
-        //             selectedValue={selectedValue}
-        //             onChange={(e) => {
-        //               handlePaymentChange(e);
-        //               setExpandedRows((prev) => [...prev, rowData]);
-        // }}
-        //             className="flex gap-2"
-        //           >
-        //             <Radio
-        //               value="ach"
-        //               label="ACH"
-        //               id={`chkACHApproved${rowData.RowId}`}
-        //               className="text-[12px] text-black-900"
-        //             />
-        //             <Radio
-        //               value="check"
-        //               label="Check"
-        //               id={`chkPrintChecks${rowData.RowId}`}
-        //               className="text-[12px] text-black-900"
-        //             />
-        //           </RadioGroup>
-        //         );
-
-        //       }
-      },
-      {
-        field: "MarkPaid",
-        "data-field": "MarkPaid",
-        editable: false,
-        header: () => (
-          <Text
-            size="textmd"
-            as="p"
-            className="py-3.5 text-left text-[14px] font-normal text-black-900"
-          >
-            Paid
-          </Text>
-        ),
-        style: { width: "44px" },
-        body: (rowData) => (
-          <div className="flex">
-            <Checkbox
-              label=""
-              name="item"
-              id={`chkMarkaspaid${rowData.RowId}`}
-              onChange={(e) => console.log("Checked:", e.target.checked)}
-              className="text-gray-800"
-            />
-          </div>
-        ),
-      },
       {
         field: "imagesHeader",
         "data-field": "imagesHeader",
@@ -1040,10 +987,8 @@ const PaymentManagementSection = forwardRef(
           <FileUpload
             id={`file-upload-${rowData.RowId}`} // _${rowData.Scandoctype}_${rowData.ID}
             style={{
-              marginLeft: "1rem",
-              height: 25,
               fontSize: 12,
-              display: "inline",
+              display: "block",
             }}
             className="primary"
             text={
@@ -1177,30 +1122,106 @@ const PaymentManagementSection = forwardRef(
           );
         },
       },
+      {
+        field: "paymentMethodHeader",
+        "data-field": "paymentMethodHeader",
+        editable: false,
+        header: () => (
+          <Text
+            size="textmd"
+            as="p"
+            className="pb-3 pt-4 text-left text-[14px] font-normal text-black-900"
+          >
+            Payment Method
+          </Text>
+        ),
+        style: { width: "136px" },
+        //       body: (rowData) => {
+
+        //         const handlePaymentChange = (value) => {
+        //           rowData.PayACH = value === "ach";
+        //           rowData.PayCheck = value === "check";
+        //         };
+
+        //         const selectedValue = rowData.PayACH ? "ach" : rowData.PayCheck ? "check" : "";
+        //         return (
+        //           <RadioGroup
+        //             name={`payment-${rowData.RowId}`}
+        //             selectedValue={selectedValue}
+        //             onChange={(e) => {
+        //               handlePaymentChange(e);
+        //               setExpandedRows((prev) => [...prev, rowData]);
+        // }}
+        //             className="flex gap-2"
+        //           >
+        //             <Radio
+        //               value="ach"
+        //               label="ACH"
+        //               id={`chkACHApproved${rowData.RowId}`}
+        //               className="text-[12px] text-black-900"
+        //             />
+        //             <Radio
+        //               value="check"
+        //               label="Check"
+        //               id={`chkPrintChecks${rowData.RowId}`}
+        //               className="text-[12px] text-black-900"
+        //             />
+        //           </RadioGroup>
+        //         );
+
+        //       }
+      },
+      {
+        field: "MarkPaid",
+        "data-field": "MarkPaid",
+        editable: false,
+        header: () => (
+          <Text
+            size="textmd"
+            as="p"
+            className="py-3.5 text-left text-[14px] font-normal text-black-900"
+          >
+            Paid
+          </Text>
+        ),
+        style: { width: "44px" },
+        body: (rowData) => (
+          <div className="flex">
+            <Checkbox
+              tabIndex={1}
+              label=""
+              name="item"
+              id={`chkMarkaspaid${rowData.RowId}`}
+              onChange={(e) => console.log("Checked:", e.target.checked)}
+              className="text-gray-800 check-box"
+            />
+          </div>
+        ),
+      },
     ];
     const [columns, setColumns] = useState(iColumns);
     useEffect(() => {
       if (validationResult.length > 0) {
         setColumns([...iColumns]);
       }
-    }, [validationResult, viewAllPDFStatus, editingRows]);
+    }, [validationResult, viewAllPDFStatus, editingRows, rowData]);
     const handlePayment = () => {
       if (tableRef.current) {
-        const selectedPaymentType = rowData.find(row => row.PayACH || row.PayCheck);
-        const paymentFlag = selectedPaymentType?.PayACH ? 'ACH' : 'CHECK';
-        console.log(paymentFlag)
+        const selectedPaymentType = rowData.find(
+          (row) => row.PayACH || row.PayCheck
+        );
+        const paymentFlag = selectedPaymentType?.PayACH ? "ACH" : "CHECK";
+        console.log(paymentFlag);
         tableRef.current.handlePaymentProcess(paymentFlag);
       }
     };
     const handleCheckPaymentGo = () => {
       if (tableRef.current) {
-
         tableRef.current.ProcessPrintChecks();
       }
     };
     const handleSaveCheckPayment = () => {
       if (tableRef.current) {
-
         tableRef.current.SavePrintCheckPayment();
       }
     };
@@ -1359,9 +1380,8 @@ const PaymentManagementSection = forwardRef(
     //   ];
     // }, []);
     const getButtonLabel = () => {
-      return paymentMethod === 'ach' ? 'Pay ACH' : 'Print Checks';
+      return paymentMethod === "ach" ? "Pay ACH" : "Print Checks";
     };
-
 
     return (
       <>
@@ -1393,6 +1413,7 @@ const PaymentManagementSection = forwardRef(
                   paginator
                   isLoading={isLoading}
                   tableData={rowData}
+                  setEditingRows={setEditingRows}
                   accounts={glAccounts}
                   Class={Class}
                   vendors={vendors}
@@ -1414,6 +1435,7 @@ const PaymentManagementSection = forwardRef(
                   expandedRows={expandedRows}
                   setExpandedRows={setExpandedRows}
                   handleRemove={handleRemove}
+                  setRowData={setRowData}
                   setIsLoadingGo={setIsLoadingGo}
                   setIsLoadingSave={setIsLoadingSave}
                   getVendorPaymentApprovalData={GetVendorPaymentApprovalData}
@@ -1445,7 +1467,9 @@ const PaymentManagementSection = forwardRef(
                                   className="font-inter text-[12px] font-normal text-black-900"
                                 >
                                   <span>Bills marked to pay&nbsp;</span>
-                                  <span className="font-bold">({markedCount}):</span>
+                                  <span className="font-bold">
+                                    ({markedCount}):
+                                  </span>
                                 </Text>
                                 <Heading
                                   as="p"
@@ -1474,28 +1498,35 @@ const PaymentManagementSection = forwardRef(
                                     value={selectedBank.value}
                                     onChange={(selectedOption) => {
                                       setSelectedBank(selectedOption);
-                                      const selectedBankOption = dropDownOptions?.find(option => option?.value === selectedOption?.value) || {
-                                        checkNum: 0,
-                                        label: '',
-                                        selected: false,
-                                        value: ''
-                                      };
-                                      setChecknumber(selectedBankOption.checkNum || 0)
-
+                                      const selectedBankOption =
+                                        dropDownOptions?.find(
+                                          (option) =>
+                                            option?.value ===
+                                            selectedOption?.value
+                                        ) || {
+                                          checkNum: 0,
+                                          label: "",
+                                          selected: false,
+                                          value: "",
+                                        };
+                                      setChecknumber(
+                                        selectedBankOption.checkNum || 0
+                                      );
                                     }}
-                                  // onChange={setSelectedBank}
+                                    // onChange={setSelectedBank}
                                   />
                                 </div>
                                 <Button
                                   onClick={handlePayment}
                                   disabled={isButtonEnabled}
                                   style={{
-
-                                    cursor: isButtonEnabled ? 'not-allowed' : 'pointer',
-                                    opacity: isButtonEnabled ? 0.8 : 1
+                                    cursor: isButtonEnabled
+                                      ? "not-allowed"
+                                      : "pointer",
+                                    opacity: isButtonEnabled ? 0.8 : 1,
                                   }}
                                   leftIcon={
-                                    paymentMethod === 'ach' ? (
+                                    paymentMethod === "ach" ? (
                                       <Img
                                         src="images/img_arrowright.svg"
                                         alt="Arrow Right"
@@ -1510,9 +1541,11 @@ const PaymentManagementSection = forwardRef(
                                           width: "25px",
                                           height: "25px",
                                           objectFit: "contain",
-                                          filter: "brightness(0) invert(1)"
+                                          filter: "brightness(0) invert(1)",
                                         }}
-                                        onClick={() => handleImageClick(rowData.LinkId)}
+                                        onClick={() =>
+                                          handleImageClick(rowData.LinkId)
+                                        }
                                       />
                                     )
                                   }
@@ -1545,7 +1578,10 @@ const PaymentManagementSection = forwardRef(
                                     onChange={setSelectedPrintOrder}
                                   />
                                   <div className="min-w-[115px]">
-                                    <Button onClick={handleCheckPaymentGo} className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 ">
+                                    <Button
+                                      onClick={handleCheckPaymentGo}
+                                      className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 "
+                                    >
                                       Go
                                     </Button>
                                     {isLoadingGo && (
@@ -1583,7 +1619,10 @@ const PaymentManagementSection = forwardRef(
                                   className="h-5 w-5 rounded border border-solid border-black-900"
                                 />
                                 <div className="min-w-[115px]">
-                                  <Button onClick={handleSaveCheckPayment} className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700">
+                                  <Button
+                                    onClick={handleSaveCheckPayment}
+                                    className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700"
+                                  >
                                     Save
                                   </Button>
                                   {isLoadingSave && (

@@ -56,7 +56,7 @@ const Table = forwardRef(
       footerContent = <></>,
       expandedRows,
       setExpandedRows,
-      handleRemove = () => { },
+      handleRemove = () => {},
       getVendorPaymentApprovalData,
       setmarkPaid,
       setSelectedCount,
@@ -204,21 +204,24 @@ const Table = forwardRef(
     }, [tableData]);
 
     const handlePaymentProcess = (paymentType) => {
-      const selectedBankOption = BankOptions?.find(option => option?.value === selectedBank?.value) || {
+      const selectedBankOption = BankOptions?.find(
+        (option) => option?.value === selectedBank?.value
+      ) || {
         checkNum: 0,
-        label: '',
+        label: "",
         selected: false,
-        value: ''
+        value: "",
       };
-      if (selectedBankOption.value === '') { return; }
+      if (selectedBankOption.value === "") {
+        return;
+      }
 
-      if (paymentType === 'ACH') {
+      if (paymentType === "ACH") {
         ProcessACHPayment();
       }
-      if (paymentType === 'CHECK') {
+      if (paymentType === "CHECK") {
         setShowSecondRow(true);
       }
-
     };
 
     const ProcessPrintChecks = async () => {
@@ -226,16 +229,17 @@ const Table = forwardRef(
       let VendorPayArray = [];
       let VendorPaymentId = "";
 
-      const selectedBankOption = BankOptions?.find(option => option?.value === selectedBank?.value) || {
+      const selectedBankOption = BankOptions?.find(
+        (option) => option?.value === selectedBank?.value
+      ) || {
         checkNum: 0,
-        label: '',
+        label: "",
         selected: false,
-        value: ''
+        value: "",
       };
 
       const checkNum = selectedBankOption.checkNum || 0;
       const BankAccount = selectedBankOption.value || 0;
-
 
       selectedRows.forEach((row) => {
         // Check if VendorPaymentId is not already processed
@@ -246,16 +250,14 @@ const Table = forwardRef(
         }
       });
 
-
       let obj = {
         VendorPaymentId: VendorPaymentId,
         CheckNum: checkNum,
         BankAccountId: BankAccount,
         PrintOrder: selectedPrintOrder.value,
         EmpNum: EmpId,
-
       };
-       return
+      return;
       const response = await handleAPI({
         name: "VendorPaymentApprovalPrintChecks",
         params: {},
@@ -263,12 +265,7 @@ const Table = forwardRef(
         body: JSON.stringify(obj),
       });
 
-
-      if (
-        response &&
-        response.trim() !== "{}" &&
-        response.trim() !== "[]"
-      ) {
+      if (response && response.trim() !== "{}" && response.trim() !== "[]") {
         setShowThirdRow(true);
         setIsLoadingGo(false);
         const currentURL = window.location.href;
@@ -276,10 +273,13 @@ const Table = forwardRef(
 
         const finalURL = baseURL + response;
 
-        window.open(finalURL, "", "width=1200,height=1200,resizable=yes,scrollbars=yes");
+        window.open(
+          finalURL,
+          "",
+          "width=1200,height=1200,resizable=yes,scrollbars=yes"
+        );
       }
-
-    }
+    };
     const SavePrintCheckPayment = async () => {
       setIsLoadingSave(true);
       let VendorPayArray = [];
@@ -296,26 +296,19 @@ const Table = forwardRef(
         VendorPaymentId: VendorPaymentId,
         PrintCheckStatus: printSuccess,
         EmpNum: EmpId,
-
       };
-      return
+      return;
       const response = await handleAPI({
         name: "VendorPaymentMarkPrintChecks",
         params: {},
         method: "POST",
         body: JSON.stringify(obj),
       });
-      if (
-        response &&
-        response.trim() !== "{}" &&
-        response.trim() !== "[]"
-      ) {
+      if (response && response.trim() !== "{}" && response.trim() !== "[]") {
         setIsLoadingSave(false);
         getVendorPaymentApprovalData(companyId, EmpId, false);
       }
-
-
-    }
+    };
     const ProcessACHPayment = async () => {
       let tBody = "";
       let VendorPayArray = [];
@@ -375,11 +368,13 @@ const Table = forwardRef(
         sessionid
       );
 
-      const selectedBankOption = BankOptions?.find(option => option?.value === selectedBank?.value) || {
+      const selectedBankOption = BankOptions?.find(
+        (option) => option?.value === selectedBank?.value
+      ) || {
         checkNum: 0,
-        label: '',
+        label: "",
         selected: false,
-        value: ''
+        value: "",
       };
 
       const BankAccountId = selectedBankOption.value || 0;
@@ -388,29 +383,20 @@ const Table = forwardRef(
         VendorPaymentId: VendorPaymentId,
         BankAccountId: BankAccountId,
         EmpNum: EmpId,
-
       };
-       return
+      return;
       const response = await handleAPI({
         name: "VendorPaymentApprovalACHPayments",
         params: {},
         method: "POST",
         body: JSON.stringify(obj),
       });
-      if (
-        response &&
-        response.trim() !== "{}" &&
-        response.trim() !== "[]"
-      ) {
+      if (response && response.trim() !== "{}" && response.trim() !== "[]") {
         //setIsLoadingSave(false);
-
       }
-
-
-    }
+    };
 
     const handlePaymentChange = (rowData, value) => {
-
       setPaymentMethod(value);
       setShowPaymentSection(true);
       setShowSecondRow(false);
@@ -418,13 +404,13 @@ const Table = forwardRef(
 
       // Get all rows including child rows flattened into single array
       const allRows = [...localData];
-      Object.values(groupedData).forEach(childRows => {
+      Object.values(groupedData).forEach((childRows) => {
         allRows.push(...childRows);
       });
 
       // Check if there are any existing selections in main or child rows
-      const existingSelections = allRows.find(row =>
-        (row.PayACH || row.PayCheck) && row.RowId !== rowData.RowId
+      const existingSelections = allRows.find(
+        (row) => (row.PayACH || row.PayCheck) && row.RowId !== rowData.RowId
       );
 
       // If there are existing selections, ensure new selection matches the payment type
@@ -448,7 +434,7 @@ const Table = forwardRef(
       }
 
       // Set the new selection in main data
-      const targetRow = localData.find(row => row.RowId === rowData.RowId);
+      const targetRow = localData.find((row) => row.RowId === rowData.RowId);
       if (targetRow) {
         targetRow.PayACH = value === "ach";
         targetRow.PayCheck = value === "check";
@@ -464,7 +450,9 @@ const Table = forwardRef(
 
       // Set the new selection in child rows if it's a child row being selected
       Object.values(groupedData).forEach((childRows) => {
-        const targetChildRow = childRows.find(row => row.RowId === rowData.RowId);
+        const targetChildRow = childRows.find(
+          (row) => row.RowId === rowData.RowId
+        );
         if (targetChildRow) {
           targetChildRow.PayACH = value === "ach";
           targetChildRow.PayCheck = value === "check";
@@ -478,25 +466,29 @@ const Table = forwardRef(
       const childRows = groupedData[row.VendorPaymentId] || [];
 
       // Get existing payment method
-      const existingPaymentMethod = localData.find(r => r.PayACH || r.PayCheck);
-      const paymentType = existingPaymentMethod?.PayACH ? "ach" :
-        existingPaymentMethod?.PayCheck ? "check" : null;
+      const existingPaymentMethod = localData.find(
+        (r) => r.PayACH || r.PayCheck
+      );
+      const paymentType = existingPaymentMethod?.PayACH
+        ? "ach"
+        : existingPaymentMethod?.PayCheck
+        ? "check"
+        : null;
 
       if (checked && paymentType) {
         row[paymentType === "ach" ? "PayACH" : "PayCheck"] = true;
-        childRows.forEach(childRow => {
+        childRows.forEach((childRow) => {
           childRow[paymentType === "ach" ? "PayACH" : "PayCheck"] = true;
         });
       }
 
       const filteredRows = selectedRows.filter(
-        (r) => r.RowId !== row.RowId &&
+        (r) =>
+          r.RowId !== row.RowId &&
           !childRows.some((child) => child.RowId === r.RowId)
       );
 
-      const newSelectedRows = checked
-        ? [...filteredRows, row]
-        : filteredRows;
+      const newSelectedRows = checked ? [...filteredRows, row] : filteredRows;
 
       setSelectedRows(newSelectedRows);
       updateSelectedRows();
@@ -520,7 +512,12 @@ const Table = forwardRef(
             if (rowData.VendorId === 166624) {
               return (
                 <div className="center-container">
-                  <button className="btnCustom" onClick={() => handlePayHUD(rowData.VendorPaymentId)} >Pay HUD</button>
+                  <button
+                    className="btnCustom"
+                    onClick={() => handlePayHUD(rowData.VendorPaymentId)}
+                  >
+                    Pay HUD
+                  </button>
                 </div>
               );
             }
@@ -528,7 +525,12 @@ const Table = forwardRef(
             if (rowData.VendorId === 167753) {
               return (
                 <div className="center-container">
-                  <button className="btnCustom" onClick={() => handlePayVA(rowData.VendorPaymentId)} >Pay VA</button>
+                  <button
+                    className="btnCustom"
+                    onClick={() => handlePayVA(rowData.VendorPaymentId)}
+                  >
+                    Pay VA
+                  </button>
                 </div>
               );
             }
@@ -536,8 +538,8 @@ const Table = forwardRef(
             const selectedValue = rowData.PayACH
               ? "ach"
               : rowData.PayCheck
-                ? "check"
-                : "";
+              ? "check"
+              : "";
 
             return (
               <RadioGroup
@@ -546,7 +548,6 @@ const Table = forwardRef(
                 onChange={(e) => {
                   handlePaymentChange(rowData, e);
                   if (FilterchildRows.length !== 0) {
-
                     setExpandedRows((prev) => [...prev, rowData]);
                   }
                   handleCheckboxChange(rowData, true);
@@ -585,8 +586,7 @@ const Table = forwardRef(
       return col;
     });
     const handlePayHUD = (VendorPaymentId) => {
-
-      const HudVendorPaymentId = VendorPaymentId + "~"
+      const HudVendorPaymentId = VendorPaymentId + "~";
       sethdnGlo_Hud_VA(HudVendorPaymentId);
       sethdnpayCheck("0");
       //console.log(HudVendorPaymentId)
@@ -595,10 +595,9 @@ const Table = forwardRef(
         "/FeeCollection/Presentation/Webforms/PaymentStaus.aspx",
         sessionid
       );
-
-    }
+    };
     const handlePayVA = (VendorPaymentId) => {
-      const VAVendorPaymentId = VendorPaymentId + "~"
+      const VAVendorPaymentId = VendorPaymentId + "~";
       sethdnGlo_Hud_VA(VAVendorPaymentId);
       sethdnpayCheck("1");
       fnOpenWindow(
@@ -606,11 +605,11 @@ const Table = forwardRef(
         "/FeeCollection/Presentation/Webforms/PaymentStaus.aspx",
         sessionid
       );
-    }
+    };
     const updateSelectedRows = () => {
       const selectedRows = [];
 
-      localData.forEach(row => {
+      localData.forEach((row) => {
         if (row.PayACH || row.PayCheck) {
           selectedRows.push(row);
 
@@ -618,7 +617,7 @@ const Table = forwardRef(
           const childRow = groupedData[row.VendorPaymentId] || [];
           const childRows = childRow.filter((r) => r.RowId !== row.RowId);
 
-          childRows.forEach(childRow => {
+          childRows.forEach((childRow) => {
             childRow.PayACH = row.PayACH;
             childRow.PayCheck = row.PayCheck;
             selectedRows.push(childRow);
@@ -627,10 +626,11 @@ const Table = forwardRef(
       });
 
       // Handle individually selected child rows
-      Object.values(groupedData).forEach(groupChildren => {
-        const filteredChildren = groupChildren.filter(child =>
-          (child.PayACH || child.PayCheck) &&
-          !selectedRows.some(r => r.RowId === child.RowId)
+      Object.values(groupedData).forEach((groupChildren) => {
+        const filteredChildren = groupChildren.filter(
+          (child) =>
+            (child.PayACH || child.PayCheck) &&
+            !selectedRows.some((r) => r.RowId === child.RowId)
         );
         selectedRows.push(...filteredChildren);
       });
@@ -644,7 +644,7 @@ const Table = forwardRef(
 
       //  unique count based on VendorPaymentId
       const uniqueVendorPayments = new Set(
-        selectedRows.map(row => row.VendorPaymentId)
+        selectedRows.map((row) => row.VendorPaymentId)
       );
 
       setmarkPaid(total);
@@ -845,7 +845,7 @@ const Table = forwardRef(
                         sessionid={sessionid}
                         values={[
                           {
-                            Class_Id: parseInt( childRow[col.field]),
+                            Class_Id: parseInt(childRow[col.field]),
                             label: childRow[col.field] || "",
                           },
                         ]}
@@ -879,53 +879,51 @@ const Table = forwardRef(
                         {childRow[col.field] || ""}
                       </span>
                     )
-                  )
-
-                    : col.field === "TotalAmount" ||
-                      col.field === "InvoiceDate" ||
-                      col.field === "Invoice" ||
-                      col.field === "Memo" ? (
-                      editingCell === `${childRow.RowId}-${col.field}` ? (
-                        <input
-                          type="text"
-                          value={
-                            col.field === "TotalAmount"
-                              ? childRow.SubTotal
-                              : childRow[col.field] || ""
-                          }
-                          onChange={(e) => {
-                            const newValue = e.target.value;
-                            if (col.field === "TotalAmount") {
-                              childRow.SubTotal = newValue;
-                            } else {
-                              childRow[col.field] = newValue;
-                            }
-                            childRow.Change = 1;
-                            setLocalData([...localData]);
-                          }}
-                          className="text-[12px] font-normal text-black-900 clsGridInput w-full"
-                          onBlur={() => setEditingCell(null)}
-                          onClick={(e) => e.stopPropagation()}
-                          autoFocus
-                        />
-                      ) : (
-                        <span
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingCell(`${childRow.RowId}-${col.field}`);
-                          }}
-                          className="text-[14px] font-normal text-black-900 cursor-pointer"
-                        >
-                          {col.field === "TotalAmount"
+                  ) : col.field === "TotalAmount" ||
+                    col.field === "InvoiceDate" ||
+                    col.field === "Invoice" ||
+                    col.field === "Memo" ? (
+                    editingCell === `${childRow.RowId}-${col.field}` ? (
+                      <input
+                        type="text"
+                        value={
+                          col.field === "TotalAmount"
                             ? childRow.SubTotal
-                            : childRow[col.field] || ""}
-                        </span>
-                      )
-                    ) : col.body ? (
-                      col.body(childRow)
+                            : childRow[col.field] || ""
+                        }
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          if (col.field === "TotalAmount") {
+                            childRow.SubTotal = newValue;
+                          } else {
+                            childRow[col.field] = newValue;
+                          }
+                          childRow.Change = 1;
+                          setLocalData([...localData]);
+                        }}
+                        className="text-[12px] font-normal text-black-900 clsGridInput w-full"
+                        onBlur={() => setEditingCell(null)}
+                        onClick={(e) => e.stopPropagation()}
+                        autoFocus
+                      />
                     ) : (
-                      childRow[col.field]
-                    )}
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingCell(`${childRow.RowId}-${col.field}`);
+                        }}
+                        className="text-[14px] font-normal text-black-900 cursor-pointer"
+                      >
+                        {col.field === "TotalAmount"
+                          ? childRow.SubTotal
+                          : childRow[col.field] || ""}
+                      </span>
+                    )
+                  ) : col.body ? (
+                    col.body(childRow)
+                  ) : (
+                    childRow[col.field]
+                  )}
                 </div>
               ))}
             </tr>
@@ -988,7 +986,6 @@ const Table = forwardRef(
       const changedJSON = [];
       const processedData = saveDataWithChildren(localData);
       processedData.forEach((val) => {
-        debugger;
         const RowId = val.RowId;
 
         const childRow = groupedData[val.VendorPaymentId] || [];
@@ -1239,43 +1236,43 @@ const Table = forwardRef(
     ];
 
     const header = (
-      <div className="table-header">
-        <h6>{tableTitle}</h6>
-        <div className="flex w-full justify-between items-center">
-          <div className="flex-start flex gap-2">
-            <Button
-              leftIcon={
-                <Img
-                  src="images/img_grid.svg"
-                  alt="Grid"
-                  className="h-[18px] w-[18px]"
-                />
-              }
-              className="flex h-[38px] min-w-[146px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
-              onClick={addRow}
-            >
-              Add Payment
-            </Button>
-            {/* <Button
+        <div className="table-header">
+          <h6>{tableTitle}</h6>
+          <div className="flex w-full justify-between items-center">
+            <div className="flex-start flex gap-2">
+              <Button
+                leftIcon={
+                  <Img
+                    src="images/img_grid.svg"
+                    alt="Grid"
+                    className="h-[18px] w-[18px]"
+                  />
+                }
+                className="flex h-[38px] min-w-[146px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
+                onClick={addRow}
+              >
+                Add Payment
+              </Button>
+              {/* <Button
               leftIcon={<Img src="payment/images/img_grid.svg" alt="Grid" className="h-[18px] w-[18px]" />}
               className="flex h-[38px] min-w-[176px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
             >
               Add Payment Split
             </Button> */}
-          </div>
-          <div className="flex-end">
-            {paginator && (
-              <input
-                className="input-field"
-                type="search"
-                onInput={(e) => setGlobalFilter(e.target.value)}
-                placeholder="Search"
-              />
-            )}
+            </div>
+            <div className="flex-end">
+              {paginator && (
+                <input
+                  className="input-field"
+                  type="search"
+                  onInput={(e) => setGlobalFilter(e.target.value)}
+                  placeholder="Search"
+                />
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    ),
+      ),
       footer = () => (
         <div>
           <div>
@@ -1435,7 +1432,7 @@ const Table = forwardRef(
                 ...options.rowData,
                 VendorId: selectedEntity.value,
                 Payee: selectedEntityLabel.value,
-                Change: 1
+                Change: 1,
               };
 
               // Update the groupedData by finding the right VendorPaymentId and RowId
@@ -1500,7 +1497,6 @@ const Table = forwardRef(
                 options.onRowUpdate(updatedData);
               }
             }}
-            
             loading={isLoading}
             loadingMessage="Loading Payee"
           />
@@ -1676,8 +1672,8 @@ const Table = forwardRef(
             paginator && isLoading
               ? "empty-page-data-table pb-[5em]"
               : isLoading
-                ? "empty-data-table"
-                : "data-table py-[0em] px-[2em]"
+              ? "empty-data-table"
+              : "data-table py-[0em] px-[2em]"
           }
           paginator={false}
           rows={rows}
@@ -1719,21 +1715,23 @@ const Table = forwardRef(
               sortFunction={columnProps.sortFunction}
               editor={(options) => {
                 if (
-                  columnProps.field === "Payee" && 
+                  columnProps.field === "Payee" &&
                   options.rowData.VendorId === 0 // Check if VendorId is 0
                 ) {
-
                   const hasChildRows = (
                     groupedData[options.rowData.VendorPaymentId] || []
                   ).some((row) => row.RowId !== options.rowData.RowId);
-          
+
                   if (
                     hasChildRows &&
-                    !expandedRows.some((row) => row.RowId === options.rowData.RowId)
+                    !expandedRows.some(
+                      (row) => row.RowId === options.rowData.RowId
+                    )
                   ) {
                     toggleRow(options.rowData);
                   }
-                  const { VendorPaymentDetailId, VendorPaymentId } = options.rowData;
+                  const { VendorPaymentDetailId, VendorPaymentId } =
+                    options.rowData;
                   return (
                     <GroupSelect
                       size="sm"
@@ -1761,85 +1759,98 @@ const Table = forwardRef(
                       onChange={(selected) => {
                         const selectedEntity = selected[0];
                         const selectedEntityLabel = selected[1];
-          
+
                         // Log to verify what's being selected
                         console.log("Selected Vendor:", selectedEntity.value);
-                        console.log("Selected Payee:", selectedEntityLabel.value);
-          
+                        console.log(
+                          "Selected Payee:",
+                          selectedEntityLabel.value
+                        );
+
                         // Update the Payee value in the editor callback
                         options.editorCallback(`${selectedEntityLabel.value}`);
-          
+
                         // Create an updated row data object
                         const updatedData = {
                           ...options.rowData,
                           VendorId: selectedEntity.value,
                           Payee: selectedEntityLabel.value,
-                          Change: 1
+                          Change: 1,
                         };
-          
+
                         // Update the groupedData by finding the right VendorPaymentId and RowId
                         const updatedGroupedData = { ...groupedData };
                         const paymentId = options.rowData.VendorPaymentId;
-          
+
                         if (updatedGroupedData[paymentId]) {
                           // Find the index of the current row in the grouped data
-                          const rowIndex = updatedGroupedData[paymentId].findIndex(
+                          const rowIndex = updatedGroupedData[
+                            paymentId
+                          ].findIndex(
                             (row) => row.RowId === options.rowData.RowId
                           );
-          
+
                           if (rowIndex !== -1) {
                             // Update the row in groupedData
-                            updatedGroupedData[paymentId][rowIndex] = updatedData;
+                            updatedGroupedData[paymentId][rowIndex] =
+                              updatedData;
                           }
                         }
-          
+
                         // Log to verify updated grouped data
-                        console.log("Updated Grouped Data:", updatedGroupedData);
-          
-                        // Now, update the localData state to reflect the changes
-                        const updatedLocalData = Object.entries(updatedGroupedData).map(
-                          ([paymentId, rows]) => {
-                            const parentRow = rows.reduce((minRow, currentRow) =>
-                              currentRow.RowId < minRow.RowId ? currentRow : minRow
-                            );
-          
-                            // Create a display copy of the parent row
-                            const displayParentRow = { ...parentRow };
-          
-                            if (rows.length > 1) {
-                              displayParentRow.ClassName = "";
-                              displayParentRow.GLAccount = "";
-                              displayParentRow.InvoiceDate = "";
-                              displayParentRow.Invoice = "";
-                              displayParentRow.Memo = "";
-                            }
-          
-                            return {
-                              ...displayParentRow,
-                              originalClassName: fieldMaps.classNameMap[paymentId],
-                              originalGLAccount: fieldMaps.glAccountMap[paymentId],
-                              originalInvoiceDate: fieldMaps.invoiceDateMap[paymentId],
-                              originalInvoice: fieldMaps.invoiceMap[paymentId],
-                              originalMemo: fieldMaps.memoMap[paymentId],
-                            };
-                          }
+                        console.log(
+                          "Updated Grouped Data:",
+                          updatedGroupedData
                         );
-          
+
+                        // Now, update the localData state to reflect the changes
+                        const updatedLocalData = Object.entries(
+                          updatedGroupedData
+                        ).map(([paymentId, rows]) => {
+                          const parentRow = rows.reduce((minRow, currentRow) =>
+                            currentRow.RowId < minRow.RowId
+                              ? currentRow
+                              : minRow
+                          );
+
+                          // Create a display copy of the parent row
+                          const displayParentRow = { ...parentRow };
+
+                          if (rows.length > 1) {
+                            displayParentRow.ClassName = "";
+                            displayParentRow.GLAccount = "";
+                            displayParentRow.InvoiceDate = "";
+                            displayParentRow.Invoice = "";
+                            displayParentRow.Memo = "";
+                          }
+
+                          return {
+                            ...displayParentRow,
+                            originalClassName:
+                              fieldMaps.classNameMap[paymentId],
+                            originalGLAccount:
+                              fieldMaps.glAccountMap[paymentId],
+                            originalInvoiceDate:
+                              fieldMaps.invoiceDateMap[paymentId],
+                            originalInvoice: fieldMaps.invoiceMap[paymentId],
+                            originalMemo: fieldMaps.memoMap[paymentId],
+                          };
+                        });
+
                         console.log("Updated Local Data:", updatedLocalData);
-          
+
                         const sortedParentRows = [...updatedLocalData].sort(
                           (a, b) =>
                             paymentIdOrder.indexOf(a.VendorPaymentId) -
                             paymentIdOrder.indexOf(b.VendorPaymentId)
                         );
-          
+
                         setLocalData(sortedParentRows);
-          
+
                         if (options.onRowUpdate) {
                           options.onRowUpdate(updatedData);
                         }
                       }}
-                      
                       loading={isLoading}
                       loadingMessage="Loading Payee"
                     />
@@ -1875,41 +1886,13 @@ const Table = forwardRef(
           value={payStatusVendorID}
           id="hdnPayStatusVendorID"
         />
-        <input
-          type="hidden"
-          value={EmpId}
-          id="hdnEmpNum"
-        />
-        <input
-          type="hidden"
-          value={hdnBankAcountId}
-          id="drpBankAccounts"
-        />
-        <input
-          type="hidden"
-          value={hdnGlo_Hud_VA}
-          id="Glo_Hud_VA"
-        />
-        <input
-          type="hidden"
-          value={'0'}
-          id="hdnPayStatus"
-        />
-        <input
-          type="hidden"
-          value={'5'}
-          id="hdnPaymentType"
-        />
-        <input
-          type="hidden"
-          value={hdnpayCheck}
-          id="hdnPayByCheck"
-        />
-        <input
-          type="hidden"
-          value={'1'}
-          id="hdnFromReactForm"
-        />
+        <input type="hidden" value={EmpId} id="hdnEmpNum" />
+        <input type="hidden" value={hdnBankAcountId} id="drpBankAccounts" />
+        <input type="hidden" value={hdnGlo_Hud_VA} id="Glo_Hud_VA" />
+        <input type="hidden" value={"0"} id="hdnPayStatus" />
+        <input type="hidden" value={"5"} id="hdnPaymentType" />
+        <input type="hidden" value={hdnpayCheck} id="hdnPayByCheck" />
+        <input type="hidden" value={"1"} id="hdnFromReactForm" />
       </div>
     );
   }

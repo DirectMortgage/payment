@@ -15,26 +15,14 @@ import {
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { Paginator } from "primereact/paginator";
-import AutoCompleteInputBox from "../AutoComplete/AutoComplete";
 import { GroupSelect } from "../GroupSelect/index";
-import {
-  Img,
-  Text,
-  Button,
-  SelectBox,
-  Heading,
-  Radio,
-  RadioGroup,
-  Input,
-  Checkbox,
-} from "../../components";
+import { Img, Button, Radio, RadioGroup } from "../../components";
 import {
   handleAPI,
-  queryStringToObject,
-  handleGetSessionData,
   FormatValueforCalc,
   fnOpenWindow,
   formatDate,
+  cleanValue,
 } from "../../components/CommonFunctions/CommonFunction.js";
 
 const Table = forwardRef(
@@ -81,18 +69,10 @@ const Table = forwardRef(
       [globalFilter, setGlobalFilter] = useState(null),
       [rows, setRows] = useState(5),
       [first, setFirst] = useState(0);
-    // const [expandedRows, setExpandedRows] = useState([]);
     const [editingCell, setEditingCell] = useState(null);
-    const [glAccountOptions, setGlAccountOptions] = useState([
-      // Add more GL accounts as needed
-    ]);
-    //const [rowData, setRowData] = useState([]);
     const [sortField, setSortField] = useState(null);
     const [sortOrder, setSortOrder] = useState(null);
     const [selectedRows, setSelectedRows] = useState([]);
-
-    //hidden fields
-
     const [payStatusHtml, setPayStatusHtml] = useState("");
     const [payStatusVendorID, setPayStatusVendorID] = useState("");
     const [hdnpayCheck, sethdnpayCheck] = useState("");
@@ -104,7 +84,9 @@ const Table = forwardRef(
       setSortField(event.sortField);
       setSortOrder(event.sortOrder);
     };
-
+    useEffect(() => {
+      if (tableData.length > 0) console.log({ tableData });
+    }, [tableData]);
     const dataArray = Array.isArray(tableData) ? tableData : [];
 
     // Store original order of paymentIds
@@ -151,9 +133,9 @@ const Table = forwardRef(
       if (rows.length > 1) {
         displayParentRow.ClassName = "";
         displayParentRow.GLAccount = "";
-        displayParentRow.InvoiceDate = "";
-        displayParentRow.Invoice = "";
-        displayParentRow.Memo = "";
+        //displayParentRow.InvoiceDate = "";
+        //displayParentRow.Invoice = "";
+        //displayParentRow.Memo = "";
       }
 
       return {
@@ -358,12 +340,6 @@ const Table = forwardRef(
       setPayStatusHtml(tBody);
       setPayStatusVendorID(VendorPayArray);
       sethdnBankAcountId(selectedBank.value);
-      // window.open(
-      //   "http://localhost:3000/FeeCollection/Presentation/Webforms/PaymentStaus.aspx?SessionID={34D43D3B-40AC-49C7-8E7A-DD3C5D757214}&ProcessType=1",
-      //   "test",
-      //   "_blank"
-      // );
-      // return
 
       fnOpenWindow(
         `FeeCollection/Presentation/Webforms/PaymentStaus.aspx?SessionID=${sessionid}&ProcessType=1&CompanyId=${companyId}`,
@@ -506,17 +482,20 @@ const Table = forwardRef(
             const FilterchildRows = childRows.filter(
               (row) => row.RowId !== rowData.RowId
             );
+
             const hasChildRows = childRows.length > 0;
 
-            if (hasChildRows && rowData === childRows[0]) {
-              return null; // Skip the first child row
-            }
+            //if (hasChildRows && rowData === childRows[0]) {
+            //  console.log({ rowData });
+
+            //  return null; // Skip the first child row
+            //}
 
             if (rowData.VendorId === 166624) {
               return (
                 <div className="center-container">
                   <button
-                    tabIndex={1}
+                    tabIndex={0}
                     className="btnCustom"
                     onClick={() => handlePayHUD(rowData.VendorPaymentId)}
                   >
@@ -524,13 +503,11 @@ const Table = forwardRef(
                   </button>
                 </div>
               );
-            }
-
-            if (rowData.VendorId === 167753) {
+            } else if (rowData.VendorId === 167753) {
               return (
                 <div className="center-container">
                   <button
-                    tabIndex={1}
+                    tabIndex={0}
                     className="btnCustom"
                     onClick={() => handlePayVA(rowData.VendorPaymentId)}
                   >
@@ -547,44 +524,147 @@ const Table = forwardRef(
               : "";
 
             return (
-              <RadioGroup
-                name={`payment-${rowData.RowId}`}
-                selectedValue={selectedValue}
-                onChange={(e) => {
-                  handlePaymentChange(rowData, e);
-                  if (FilterchildRows.length !== 0) {
-                    setExpandedRows((prev) => [...prev, rowData]);
-                  }
-                  handleCheckboxChange(rowData, true);
-                }}
-                className="flex gap-2"
-              >
+              <div className="flex gap-2">
                 {rowData.ACHApproved === 2 ? (
-                  <span
-                    style={{
-                      color: "red",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                    }}
-                  >
+                  <span className="text-red-500 text-xs font-bold">
                     Refused
                   </span>
                 ) : (
-                  <Radio
-                    value="ach"
-                    label="ACH"
-                    id={`chkACHApproved${rowData.RowId}`}
-                    className="text-[12px] text-black-900"
-                  />
+                  <div className="flex items-center gap-1">
+                    <span
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if ([32, 13].includes(e.keyCode)) {
+                          e.preventDefault();
+                          handlePaymentChange(
+                            rowData,
+                            selectedValue === "ach" ? null : "ach"
+                          );
+                          if (FilterchildRows.length !== 0) {
+                            setExpandedRows((prev) => [...prev, rowData]);
+                          }
+                          handleCheckboxChange(rowData, true);
+                        }
+                      }}
+                      className="cursor-pointer rounded-full width-[20px] height-[20px] pl-[3px] pr-[3px] pt-[0px] pb-[2px]"
+                    >
+                      <input
+                        tabIndex={-1}
+                        type="radio"
+                        id={`chkACHApproved${rowData.RowId}`}
+                        name={`payment-${rowData.RowId}`}
+                        value="ach"
+                        checked={selectedValue === "ach"}
+                        onClick={(e) => {
+                          handlePaymentChange(
+                            rowData,
+                            selectedValue === "ach" ? null : "ach"
+                          );
+                          if (FilterchildRows.length !== 0) {
+                            setExpandedRows((prev) => [...prev, rowData]);
+                          }
+                          handleCheckboxChange(rowData, true);
+                        }}
+                        onChange={(e) => {}}
+                        className="cursor-pointer"
+                      />
+                    </span>
+                    <label
+                      htmlFor={`chkACHApproved${rowData.RowId}`}
+                      className="text-[12px] text-black-900 cursor-pointer"
+                    >
+                      ACH
+                    </label>
+                  </div>
                 )}
-                <Radio
-                  tabIndex={2}
-                  value="check"
-                  label="Check"
-                  id={`chkPrintChecks${rowData.RowId}`}
-                  className="text-[12px] text-black-900"
-                />
-              </RadioGroup>
+
+                <div className="flex items-center gap-1">
+                  <span
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if ([32, 13].includes(e.keyCode)) {
+                        e.preventDefault();
+                        handlePaymentChange(
+                          rowData,
+                          selectedValue === "check" ? null : "check"
+                        );
+                        if (FilterchildRows.length !== 0) {
+                          setExpandedRows((prev) => [...prev, rowData]);
+                        }
+                        handleCheckboxChange(rowData, true);
+                      }
+                    }}
+                    className="cursor-pointer rounded-full width-[20px] height-[20px] pl-[2px] pr-[2px] pt-[0px] pb-[2px]"
+                  >
+                    <input
+                      type="radio"
+                      tabIndex={-1}
+                      id={`chkPrintChecks${rowData.RowId}`}
+                      name={`payment-${rowData.RowId}`}
+                      value="check"
+                      checked={selectedValue === "check"}
+                      onClick={(e) => {
+                        handlePaymentChange(
+                          rowData,
+                          selectedValue === "check" ? null : "check"
+                        );
+                        if (FilterchildRows.length !== 0) {
+                          setExpandedRows((prev) => [...prev, rowData]);
+                        }
+                        handleCheckboxChange(rowData, true);
+                      }}
+                      onChange={(e) => {}}
+                      className="cursor-pointer"
+                    />
+                  </span>
+                  <label
+                    htmlFor={`chkPrintChecks${rowData.RowId}`}
+                    className="text-[12px] text-black-900 cursor-pointer"
+                  >
+                    Check
+                  </label>
+                </div>
+              </div>
+
+              //<RadioGroup
+              //  name={`payment-${rowData.RowId}`}
+              //  selectedValue={selectedValue}
+              //  onChange={(e) => {
+              //    handlePaymentChange(rowData, e);
+              //    if (FilterchildRows.length !== 0) {
+              //      setExpandedRows((prev) => [...prev, rowData]);
+              //    }
+              //    handleCheckboxChange(rowData, true);
+              //  }}
+              //  className="flex gap-2"
+              //>
+              //  {rowData.ACHApproved === 2 ? (
+              //    <span
+              //      style={{
+              //        color: "red",
+              //        fontSize: "12px",
+              //        fontWeight: "bold",
+              //      }}
+              //    >
+              //      Refused
+              //    </span>
+              //  ) : (
+              //    <Radio
+              //      tabIndex={0}
+              //      value="ach"
+              //      label="ACH"
+              //      id={`chkACHApproved${rowData.RowId}`}
+              //      className="text-[12px] text-black-900"
+              //    />
+              //  )}
+              //  <Radio
+              //    tabIndex={0}
+              //    value="check"
+              //    label="Check"
+              //    id={`chkPrintChecks${rowData.RowId}`}
+              //    className="text-[12px] text-black-900"
+              //  />
+              //</RadioGroup>
             );
           },
         };
@@ -674,6 +754,14 @@ const Table = forwardRef(
       }
       return (
         <button
+          id={`expand-button-${data.RowId}`}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if ([32, 13].includes(e.keyCode)) {
+              e.preventDefault();
+              document.getElementById(`expand-button-${data.RowId}`).click();
+            }
+          }}
           onClick={() => toggleRow(data)}
           className="p-2 hover:bg-gray-100 rounded"
         >
@@ -726,217 +814,201 @@ const Table = forwardRef(
 
       return (
         <>
-          {allRows.map((childRow, index) => (
-            <tr key={index} className="p-row justify-between flex">
-              <div className="w-[48px] flex-shrink-0"></div>
-              {enhancedColumns.map((col, colIndex) => (
-                <div
-                  key={colIndex}
-                  className="p-col"
-                  style={{
-                    ...(colIndex === 0 && {
-                      position: "relative",
-                      left: "-8px",
-                    }),
-                    ...(colIndex === 1 && {
-                      position: "relative",
-                      left: "2px",
-                    }),
-                    ...(colIndex === 7 && {
-                      position: "relative",
-                      left: "12px",
-                    }),
-                    ...(colIndex === 8 && {
-                      position: "relative",
-                      left: "13px",
-                    }),
-                    ...(colIndex === 9 && {
-                      position: "relative",
-                      left: "10px",
-                    }),
-                    ...(colIndex === 10 && {
-                      position: "relative",
-                      left: "5px",
-                    }),
-                    ...(col.style
-                      ? { width: col.style.width, minWidth: col.style.width }
-                      : {}),
-                  }}
-                >
-                  {col.field === "Payee" ? (
-                    <div className="flex flex-col items-start justify-center h-full px-4">
-                      <div
-                        className="text-[10px] font-normal text-black-900"
-                        dangerouslySetInnerHTML={{
-                          __html:
-                            childRow?.LastPaidDetails?.replace(
-                              /<b>/g,
-                              ""
-                            ).replace(/<\/b>/g, "") || "",
-                        }}
-                      />
-                    </div>
-                  ) : col.field === "GLAccount" ? (
-                    editingCell === `${childRow.RowId}-${col.field}` ? (
-                      <GroupSelect
-                        size="sm"
-                        shape="round"
-                        options={accounts.map((opt) => ({
-                          label: `${opt.Account_Id} - ${opt.Account_Name}`,
-                          value: opt.Account_Id,
-                          Account_Id: opt.Account_Id,
-                          Account_Name: opt.Account_Name,
-                        }))}
-                        name="Account"
-                        valueKey="Account_Id"
-                        labelKey="label"
-                        sessionid={sessionid}
-                        values={[
-                          {
-                            Account_Id:
+          {" "}
+          <table className="table-auto w-full">
+            <thead>
+              <tr>
+                {expandedColumns.map((col, i) => (
+                  <th
+                    key={col.field}
+                    style={{
+                      width:
+                        Number(col.style?.width.replace("px", "")) +
+                          (i > 4 ? -3 : 0) +
+                          "px" || "auto",
+                      padding: 0,
+                    }}
+                    className="text-left bg-gray-100 text-sm border-none font-medium text-black-900"
+                  ></th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {allRows.map((childRow, index) => (
+                <tr key={index} className="p-row border-none">
+                  <td className="w-[48px] flex-shrink-0 border-none"></td>
+                  {enhancedColumns.map((col, colIndex) => (
+                    <td key={colIndex} className="p-col border-none">
+                      {col.field === "Payee" ? (
+                        <div className="flex flex-col items-start justify-center h-full px-4">
+                          <div
+                            className="text-[10px] font-normal text-black-900"
+                            dangerouslySetInnerHTML={{
+                              __html:
+                                childRow?.LastPaidDetails?.replace(
+                                  /<b>/g,
+                                  ""
+                                ).replace(/<\/b>/g, "") || "",
+                            }}
+                          />
+                        </div>
+                      ) : col.field === "GLAccount" ? (
+                        editingCell === `${childRow.RowId}-${col.field}` ? (
+                          <GroupSelect
+                            size="sm"
+                            shape="round"
+                            options={accounts.map((opt) => ({
+                              label: `${opt.Account_Id} - ${opt.Account_Name}`,
+                              value: opt.Account_Id,
+                              Account_Id: opt.Account_Id,
+                              Account_Name: opt.Account_Name,
+                            }))}
+                            name="Account"
+                            valueKey="Account_Id"
+                            labelKey="label"
+                            sessionid={sessionid}
+                            value={
                               parseInt(
                                 childRow[col.field]?.split("-")[0]?.trim()
-                              ) || 0,
-                            label: childRow[col.field] || "",
-                          },
-                        ]}
-                        Account_Id={
-                          parseInt(
-                            childRow[col.field]?.split("-")[0]?.trim()
-                          ) || 0
-                        }
-                        RowId={childRow.RowId}
-                        handleRemove={handleRemove}
-                        onChange={(selected) => {
-                          const selectedEntityLabel = selected[1];
-                          childRow[col.field] = `${selectedEntityLabel.value}`;
-                          childRow.Change = 1;
-                          setLocalData([...localData]);
-                          setEditingCell(null);
-                        }}
-                        showSearch={true}
-                        placeholder="Search GL Account"
-                        showAddPaymentSplit={false}
-                        showRemoveRow={false}
-                        style={{
-                          margin: 0,
-                          border: "none",
-                        }}
-                      />
-                    ) : (
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingCell(`${childRow.RowId}-${col.field}`);
-                        }}
-                        className="text-[14px] font-normal text-black-900 cursor-pointer"
-                      >
-                        {childRow[col.field] || ""}
-                      </span>
-                    )
-                  ) : col.field === "ClassName" ? (
-                    editingCell === `${childRow.RowId}-${col.field}` ? (
-                      <GroupSelect
-                        size="sm"
-                        shape="round"
-                        options={Class.map((opt) => ({
-                          label: `${opt.label}`,
-                          value: opt.Class_Id,
-                          Class_Id: opt.Class_Id,
-                          Class_Name: opt.Class_Name,
-                        }))}
-                        name="Class"
-                        valueKey="Class_Id"
-                        labelKey="label"
-                        sessionid={sessionid}
-                        values={[
-                          {
-                            Class_Id: parseInt(childRow[col.field]),
-                            label: childRow[col.field] || "",
-                          },
-                        ]}
-                        Class_Id={parseInt(childRow[col.field])}
-                        RowId={childRow.RowId}
-                        handleRemove={handleRemove}
-                        onChange={(selected) => {
-                          const selectedEntityLabel = selected[1];
-                          childRow[col.field] = `${selectedEntityLabel.value}`;
-                          childRow.Change = 1;
-                          setLocalData([...localData]);
-                          setEditingCell(null);
-                        }}
-                        showSearch={true}
-                        placeholder="Search Department"
-                        showAddPaymentSplit={false}
-                        showRemoveRow={false}
-                        style={{
-                          margin: 0,
-                          border: "none",
-                        }}
-                      />
-                    ) : (
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingCell(`${childRow.RowId}-${col.field}`);
-                        }}
-                        className="text-[14px] font-normal text-black-900 cursor-pointer"
-                      >
-                        {childRow[col.field] || ""}
-                      </span>
-                    )
-                  ) : col.field === "TotalAmount" ||
-                    col.field === "InvoiceDate" ||
-                    col.field === "Invoice" ||
-                    col.field === "Memo" ? (
-                    editingCell === `${childRow.RowId}-${col.field}` ? (
-                      <input
-                        type="text"
-                        value={
-                          col.field === "TotalAmount"
-                            ? childRow.SubTotal
-                            : childRow[col.field] || ""
-                        }
-                        onChange={(e) => {
-                          const newValue = e.target.value;
-                          if (col.field === "TotalAmount") {
-                            childRow.SubTotal = newValue;
-                          } else {
-                            childRow[col.field] = newValue;
-                          }
-                          childRow.Change = 1;
-                          setLocalData([...localData]);
-                        }}
-                        className="text-[12px] font-normal text-black-900 clsGridInput w-full"
-                        onBlur={() => {
-                          debugger;
-                          setEditingCell(null);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        autoFocus
-                      />
-                    ) : (
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingCell(`${childRow.RowId}-${col.field}`);
-                        }}
-                        className="text-[14px] font-normal text-black-900 cursor-pointer"
-                      >
-                        {col.field === "TotalAmount"
-                          ? childRow.SubTotal
-                          : childRow[col.field] || ""}
-                      </span>
-                    )
-                  ) : col.body ? (
-                    col.body(childRow)
-                  ) : (
-                    childRow[col.field]
-                  )}
-                </div>
+                              ) || 0
+                            }
+                            Account_Id={
+                              parseInt(
+                                childRow[col.field]?.split("-")[0]?.trim()
+                              ) || 0
+                            }
+                            RowId={childRow.RowId}
+                            handleRemove={handleRemove}
+                            onChange={(selected) => {
+                              const selectedEntityLabel = selected[1];
+                              childRow[
+                                col.field
+                              ] = `${selectedEntityLabel.value}`;
+                              childRow.Change = 1;
+                              setLocalData([...localData]);
+                              setEditingCell(null);
+                            }}
+                            showSearch={true}
+                            placeholder="Search GL Account"
+                            showAddPaymentSplit={false}
+                            showRemoveRow={false}
+                            style={{
+                              margin: 0,
+                              border: "none",
+                            }}
+                          />
+                        ) : (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell(`${childRow.RowId}-${col.field}`);
+                            }}
+                            className="text-[14px] font-normal text-black-900 cursor-pointer"
+                          >
+                            {childRow[col.field] || ""}
+                          </span>
+                        )
+                      ) : col.field === "ClassName" ? (
+                        editingCell === `${childRow.RowId}-${col.field}` ? (
+                          <GroupSelect
+                            size="sm"
+                            shape="round"
+                            options={Class.map((opt) => ({
+                              label: `${opt.label}`,
+                              value: opt.Class_Id,
+                              Class_Id: opt.Class_Id,
+                              Class_Name: opt.Class_Name,
+                            }))}
+                            name="Class"
+                            valueKey="Class_Id"
+                            labelKey="label"
+                            sessionid={sessionid}
+                            value={parseInt(childRow[col.field])}
+                            Class_Id={parseInt(childRow[col.field])}
+                            RowId={childRow.RowId}
+                            handleRemove={handleRemove}
+                            onChange={(selected) => {
+                              const selectedEntityLabel = selected[1];
+                              childRow[
+                                col.field
+                              ] = `${selectedEntityLabel.value}`;
+                              childRow.Change = 1;
+                              setLocalData([...localData]);
+                              setEditingCell(null);
+                            }}
+                            showSearch={true}
+                            placeholder="Search Department"
+                            showAddPaymentSplit={false}
+                            showRemoveRow={false}
+                            style={{
+                              margin: 0,
+                              border: "none",
+                            }}
+                          />
+                        ) : (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell(`${childRow.RowId}-${col.field}`);
+                            }}
+                            className="text-[14px] font-normal text-black-900 cursor-pointer"
+                          >
+                            {childRow[col.field] || ""}
+                          </span>
+                        )
+                      ) : col.field === "TotalAmount" ||
+                        col.field === "InvoiceDate" ||
+                        col.field === "Invoice" ||
+                        col.field === "Memo" ? (
+                        editingCell === `${childRow.RowId}-${col.field}` ? (
+                          <input
+                            type="text"
+                            value={
+                              col.field === "TotalAmount"
+                                ? childRow.SubTotal
+                                : childRow[col.field] || ""
+                            }
+                            onChange={(e) => {
+                              const newValue = e.target.value;
+                              if (col.field === "TotalAmount") {
+                                childRow.SubTotal = newValue;
+                              } else {
+                                childRow[col.field] = newValue;
+                              }
+                              childRow.Change = 1;
+                              setLocalData([...localData]);
+                            }}
+                            className="text-[12px] font-normal text-black-900 clsGridInput w-full"
+                            onBlur={() => {
+                              setEditingCell(null);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                          />
+                        ) : (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell(`${childRow.RowId}-${col.field}`);
+                            }}
+                            className="text-[14px] font-normal text-black-900 cursor-pointer"
+                          >
+                            {col.field === "TotalAmount"
+                              ? childRow.SubTotal
+                              : childRow[col.field] || ""}
+                          </span>
+                        )
+                      ) : col.body ? (
+                        col.body(childRow)
+                      ) : (
+                        childRow[col.field]
+                      )}
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          ))}
+            </tbody>
+          </table>
         </>
       );
     };
@@ -1165,7 +1237,7 @@ const Table = forwardRef(
       // Replace quotes for proper formatting
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
-      // console.log({ ChangeXML, jsonString });
+      console.log({ ChangeXML, jsonString });
       //return;
       let obj = { SaveXml: ChangeXML, changedJSON: jsonString };
       const response = await handleAPI({
@@ -1236,6 +1308,7 @@ const Table = forwardRef(
     const expandedColumns = [
       {
         expander: true,
+        bodyClassName: "empty-row",
         field: "expand",
         "data-field": "expand",
         body: expandTemplate,
@@ -1313,29 +1386,28 @@ const Table = forwardRef(
       setRows(event.rows);
     };
     const cellEditor = (options) => {
+      const rowId = options.rowData.RowId;
+
+      options["rowIndex"] = tableData.findIndex((x) => x.RowId === rowId);
+      if (options["rowIndex"] === -1) return <></>;
+      const rowData = tableData[options["rowIndex"]];
+
       options.rowData = {
         ...options.rowData,
         ...tableData[options["rowIndex"]],
       };
 
-      const rowId = options.rowData.RowId;
-
-      const isEditing = editingRows[rowId] ?? false;
+      const isEditing = editingRows[rowId]?.includes(options.field) ?? false;
       const isEditable =
         options.column.props.editable === undefined ||
         (typeof options.column.props.editable === "function"
-          ? options.column.props.editable(options.rowData)
+          ? options.column.props.editable(rowData)
           : options.column.props.editable);
 
       // Handle non-editable fields
-      if (
-        options.field === "Payee"
-          ? !isEditing
-          : false || (options.field === "Payee" ? false : !isEditable)
-      ) {
-        return options.column.props.body(options.rowData);
-      }
-      if (options.field === "GLAccount") {
+      if (options.field === "Payee" ? !isEditing : !isEditable) {
+        return options.column.props.body(rowData);
+      } else if (options.field === "GLAccount") {
         return (
           <GroupSelect
             size="sm"
@@ -1350,32 +1422,34 @@ const Table = forwardRef(
             valueKey="Account_Id"
             labelKey="label"
             sessionid={sessionid}
-            values={[
-              {
-                Account_Id: parseInt(
-                  options.rowData.GLAccount.split("-")[0].trim()
-                ),
-                label: options.value || options.rowData.GLAccount,
-              },
-            ]}
-            Account_Id={parseInt(
-              options.rowData.GLAccount.split("-")[0].trim()
-            )}
-            RowId={options.rowData.RowId}
+            value={rowData.Account_Id}
+            Account_Id={rowData.Account_Id}
+            RowId={rowData.RowId}
             handleRemove={handleRemove}
             onChange={(selected) => {
-              const selectedEntityLabel = selected[1];
+              setRowData((prevData) =>
+                prevData.map((row) =>
+                  row.RowId === rowData.RowId
+                    ? {
+                        ...row,
+                        Account_Id: selected[0].value,
+                        GLAccount: selected[1].value,
+                      }
+                    : row
+                )
+              );
+              //const selectedEntityLabel = selected[1];
 
-              options.editorCallback(`${selectedEntityLabel.value}`);
-              const updatedData = {
-                ...options.rowData,
-                GLAccount: selectedEntityLabel.value,
-              };
-              console.log({ updatedData });
+              //options.editorCallback(`${selectedEntityLabel.value}`);
+              //const updatedData = {
+              //  ...rowData,
+              //  GLAccount: selectedEntityLabel.value,
+              //};
+              //console.log({ updatedData });
 
-              if (options.onRowUpdate) {
-                options.onRowUpdate(updatedData);
-              }
+              //if (options.onRowUpdate) {
+              //  options.onRowUpdate(updatedData);
+              //}
             }}
             showSearch={true}
             placeholder="Search GL Account"
@@ -1383,19 +1457,18 @@ const Table = forwardRef(
             showRemoveRow={false}
           />
         );
-      }
-      if (options.field === "Payee") {
-        const hasChildRows = (
-          groupedData[options.rowData.VendorPaymentId] || []
-        ).some((row) => row.RowId !== options.rowData.RowId);
+      } else if (options.field === "Payee") {
+        const hasChildRows = (groupedData[rowData.VendorPaymentId] || []).some(
+          (row) => row.RowId !== rowData.RowId
+        );
 
         if (
           hasChildRows &&
-          !expandedRows.some((row) => row.RowId === options.rowData.RowId)
+          !expandedRows.some((row) => row.RowId === rowData.RowId)
         ) {
-          toggleRow(options.rowData);
+          toggleRow(rowData);
         }
-        const { VendorPaymentDetailId, VendorPaymentId } = options.rowData;
+        const { VendorPaymentDetailId, VendorPaymentId } = rowData;
 
         return (
           <GroupSelect
@@ -1409,24 +1482,25 @@ const Table = forwardRef(
             labelKey="label"
             sessionid={sessionid}
             defaultMenuIsOpen={false}
-            values={[
-              {
-                VendorId: options.rowData.VendorId,
-                label: options.rowData.Payee,
-              },
-            ]}
-            VendorId={options.rowData.VendorId}
-            RowId={options.rowData.RowId}
+            value={rowData.VendorId}
+            VendorId={rowData.VendorId}
+            RowId={rowData.RowId}
             companyId={companyId}
             EmpId={EmpId}
             handleRemove={handleRemove}
             showAddPaymentSplit={true} // Control visibility of Add Payment Split
             showRemoveRow={true}
             onChange={(selected) => {
-              setEditingRows((prev) => {
-                prev[options.rowData.RowId] = false;
-                return { ...prev };
-              });
+              if (selected.length > 0 || true) {
+                setEditingRows((prev) => {
+                  prev[rowData.RowId] = (prev[rowData.RowId] || []).filter(
+                    (field) => field !== options.field
+                  );
+                  console.log({ prev });
+
+                  return { ...prev };
+                });
+              }
               const [selectedEntity, selectedEntityLabel] = selected;
 
               const selectedVendor = vendors.find(
@@ -1443,7 +1517,7 @@ const Table = forwardRef(
                 account = account.trim().replaceAll("0 -", "");
 
               const updatedData = {
-                ...options.rowData,
+                ...rowData,
                 VendorId: selectedEntity.value,
                 Payee: selectedEntityLabel.value,
                 GLAccount: account,
@@ -1452,11 +1526,11 @@ const Table = forwardRef(
               };
 
               const updatedGroupedData = { ...groupedData };
-              const paymentId = options.rowData.VendorPaymentId;
+              const paymentId = rowData.VendorPaymentId;
 
               if (updatedGroupedData[paymentId]) {
                 const rowIndex = updatedGroupedData[paymentId].findIndex(
-                  (row) => row.RowId === options.rowData.RowId
+                  (row) => row.RowId === rowData.RowId
                 );
 
                 if (rowIndex !== -1) {
@@ -1502,7 +1576,6 @@ const Table = forwardRef(
 
               setLocalData(sortedParentRows);
 
-              console.log({ updatedData });
               if (options.onRowUpdate) {
                 options.onRowUpdate(updatedData);
               }
@@ -1511,9 +1584,7 @@ const Table = forwardRef(
             loadingMessage="Loading Payee"
           />
         );
-      }
-      if (options.field === "ClassName") {
-        //console.log(Class);
+      } else if (options.field === "ClassName") {
         return (
           <GroupSelect
             size="sm"
@@ -1528,19 +1599,25 @@ const Table = forwardRef(
             valueKey="Class_Id"
             labelKey="label"
             sessionid={sessionid}
-            values={[
-              {
-                Class_Id: parseInt(options.rowData.Class),
-                label: options.value,
-              },
-            ]}
-            Class_Id={parseInt(options.rowData.Class)}
-            RowId={options.rowData.RowId}
+            value={parseInt(rowData.Class)}
+            Class_Id={parseInt(rowData.Class)}
+            RowId={rowData.RowId}
             handleRemove={handleRemove}
             onChange={(selected) => {
-              const selectedEntity = selected[0];
-              const selectedEntityLabel = selected[1];
+              const [selectedEntity, selectedEntityLabel] = selected;
 
+              setRowData((prevData) =>
+                prevData.map((row) =>
+                  row.RowId === rowData.RowId
+                    ? {
+                        ...row,
+                        Class: selectedEntity.value,
+                        ClassName: selectedEntityLabel.value,
+                      }
+                    : row
+                )
+              );
+              return;
               options.editorCallback(`${selectedEntityLabel.value}`);
               const updatedData = {
                 ...options.rowData,
@@ -1616,64 +1693,47 @@ const Table = forwardRef(
             showRemoveRow={false}
           />
         );
-      }
-
-      return (
-        <input
-          type="text"
-          value={options.value}
-          onChange={(e) => options.editorCallback(e.target.value)}
-          className="text-[12px] font-normal text-black-900 clsGridInput"
-          onBlur={() => {
-            if (options.field === "InvoiceDate") {
-              options.editorCallback(formatDate(options.value));
-              setRowData((prevData) =>
-                prevData.map((row) =>
-                  row.RowId === options.rowData.RowId
-                    ? { ...row, InvoiceDate: formatDate(options.value) }
-                    : row
-                )
-              );
+      } else {
+        return (
+          <input
+            type="text"
+            value={
+              options.field === "TotalAmount"
+                ? cleanValue(options.value) || ""
+                : options.value || ""
             }
-          }}
-        />
-      );
+            onChange={(e) => {
+              options.editorCallback(e.target.value);
+              setRowData((prevData) => {
+                prevData[options.rowIndex][options.field] = e.target.value;
+                return [...prevData];
+              });
+            }}
+            className="text-[12px] font-normal text-black-900 clsGridInput"
+            onBlur={
+              options.field === "InvoiceDate"
+                ? () => {
+                    setTimeout(() => {
+                      options.editorCallback(formatDate(options.value));
+                      setRowData((prevData) => {
+                        prevData[options.rowIndex][options.field] = formatDate(
+                          options.value
+                        );
+                        return [...prevData];
+                      });
+                    }, 0);
+                  }
+                : () => {}
+            }
+          />
+        );
+      }
     };
-    // const cellEditor = (options) => {
-    //   // Make Payee editable for newly added rows by checking if it's a new row
-    //   const isNewRow = options.rowData.VendorPaymentDetailId === "";
-    //   const isPayeeColumn = options.field === "Payee";
-
-    //   if (isPayeeColumn && isNewRow) {
-    //     return (
-    //       <input
-    //         type="text"
-    //         value={options.value || ''}
-    //         onChange={(e) => options.editorCallback(e.target.value)}
-    //         className="text-[12px] font-normal text-black-900 clsGridInput"
-    //       />
-    //     );
-    //   }
-
-    //   if (!(options.column.props.editable ?? true)) {
-    //     return options.column.props.body(options.rowData);
-    //   }
-
-    //   return (
-    //     <input
-    //       type="text"
-    //       value={options.value || ''}
-    //       onChange={(e) => options.editorCallback(e.target.value)}
-    //       className="text-[12px] font-normal text-black-900 clsGridInput"
-    //     />
-    //   );
-    // };
 
     const onCellEditComplete = (e) => {
-      let { rowData, newValue, field } = e;
-      rowData[field] = newValue;
-
-      rowData.Change = 1;
+      //let { rowData, newValue, field } = e;
+      //rowData[field] = newValue;
+      //rowData.Change = 1;
     };
     useEffect(() => setRows(row), [row]);
     // Modify how we calculate pagination values

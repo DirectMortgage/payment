@@ -236,7 +236,7 @@ const handleShowUploadingStatus = (selector) => {
   document.querySelector('label[for="' + selector + '"]').classList.add("dark");
 };
 const cleanValue = (value = 0) => {
-  value = value
+  value = (value ?? "")
     .toString()
     .replaceAll("(", "")
     .replaceAll(")", "")

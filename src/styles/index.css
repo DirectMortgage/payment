@@ -24,10 +24,9 @@ table {
   table-layout: fixed;
 }
 
-/* .clsGridInput{
-border: none;
-background-color: inherit;
-} */
+.clsGridInput {
+  padding: 5px;
+}
 .clsGridInput:focus {
   border: 1px solid #888;
   border-radius: 5px;
@@ -213,4 +212,21 @@ input[type="radio"]:focus {
   -moz-appearance: none;
   background-image: none;
   font-size: 14px;
+}
+.s-dropdown input {
+  box-shadow: none !important;
+}
+.s-dropdown > div {
+  border: 2px solid #999 !important;
+  box-shadow: none;
+}
+.p-datatable-row-expansion > td {
+  padding: 0 !important;
+}
+.border-none {
+  border: none !important;
+}
+.empty-row .p-hidden-accessible,
+.empty-row .p-column-title {
+  display: none !important;
 }

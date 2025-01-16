@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import PropTypes from "prop-types";
-import Select from "react-dropdown-select";
+import Select from "react-select";
 import { Heading } from "../Heading";
 import Close from "../../components/Images/close.png";
 import Add from "../../components/Images/add.png";
@@ -17,8 +17,8 @@ const variants = {
 };
 
 const sizes = {
-  sm: "pl-2.5 text-[14px]", //48 16px
-  xs: "px-2.5 text-[14px]",
+  sm: "text-[14px]", //48 16px
+  xs: "text-[14px]",
 };
 
 const GroupSelect = ({
@@ -31,6 +31,7 @@ const GroupSelect = ({
   valueKey = "VendorId",
   sessionid = "",
   placeholder = "Search for vendor",
+  isClearable = false,
   shape,
   variant = "fill",
   size = "xs",
@@ -94,9 +95,8 @@ const GroupSelect = ({
 
   const allOptions = [...options, ...customOptions];
 
-  const handleChange = (selected) => {
-    if (selected && selected.length > 0) {
-      const selectedOption = selected[0];
+  const handleChange = (selectedOption) => {
+    if (selectedOption && Object.keys(selectedOption).length > 0) {
       onChange([
         { name, value: selectedOption[valueKey] },
         { name: name + "_name", value: selectedOption[labelKey] },
@@ -113,25 +113,25 @@ const GroupSelect = ({
     })
     .filter(Boolean);
 
+  const iValue = useMemo(() => {
+    if (validatedOptions.length > 0 && value) {
+      return [validatedOptions.find((option) => option[valueKey] === value)];
+    }
+  }, [value, validatedOptions]);
+
   const selectRef = useRef(null);
 
   const handleKeyDown = (e) => {
     const select = selectRef.current;
-
     if (!select) return;
-
-    if ([32, 9].includes(e.event.keyCode) && !e.event.shiftKey) {
-      e.event.preventDefault(); // Prevent scrolling or default space behavior
-      const currentHighlightedIndex = select.state.cursor;
-      if (![null, undefined].includes(currentHighlightedIndex)) {
-        const currentOption =
-          select.state.searchResults[currentHighlightedIndex];
-
-        if (currentOption) {
-          handleChange([currentOption]); // Update the selected value
-        }
-        //debugger;
-        e.event.target.blur();
+    if ([32].includes(e.keyCode) && !e.shiftKey) {
+      // tab => 9
+      //debugger;
+      e.preventDefault();
+      const currentOption = selectRef.current.state.focusedOption;
+      if (currentOption) {
+        handleChange(currentOption);
+        //e.target.blur();
       }
     }
   };
@@ -139,26 +139,83 @@ const GroupSelect = ({
   return (
     <>
       <Select
-        defaultMenuIsOpen={defaultMenuIsOpen}
-        handleKeyDownFn={handleKeyDown}
+        onKeyDown={(event) => handleKeyDown(event)}
         options={validatedOptions}
         name={name}
         placeholder={placeholder}
-        clearable={true}
-        searchable={true}
+        isSearchable={true}
+        isClearable={isClearable}
         //autoFocus={true}
         ref={selectRef}
         labelField={labelKey}
         valueField={valueKey}
-        values={value ? [value] : []} // Change value to values and ensure it's an array
+        value={iValue}
         onChange={handleChange}
         disabled={loading}
-        className={`${className} w-full flex cursor-pointer items-center flex-direction-column justify-center border border-solid bg-white-a700 rounded ${
+        className={`${className} block s-dropdown w-full cursor-pointer font-[10px] items-center justify-center border border-solid bg-white-a700 rounded ${
           shape && shapes[shape]
         } ${variant && (variants[variant]?.[color] || variants[variant])} ${
           size && sizes[size]
         }`}
         dropdownGap={0}
+        styles={{
+          dropdownIndicator: (base, state) => ({
+            ...base,
+            color: state.isFocused ? "#508bc9" : "gray",
+            padding: "3px",
+            width: "20px",
+            height: "20px",
+            alignItems: "center",
+            fontSize: "15px",
+            transform: state.selectProps.menuIsOpen
+              ? "rotate(180deg)"
+              : "rotate(0)",
+            transition: "transform 0.2s ease",
+            ":hover": {
+              color: "#508bc9", // Change color on hover
+            },
+          }),
+          clearIndicator: (base) => ({
+            ...base,
+            color: "red",
+            padding: "3px",
+            width: "20px",
+            alignItems: "center",
+            cursor: "pointer",
+            height: "20px",
+            alignSelf: "center",
+            fontSize: "15px",
+            ":hover": {
+              color: "darkred",
+            },
+          }),
+          indicatorSeparator: (base) => ({
+            ...base,
+            display: "none",
+          }),
+          singleValue: (base) => ({
+            ...base,
+            fontSize: 12,
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            display: "inline",
+            lineHeight: "1.2",
+          }),
+          placeholder: (base) => ({
+            ...base,
+            fontSize: 12,
+            whiteSpace: "normal",
+            wordWrap: "break-word",
+            display: "block",
+            lineHeight: "1.2",
+            position: "absolute",
+          }),
+          menu: (base) => ({
+            ...base,
+            fontSize: 12,
+            padding: 0,
+          }),
+        }}
         searchInputProps={{
           style: {
             width: "100%",

@@ -4,29 +4,18 @@ import {
   Button,
   SelectBox,
   Heading,
-  Radio,
-  RadioGroup,
-  Input,
   Checkbox,
 } from "../../components";
-import { CloseSVG } from "../../components/Input/close.jsx";
-import { ReactTable } from "../../components/ReactTable";
-import { createColumnHelper } from "@tanstack/react-table";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPencil, faRotate } from "@fortawesome/free-solid-svg-icons";
 import uploadPdfImage from "../../components/Images/upload-pdf.png";
 import OpenPdfImage from "../../components/Images/open_in_new.png";
-import Close from "../../components/Images/close.png";
 import PrintIcon from "../../components/Images/Print-Icon.png";
-import { GroupSelect } from "../../components/GroupSelect/index";
 import {
   handleAPI,
   queryStringToObject,
   handleGetSessionData,
-  getCurrentTimeAndDate,
-  formatAsHTML,
   fnOpenWindow,
-  handleShowUploadingStatus,
   formatCurrency,
   FormatValueforCalc,
   formatSpecialCharacters,
@@ -43,16 +32,14 @@ import React, {
   useImperativeHandle,
 } from "react";
 import Table from "../../components/Table/Table.js";
-import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
+import { Image } from "primereact/image";
 
 let SessionId;
 
 const PaymentManagementSection = forwardRef(
   ({ companyId, validationResult }, ref) => {
-    const [searchBarValue, setSearchBarValue] = React.useState("");
-    const [rawXmlData, setRawXmlData] = useState("");
     const [rowData, setRowData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [glAccounts, setGLAccounts] = useState([]);
@@ -166,7 +153,6 @@ const PaymentManagementSection = forwardRef(
           isOnload
         ) {
           setRowData([]);
-          setRawXmlData("");
         } else {
           const parsedResponse = JSON.parse(response);
           let responseJson = parsedResponse?.Table?.[0]?.VendorPayment || "";
@@ -204,14 +190,21 @@ const PaymentManagementSection = forwardRef(
             setClass(responseJson.VendorPayment[5].Class);
             setGLAccounts(responseJson.VendorPayment[6].Accounts);
             const iRowData = JSON.parse(processedData).map((item) => {
-              item["GLAccount"] = item["GLAccount"]?.replace("0-", "").trim();
+              if ((item["GLAccount"] || "").startsWith("0-")) {
+                item["GLAccount"] = (item["GLAccount"] || "")
+                  ?.toString()
+                  ?.replace("0-", "")
+                  .trim();
+              }
+              item["Account_Id"] = Number(
+                ((item["GLAccount"] || "")?.split("-")[0] || "")?.trim() || 0
+              );
               return item;
             });
             setRowData(iRowData);
-            console.log(iRowData);
+            //console.log(iRowData);
             calculateTotalSubTotal(JSON.parse(processedData));
           }
-          setRawXmlData(responseJson);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -332,13 +325,6 @@ const PaymentManagementSection = forwardRef(
       };
     };
 
-    // useEffect to load data when the component mounts
-    // useEffect(() => {
-    //   const LoadData = async () => {
-    //     GetVendorPaymentApprovalData(companyId, 32182); // Replace with the actual CompanyId and UserId
-    //   };
-    //   LoadData();
-    // }, [companyId]);
     const handleImageClick = (LinkId) => {
       // Handle the click event here
       let URL =
@@ -357,7 +343,6 @@ const PaymentManagementSection = forwardRef(
       );
     };
     const handleRemove = async (rowId) => {
-      // Find the record with the given rowId
       const recordToRemove = rowData.find((row) => row.RowId === rowId);
 
       if (recordToRemove) {
@@ -366,7 +351,6 @@ const PaymentManagementSection = forwardRef(
         const updatedData = rowData.filter(
           (row) => row.VendorPaymentId !== VendorPaymentId
         );
-        // console.log(VendorPaymentDetailId)
         setRowData(updatedData);
 
         let obj = {
@@ -383,16 +367,13 @@ const PaymentManagementSection = forwardRef(
       }
     };
     function formatDropdownOptions(htmlString) {
-      // Create a temporary DOM element
       const parser = new DOMParser();
       const doc = parser.parseFromString(htmlString, "text/html");
       const options = doc.getElementsByTagName("option");
 
-      // Convert HTMLCollection to array and map to desired format
       return Array.from(options).map((option) => ({
         label: option.textContent,
         value: option.getAttribute("value"),
-        // Optional: include additional attributes if needed
         checkNum: option.getAttribute("CheckNum"),
         selected: option.getAttribute("Selected") === "Selected",
       }));
@@ -444,83 +425,11 @@ const PaymentManagementSection = forwardRef(
               if (ScanDocId) {
                 setTimeout(() => {
                   if (spinner && headerText) {
-                    // Hide spinner and update text to "Uploaded"
                     spinner.style.display = "none";
                     headerText.textContent = "Uploaded";
                   }
                 }, 500);
-                // handleSaveScanDocDetails(
-                //   ScanDocId,
-                //   entityid,
-                //   entitytypeid,
-                //   iRecId,
-                //   index === files.length
-                // );
                 if (index === files.length) {
-                  // handlePostFileUpload({
-                  //   target,
-                  //   scanDocId: ScanDocId,
-                  //   documentDetail,
-                  // });
-                  // setUploadingStatus((prevUploading) => {
-                  //   return [...prevUploading.filter((item) => item !== ID)];
-                  // });
-                  //  handleTempRefreshDocList(ID);
-                  // setProcessingStatus(null);
-                  // setTimeout(() => {
-                  //   if (!promptFlag) {
-                  //     setModalDetails({
-                  //       body: (
-                  //         <>
-                  //           To view this document, click the Uploaded Documents
-                  //           tab above
-                  //         </>
-                  //       ),
-                  //       title: "Upload Success",
-                  //       show: true,
-                  //       footerLeftContent: (
-                  //         <>
-                  //           <div
-                  //             style={{
-                  //               display: "flex",
-                  //               alignItems: "center",
-                  //             }}
-                  //           >
-                  //             <input
-                  //               value={promptFlag}
-                  //               type="checkbox"
-                  //               id="modal-checkbox"
-                  //               style={{ height: 20, width: 20 }}
-                  //               onChange={(event) => {
-                  //                 setPromptFlag((iPromptFlag) => !iPromptFlag);
-                  //                 handleAPI({
-                  //                   name: "UpdateUploadPrompt",
-                  //                   params: {
-                  //                     empId: empNumber,
-                  //                     Value: event.target.checked ? 1 : 0,
-                  //                   },
-                  //                 }).then(() => {});
-                  //               }}
-                  //             />
-                  //             <label
-                  //               htmlFor="modal-checkbox"
-                  //               style={{
-                  //                 cursor: "pointer",
-                  //                 marginLeft: 5,
-                  //               }}
-                  //             >
-                  //               <span className="checkmark">
-                  //                 Turn off this prompt{" "}
-                  //               </span>
-                  //             </label>
-                  //           </div>
-                  //         </>
-                  //       ),
-                  //     });
-                  //   } else {
-                  //     handleToast("Document Uploaded Successfully", "success");
-                  //   }
-                  // }, 500);
                 }
               }
               index++;
@@ -567,47 +476,33 @@ const PaymentManagementSection = forwardRef(
       } else {
         setTimeout(() => {
           handleTriggerPayee(selector);
-        }, 500);
+        }, 100);
       }
     };
     useEffect(() => {
       if (rowData.length > 0) {
-        // rowData.forEach((item) => {
-        //   if (item.VendorId === 0) {
-        //     //acc[item.RowId] = true
-        //     handleTriggerPayee(item.RowId);
-        //   }
-        //   //return acc
-        // })
-
         const editing = rowData.reduce((acc, item) => {
           if (item.VendorId === 0) {
-            acc[item.RowId] = true;
+            acc[item.RowId] = ["Payee"];
             handleTriggerPayee(item.RowId);
           }
           return acc;
         }, {});
-        console.log("testing");
+
         setEditingRows((prevState) => ({
-          ...prevState,
-          ...editing,
+          ...(prevState || {}),
+          ...(editing || {}),
         }));
       }
     }, [rowData.length]);
 
-    useEffect(() => {
-      console.log(editingRows);
-    }, [editingRows]);
-
     const iColumns = [
       {
         field: "Payee",
-        editable: editingRows[rowData.RowId] || false, //(rowData) => rowData.paymentDetails === "",
-        //editable: (rowData) => {
-        //  return editingRows[rowData.RowId] && rowData.VendorId == 0;
-        //}, // Change this to true
-        editor: (options) => options.editorCallback(options.value), // Add this line
+        editable: editingRows[rowData.RowId]?.includes("Payee") || false,
+        //editor: (options) => options.editorCallback(options.value), // Add this line
         "data-field": "Payee",
+        bodyClassName: "empty-row",
         header: () => (
           <Text
             size="textmd"
@@ -638,14 +533,11 @@ const PaymentManagementSection = forwardRef(
 
             setEditingRows((prevState) => ({
               ...prevState,
-              [rowIndex]: false, // Enable editing for the specific row
+              [rowIndex]: (prevState[rowIndex] || [])?.filter(
+                (field) => field !== "Payee"
+              ),
             }));
-            //rowData.isEditing = false; // Set the row's edit state
             InsertVendorInfo(SessionId, VendorId);
-
-            //const URL = "https://www.directcorp.com/NewDMAcct/CustomerVendorOptions.aspx?SessionId=" + SessionId;
-
-            //window.open(URL, "", "width=1200,height=1200,resizable=yes,scrollbars=yes");
 
             fnOpenWindow(
               `/NewDMAcct/CustomerVendorOptions.aspx?SessionID=${SessionId}`,
@@ -656,53 +548,14 @@ const PaymentManagementSection = forwardRef(
           const handleEditClick = (e, rowData, rowIndex) => {
             setEditingRows((prevState) => ({
               ...prevState,
-              [rowIndex]: true, // Enable editing for the specific row
+              [rowIndex]: [...(prevState[rowIndex] || []), "Payee"],
             }));
-            //e.stopPropagation();
-            // Enable editing for this cell
-            // setColumns((previousColumn)=> {previousColumn[0].editable = true
-            //   return previousColumn
-            // })
-            // console.log(columns)
-            //debugger
-            //  rowData.isEditing = true; // Set the row's edit state
           };
-          if (rowData.VendorId === 0 && false) {
-            return (
-              <GroupSelect
-                size="sm"
-                shape="round"
-                options={vendors}
-                VendorPaymentDetailId={rowData.VendorPaymentDetailId}
-                VendorPaymentId={rowData.VendorPaymentId}
-                name="Vendors"
-                valueKey="VendorId"
-                labelKey="label"
-                sessionid={SessionId}
-                values={[
-                  {
-                    VendorId: rowData.VendorId,
-                    label: rowData.Payee,
-                  },
-                ]}
-                VendorId={rowData.VendorId}
-                RowId={rowData.RowId}
-                companyId={companyId}
-                EmpId={EmpId}
-                handleRemove={handleRemove}
-                showAddPaymentSplit={true}
-                showRemoveRow={true}
-                onChange={(selected) => {
-                  const selectedEntity = selected[0];
-                  const selectedEntityLabel = selected[1];
-                }}
-                loading={isLoading}
-                loadingMessage="Loading Payee"
-              />
-            );
-          }
+
           return (
-            <div className="flex flex-col items-start justify-center h-full px-4">
+            <div
+              className={`flex flex-col items-start justify-center h-full px-4`}
+            >
               <Heading
                 size="headingmd"
                 as="h1"
@@ -716,25 +569,24 @@ const PaymentManagementSection = forwardRef(
                 >
                   {rowData.Payee}
                 </span>
-                <span
-                  className="pointer"
+                <div
+                  className="cursor-pointer inline-flex p-[3px]"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if ([32, 13].includes(e.keyCode)) {
+                      e.preventDefault();
+                      handleTriggerPayee(rowData.RowId);
+                    }
+                  }}
                   id={"payee_" + rowData.RowId}
                   onClick={(e) => handleEditClick(e, rowData, rowData.RowId)}
-                  //tabIndex={0}
                 >
                   <FontAwesomeIcon
                     icon={faPencil}
-                    className="ml-1 text-[10px] text-gray-600"
-                    //onClick={(e) => handleEditClick(e, rowData, rowData.RowId)}
+                    className="ml-1 text-[10px] text-gray-600 cursor-pointer"
                   />
-                </span>
+                </div>
               </Heading>
-              {/* <div className="flex items-center gap-2">
-                  <Text size="textxs" as="p" className="text-[10px] font-normal leading-[13px] text-black-900">
-                    {rowData.paymentDetails}
-                  </Text>
-                 
-                </div> */}
               <div
                 className="text-[10px] font-normal text-black-900"
                 dangerouslySetInnerHTML={{ __html: formattedText }}
@@ -966,6 +818,7 @@ const PaymentManagementSection = forwardRef(
       {
         field: "imagesHeader",
         "data-field": "imagesHeader",
+        bodyClassName: "empty-row",
         editable: false,
         header: () => (
           <Text
@@ -978,14 +831,8 @@ const PaymentManagementSection = forwardRef(
         ),
         style: { width: "100px" },
         body: (rowData) => (
-          // <div className="flex justify-center rounded border border-dashed border-indigo-700 bg-indigo-400_33">
-          //     <Heading as="h2" className="self-end text-[12px] font-semibold text-black-900">
-          //         {rowData.imagesHeader}
-          //     </Heading>
-          // </div>
-
           <FileUpload
-            id={`file-upload-${rowData.RowId}`} // _${rowData.Scandoctype}_${rowData.ID}
+            id={`file-upload-${rowData?.RowId}`} // _${rowData.Scandoctype}_${rowData.ID}
             style={{
               fontSize: 12,
               display: "block",
@@ -1060,6 +907,7 @@ const PaymentManagementSection = forwardRef(
       {
         field: "image",
         "data-field": "image",
+        bodyClassName: "empty-row",
         editable: false,
         header: () => (
           <Text
@@ -1069,7 +917,7 @@ const PaymentManagementSection = forwardRef(
           >
             <span
               onClick={handleViewAllPDF}
-              className="cursor-pointer hover:underline flex items-center"
+              className="cursor-pointer hover:underline flex items-center pl-6"
             >
               View All PDF
               {viewAllPDFStatus.includes("loading") && (
@@ -1082,49 +930,48 @@ const PaymentManagementSection = forwardRef(
         ),
         style: { width: "130px" },
         body: (rowData) => {
-          return (
+          return rowData.FileCount > 0 ? (
             <div className="flex gap-2 justify-center items-center">
               {rowData.FileCount === 1 && (
-                <img
+                <Image
                   src={uploadPdfImage}
                   alt="Upload"
-                  style={{
-                    width: "30px",
-                    height: "30px",
-                    objectFit: "contain",
+                  className="w-6 h-6 object-contain cursor-pointer"
+                  onKeyDown={(e) => {
+                    if ([32, 13].includes(e.keyCode)) {
+                      e.preventDefault();
+                      handleImageClick(rowData.LinkId);
+                    }
                   }}
-                  className="cursor-pointer"
+                  tabIndex={0}
                   onClick={() => handleImageClick(rowData.LinkId)}
                 />
               )}
               {rowData.FileCount > 1 && (
-                <img
+                <Image
                   src={OpenPdfImage}
                   alt="Open Image"
-                  className="cursor-pointer"
-                  style={{
-                    width: "25px",
-                    height: "25px",
-                    objectFit: "contain",
+                  onKeyDown={(e) => {
+                    if ([32, 13].includes(e.keyCode)) {
+                      e.preventDefault();
+                      handleImageClick(rowData.LinkId);
+                    }
                   }}
-                  // onClick={() => handleOpenClick(rowData)}
+                  tabIndex={0}
+                  className="w-6 h-6 object-contain cursor-pointer"
                   onClick={() => handleImageClick(rowData.LinkId)}
                 />
               )}
-              {/* <img 
-              src={Close} 
-              alt="Close"
-              style={{ width: '20px', height: '20px', objectFit: 'contain' }}
-              className="cursor-pointer"
-              onClick={() => handleRemove(rowData.RowId)}
-            /> */}
             </div>
+          ) : (
+            <span></span>
           );
         },
       },
       {
         field: "paymentMethodHeader",
         "data-field": "paymentMethodHeader",
+        bodyClassName: "empty-row",
         editable: false,
         header: () => (
           <Text
@@ -1136,40 +983,6 @@ const PaymentManagementSection = forwardRef(
           </Text>
         ),
         style: { width: "136px" },
-        //       body: (rowData) => {
-
-        //         const handlePaymentChange = (value) => {
-        //           rowData.PayACH = value === "ach";
-        //           rowData.PayCheck = value === "check";
-        //         };
-
-        //         const selectedValue = rowData.PayACH ? "ach" : rowData.PayCheck ? "check" : "";
-        //         return (
-        //           <RadioGroup
-        //             name={`payment-${rowData.RowId}`}
-        //             selectedValue={selectedValue}
-        //             onChange={(e) => {
-        //               handlePaymentChange(e);
-        //               setExpandedRows((prev) => [...prev, rowData]);
-        // }}
-        //             className="flex gap-2"
-        //           >
-        //             <Radio
-        //               value="ach"
-        //               label="ACH"
-        //               id={`chkACHApproved${rowData.RowId}`}
-        //               className="text-[12px] text-black-900"
-        //             />
-        //             <Radio
-        //               value="check"
-        //               label="Check"
-        //               id={`chkPrintChecks${rowData.RowId}`}
-        //               className="text-[12px] text-black-900"
-        //             />
-        //           </RadioGroup>
-        //         );
-
-        //       }
       },
       {
         field: "MarkPaid",
@@ -1188,7 +1001,7 @@ const PaymentManagementSection = forwardRef(
         body: (rowData) => (
           <div className="flex">
             <Checkbox
-              tabIndex={1}
+              //tabIndex={0}
               label=""
               name="item"
               id={`chkMarkaspaid${rowData.RowId}`}
@@ -1199,6 +1012,7 @@ const PaymentManagementSection = forwardRef(
         ),
       },
     ];
+
     const [columns, setColumns] = useState(iColumns);
     useEffect(() => {
       if (validationResult.length > 0) {
@@ -1226,159 +1040,6 @@ const PaymentManagementSection = forwardRef(
       }
     };
 
-    // const tableColumns = React.useMemo(() => {
-    //   const tableColumnHelper = createColumnHelper();
-    //   return [
-    //     tableColumnHelper.accessor("payeeHeader", {
-    //       cell: (info) => (
-    //         <div className="flex flex-col items-center justify-center px-1.5">
-    //           <Heading size="headingmd" as="h1" className="text-[14px] font-semibold text-indigo-700">
-    //             {info.getValue()}
-    //           </Heading>
-    //           <Text size="textxs" as="p" className="text-[10px] font-normal leading-[13px] text-black-900">
-    //             {info.row.original.paymentDetails}
-    //           </Text>
-    //         </div>
-    //       ),
-    //       header: (info) => (
-    //         <Text
-    //           size="textmd"
-    //           as="p"
-    //           className="pb-0.5 pl-4 pt-2.5 text-left text-[14px] font-normal leading-[18px] text-black-900"
-    //         >
-    //           <span>
-    //             <>
-    //               Payee
-    //               <br />
-    //             </>
-    //           </span>
-    //           <span className="text-[10px]">(pay history)</span>
-    //         </Text>
-    //       ),
-    //       meta: { width: "192px" },
-    //     }),
-    //     tableColumnHelper.accessor("totalHeader", {
-    //       cell: (info) => (
-    //         <Text as="p" className="text-[12px] font-normal text-black-900">
-    //           {info.getValue()}
-    //         </Text>
-    //       ),
-    //       header: (info) => (
-    //         <Text size="textmd" as="p" className="py-3.5 text-left text-[14px] font-normal text-black-900">
-    //           Total
-    //         </Text>
-    //       ),
-    //       meta: { width: "86px" },
-    //     }),
-    //     tableColumnHelper.accessor("glAccountHeader", {
-    //       cell: (info) => (
-    //         <Text size="textmd" as="p" className="text-[14px] font-normal text-black-900">
-    //           {info.getValue()}
-    //         </Text>
-    //       ),
-    //       header: (info) => (
-    //         <Text size="textmd" as="p" className="py-3.5 text-left text-[14px] font-normal text-black-900">
-    //           G/L Account
-    //         </Text>
-    //       ),
-    //       meta: { width: "116px" },
-    //     }),
-    //     tableColumnHelper.accessor("departmentHeader", {
-    //       cell: (info) => (
-    //         <Text size="textmd" as="p" className="text-[14px] font-normal text-black-900">
-    //           {info.getValue()}
-    //         </Text>
-    //       ),
-    //       header: (info) => (
-    //         <Text size="textmd" as="p" className="pb-3 pt-4 text-left text-[14px] font-normal text-black-900">
-    //           Department
-    //         </Text>
-    //       ),
-    //       meta: { width: "96px" },
-    //     }),
-    //     tableColumnHelper.accessor("invoiceDateHeader", {
-    //       cell: (info) => (
-    //         <Text size="textmd" as="p" className="text-[14px] font-normal text-black-900">
-    //           {info.getValue()}
-    //         </Text>
-    //       ),
-    //       header: (info) => (
-    //         <Text size="textmd" as="p" className="py-3.5 text-left text-[14px] font-normal text-black-900">
-    //           Invoice Date
-    //         </Text>
-    //       ),
-    //       meta: { width: "90px" },
-    //     }),
-    //     tableColumnHelper.accessor("invoiceNumberHeader", {
-    //       cell: (info) => (
-    //         <Text size="textmd" as="p" className="text-[14px] font-normal text-black-900">
-    //           {info.getValue()}
-    //         </Text>
-    //       ),
-    //       header: (info) => (
-    //         <Text size="textmd" as="p" className="py-3.5 pl-1 text-left text-[14px] font-normal text-black-900">
-    //           Invoice #
-    //         </Text>
-    //       ),
-    //       meta: { width: "96px" },
-    //     }),
-    //     tableColumnHelper.accessor("memoHeader", {
-    //       cell: (info) => (
-    //         <Text size="textxs" as="p" className="text-[10px] font-normal text-black-900">
-    //           {info.getValue()}
-    //         </Text>
-    //       ),
-    //       header: (info) => (
-    //         <Text size="textmd" as="p" className="py-3.5 text-left text-[14px] font-normal text-black-900">
-    //           Memo
-    //         </Text>
-    //       ),
-    //       meta: { width: "96px" },
-    //     }),
-    //     tableColumnHelper.accessor("paymentMethodHeader", {
-    //       cell: (info) => (
-    //         <RadioGroup name="paymentmethodgroup" className="flex">
-    //           <Radio value="ach" label="ACH" className="flex gap-1 py-0.5 text-[12px] text-black-900" />
-    //           <Radio value="check" label="Check" className="ml-2.5 flex gap-1 py-0.5 text-[12px] text-black-900" />
-    //         </RadioGroup>
-    //       ),
-    //       header: (info) => (
-    //         <Text size="textmd" as="p" className="pb-3 pt-4 text-left text-[14px] font-normal text-black-900">
-    //           Payment Method
-    //         </Text>
-    //       ),
-    //       meta: { width: "136px" },
-    //     }),
-    //     tableColumnHelper.accessor("paidHeader", {
-    //       cell: (info) => (
-    //         <div className="flex">
-    //           <Img src={info.getValue()} alt="Instagram Image" className="h-[18px]" />
-    //         </div>
-    //       ),
-    //       header: (info) => (
-    //         <Text size="textmd" as="p" className="py-3.5 text-left text-[14px] font-normal text-black-900">
-    //           Paid
-    //         </Text>
-    //       ),
-    //       meta: { width: "44px" },
-    //     }),
-    //     tableColumnHelper.accessor("imagesHeader", {
-    //       cell: (info) => (
-    //         <div className="flex justify-center rounded border border-dashed border-indigo-700 bg-indigo-400_33">
-    //           <Heading as="h2" className="self-end text-[12px] font-semibold text-black-900">
-    //             {info.getValue()}
-    //           </Heading>
-    //         </div>
-    //       ),
-    //       header: (info) => (
-    //         <Text size="textmd" as="p" className="pb-3 pt-4 text-left text-[14px] font-normal text-black-900">
-    //           Images
-    //         </Text>
-    //       ),
-    //       meta: { width: "212px" },
-    //     }),
-    //   ];
-    // }, []);
     const getButtonLabel = () => {
       return paymentMethod === "ach" ? "Pay ACH" : "Print Checks";
     };
@@ -1388,23 +1049,7 @@ const PaymentManagementSection = forwardRef(
         <div className="flex justify-center px-14 md:px-5">
           <div className="mx-auto w-full max-w-[1550px]">
             <div className="flex items-start sm:flex-col">
-              <div style={{ padding: "0 3em" }}>
-                {/* <div className="flex flex-1 gap-[33px] ml-auto mr-2 sm:self-stretch">
-        <Button
-            leftIcon={<Img src="payment/images/img_grid.svg" alt="Grid" className="h-[18px] w-[18px]" />}
-            className="flex h-[38px] min-w-[146px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
-            onClick={addRow}  
-        >
-            Add Payment
-        </Button>
-        <Button
-            leftIcon={<Img src="payment/images/img_grid.svg" alt="Grid" className="h-[18px] w-[18px]" />}
-            className="flex h-[38px] min-w-[176px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
-        >
-            Add Payment Split
-        </Button>
-    </div> */}
-              </div>
+              <div style={{ padding: "0 3em" }}></div>
             </div>
             <div className="-mt-2">
               <div style={{ padding: "0 2em" }}>
@@ -1558,7 +1203,6 @@ const PaymentManagementSection = forwardRef(
                             )}
                           </div>
 
-                          {/* Second Row */}
                           {showSecondRow && (
                             <div className="flex items-center w-full justify-end px-[185px]">
                               <div className="flex items-center gap-4 ">
@@ -1602,7 +1246,7 @@ const PaymentManagementSection = forwardRef(
                               </div>
                             </div>
                           )}
-                          {/* Third Row */}
+
                           {showThirdRow && (
                             <div className="flex items-center w-full justify-end px-[185px]">
                               <div className="flex items-center gap-8">
@@ -1649,34 +1293,6 @@ const PaymentManagementSection = forwardRef(
                 />
               </div>
             </div>
-            {/* <div className="py-2.5">
-            <div className="mt-1.5 flex justify-center">
-              <div className="flex items-center gap-1 rounded border border-solid border-black-900">
-                <Text size="textmd" as="p" className="text-[14px] font-normal text-black-900">
-                  10
-                </Text>
-                <Img src="images/img_arrow_down_gray_900.svg" alt="Entries Dropdown" className="h-[18px] w-[18px]" />
-              </div>
-              <div className="flex flex-1 px-3">
-                <Text size="textmd" as="p" className="mt-1 text-[14px] font-normal text-black-900">
-                  Entries per page
-                </Text>
-              </div>
-            </div>
-          </div> */}
-            {/* <div className="py-2.5">
-            <div className="flex items-center justify-center">
-              <Text size="textmd" as="p" className="mt-1 self-end text-[14px] font-normal text-black-900">
-                Showing 1 to 5 of 5 entries
-              </Text>
-              <div className="flex flex-1 justify-end gap-[13px]">
-                <Img src="images/img_forward.svg" alt="Fast Forward Image" className="h-[18px] w-[18px]" />
-                <Img src="images/img_arrow_left.svg" alt="Arrow Left Image" className="h-[18px] w-[18px]" />
-                <Img src="images/img_arrow_right_gray_900.svg" alt="Arrow Right Image" className="h-[18px] w-[18px]" />
-                <Img src="images/img_forward.svg" alt="Fast Forward Image" className="h-[18px] w-[18px]" />
-              </div>
-            </div>
-          </div> */}
           </div>
         </div>
         <div

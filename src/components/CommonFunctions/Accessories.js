@@ -337,6 +337,7 @@ const FileUpload = ({
   return (
     <Fragment key={id}>
       <input
+        tabIndex={-1}
         type="file"
         key={id}
         id={id}
@@ -345,6 +346,13 @@ const FileUpload = ({
         accept=".pdf,.jpg,.jpeg,.png,.gif,.heic,.heif"
       />
       <label
+        tabIndex={tabIndex}
+        onKeyDown={(e) => {
+          if ([32, 13].includes(e.keyCode)) {
+            e.preventDefault();
+            document.getElementById(id)?.click();
+          }
+        }}
         htmlFor={id}
         className={`button file-upload ${className}`}
         style={{

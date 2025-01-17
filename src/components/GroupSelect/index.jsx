@@ -49,6 +49,7 @@ const GroupSelect = ({
   VendorPaymentDetailId,
   VendorPaymentId,
   defaultMenuIsOpen = true,
+  isChildRow = false,
   ...restProps
 }) => {
   const [customOptions, setCustomOptions] = useState([]);
@@ -131,11 +132,12 @@ const GroupSelect = ({
       const currentOption = selectRef.current.state.focusedOption;
       if (currentOption) {
         handleChange(currentOption);
+        setMenuIsOpen(false);
         //e.target.blur();
       }
     }
   };
-
+  const [menuIsOpen, setMenuIsOpen] = useState(false);
   return (
     <>
       <Select
@@ -145,7 +147,11 @@ const GroupSelect = ({
         placeholder={placeholder}
         isSearchable={true}
         isClearable={isClearable}
-        //autoFocus={true}
+        autoFocus={isChildRow}
+        menuIsOpen={menuIsOpen}
+        onMenuOpen={() => setMenuIsOpen(true)}
+        onMenuClose={() => setMenuIsOpen(false)}
+        //onFocus={() => (isChildRow ? setMenuIsOpen(true) : null)}
         ref={selectRef}
         labelField={labelKey}
         valueField={valueKey}

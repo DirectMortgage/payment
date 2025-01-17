@@ -3,6 +3,7 @@ import React, {
   useState,
   forwardRef,
   useImperativeHandle,
+  useMemo,
 } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
@@ -61,6 +62,7 @@ const Table = forwardRef(
       setIsLoadingSave,
       setEditingRows = () => {},
       setRowData = () => {},
+      handleTriggerPayee = () => {},
       ...props
     },
     ref
@@ -68,88 +70,111 @@ const Table = forwardRef(
     const toast = useRef(null),
       [globalFilter, setGlobalFilter] = useState(null),
       [rows, setRows] = useState(5),
-      [first, setFirst] = useState(0);
-    const [editingCell, setEditingCell] = useState(null);
-    const [sortField, setSortField] = useState(null);
-    const [sortOrder, setSortOrder] = useState(null);
-    const [selectedRows, setSelectedRows] = useState([]);
-    const [payStatusHtml, setPayStatusHtml] = useState("");
-    const [payStatusVendorID, setPayStatusVendorID] = useState("");
-    const [hdnpayCheck, sethdnpayCheck] = useState("");
-    const [hdnGlo_Hud_VA, sethdnGlo_Hud_VA] = useState("");
-    const [hdnBankAcountId, sethdnBankAcountId] = useState("");
-
-    // Sorting handler
-    const onSort = (event) => {
-      setSortField(event.sortField);
-      setSortOrder(event.sortOrder);
-    };
+      [first, setFirst] = useState(0),
+      [editingCell, setEditingCell] = useState(null),
+      [sortField, setSortField] = useState(null),
+      [sortOrder, setSortOrder] = useState(null),
+      [selectedRows, setSelectedRows] = useState([]),
+      [payStatusHtml, setPayStatusHtml] = useState(""),
+      [payStatusVendorID, setPayStatusVendorID] = useState(""),
+      [hdnpayCheck, sethdnpayCheck] = useState(""),
+      [hdnGlo_Hud_VA, sethdnGlo_Hud_VA] = useState(""),
+      [hdnBankAcountId, sethdnBankAcountId] = useState(""),
+      [localData, setLocalData] = useState([]),
+      [OnloadData, setOnloadData] = useState([]);
     useEffect(() => {
-      if (tableData.length > 0) console.log({ tableData });
-    }, [tableData]);
-    const dataArray = Array.isArray(tableData) ? tableData : [];
+      console.log("editingCell", editingCell);
+    }, [editingCell]);
+    const dataArray = useMemo(
+      () => (Array.isArray(tableData) && tableData.length > 0 ? tableData : []),
+      [tableData, tableData.length]
+    );
 
-    // Store original order of paymentIds
-    const paymentIdOrder = [];
+    const { groupedData, paymentIdOrder, fieldMaps, parentRows } =
+      useMemo(() => {
+        const paymentIdOrder = [];
 
-    const groupedData = dataArray.reduce((acc, item) => {
-      const paymentId = item.VendorPaymentId;
-      if (!acc[paymentId]) {
-        acc[paymentId] = [];
-        paymentIdOrder.push(paymentId); // Track order of paymentIds
+        // Group data by `VendorPaymentId` and track order
+        const groupedData = dataArray.reduce((acc, item) => {
+          const paymentId = item.VendorPaymentId;
+          if (!acc[paymentId]) {
+            acc[paymentId] = [];
+            paymentIdOrder.push(paymentId); // Track order of paymentIds
+          }
+          acc[paymentId].push(item);
+          return acc;
+        }, {});
+        debugger;
+        // Initialize field maps
+        const fieldMaps = {
+          classNameMap: {},
+          glAccountMap: {},
+          invoiceDateMap: {},
+          invoiceMap: {},
+          memoMap: {},
+        };
+
+        // Store the original values at the group level
+        Object.entries(groupedData).forEach(([paymentId, rows]) => {
+          const firstRow = rows[0];
+          fieldMaps.classNameMap[paymentId] = firstRow.ClassName;
+          fieldMaps.glAccountMap[paymentId] = firstRow.GLAccount;
+          fieldMaps.invoiceDateMap[paymentId] = firstRow.InvoiceDate;
+          fieldMaps.invoiceMap[paymentId] = firstRow.Invoice;
+          fieldMaps.memoMap[paymentId] = firstRow.Memo;
+        });
+
+        // Process parent rows
+        const parentRows = Object.entries(groupedData).map(
+          ([paymentId, rows]) => {
+            const parentRow = rows.reduce((minRow, currentRow) =>
+              currentRow.RowId < minRow.RowId ? currentRow : minRow
+            );
+            // Create a display copy of the parent row
+            const displayParentRow = { ...parentRow };
+
+            if (rows.length > 1) {
+              displayParentRow.ClassName = "";
+              displayParentRow.GLAccount = "";
+              // displayParentRow.InvoiceDate = ""; // Commented out as per original logic
+              displayParentRow.Invoice =
+                displayParentRow.Invoice.split("-")[0] || "";
+              displayParentRow.Memo = displayParentRow.Memo.split("-")[0] || "";
+              displayParentRow.isParentRow = true;
+            }
+
+            return {
+              ...displayParentRow,
+              originalClassName: fieldMaps.classNameMap[paymentId],
+              originalGLAccount: fieldMaps.glAccountMap[paymentId],
+              originalInvoiceDate: fieldMaps.invoiceDateMap[paymentId],
+              originalInvoice: fieldMaps.invoiceMap[paymentId],
+              originalMemo: fieldMaps.memoMap[paymentId],
+            };
+          }
+        );
+        console.log({ parentRows });
+
+        return { groupedData, paymentIdOrder, fieldMaps, parentRows };
+      }, [dataArray]);
+
+    useEffect(() => {
+      if (parentRows.length > 0) {
+        if (parentRows.length > 0 && expandedRows.length > 0) {
+          setExpandedRows((prevExpandedRows) =>
+            prevExpandedRows
+              .map((item) => {
+                item = parentRows.find(
+                  (iItem) => iItem["RowId"] === item["RowId"]
+                );
+                return item;
+              })
+              .filter((_) => _)
+          );
+        }
+        setLocalData([...parentRows]);
       }
-      acc[paymentId].push(item);
-      return acc;
-    }, {});
-
-    // Store original values at the group level
-    const fieldMaps = {
-      classNameMap: {},
-      glAccountMap: {},
-      invoiceDateMap: {},
-      invoiceMap: {},
-      memoMap: {},
-      classMap: {},
-    };
-
-    // Store the original values first
-    Object.entries(groupedData).forEach(([paymentId, rows]) => {
-      const firstRow = rows[0];
-      fieldMaps.classNameMap[paymentId] = firstRow.ClassName;
-      fieldMaps.glAccountMap[paymentId] = firstRow.GLAccount;
-      fieldMaps.invoiceDateMap[paymentId] = firstRow.InvoiceDate;
-      fieldMaps.invoiceMap[paymentId] = firstRow.Invoice;
-      fieldMaps.memoMap[paymentId] = firstRow.Memo;
-    });
-
-    const parentRows = Object.entries(groupedData).map(([paymentId, rows]) => {
-      const parentRow = rows.reduce((minRow, currentRow) =>
-        currentRow.RowId < minRow.RowId ? currentRow : minRow
-      );
-
-      // Create a display copy of the parent row
-      const displayParentRow = { ...parentRow };
-
-      if (rows.length > 1) {
-        displayParentRow.ClassName = "";
-        displayParentRow.GLAccount = "";
-        //displayParentRow.InvoiceDate = "";
-        //displayParentRow.Invoice = "";
-        //displayParentRow.Memo = "";
-      }
-
-      return {
-        ...displayParentRow,
-        originalClassName: fieldMaps.classNameMap[paymentId],
-        originalGLAccount: fieldMaps.glAccountMap[paymentId],
-        originalInvoiceDate: fieldMaps.invoiceDateMap[paymentId],
-        originalInvoice: fieldMaps.invoiceMap[paymentId],
-        originalMemo: fieldMaps.memoMap[paymentId],
-      };
-    });
-
-    const [localData, setLocalData] = useState(parentRows);
-    const [OnloadData, setOnloadData] = useState([]);
+    }, [parentRows, parentRows.length]);
 
     useEffect(() => {
       const sortedParentRows = [...parentRows].sort(
@@ -157,11 +182,6 @@ const Table = forwardRef(
           paymentIdOrder.indexOf(a.VendorPaymentId) -
           paymentIdOrder.indexOf(b.VendorPaymentId)
       );
-      // if (OnloadData.length === 0) {
-
-      // const sortedParentRows = [...parentRows].sort((a, b) =>
-      //   paymentIdOrder.indexOf(a.VendorPaymentId) - paymentIdOrder.indexOf(b.VendorPaymentId)
-      // );
 
       // Update fields from originalValues if child rows exist
       const updatedParentRows = sortedParentRows.map((row) => {
@@ -182,12 +202,17 @@ const Table = forwardRef(
       });
 
       // Set OnloadData with the updated and structured clone of sorted rows
-      setOnloadData(structuredClone(updatedParentRows));
-      // }
+      if (OnloadData.length === 0 && updatedParentRows.length > 0) {
+        setOnloadData(JSON["parse"](JSON.stringify(updatedParentRows)));
+      }
       setLocalData(sortedParentRows);
       setSelectedRows([]);
     }, [tableData]);
 
+    const onSort = (event) => {
+      setSortField(event.sortField);
+      setSortOrder(event.sortOrder);
+    };
     const handlePaymentProcess = (paymentType) => {
       const selectedBankOption = BankOptions?.find(
         (option) => option?.value === selectedBank?.value
@@ -382,65 +407,65 @@ const Table = forwardRef(
       setShowThirdRow(false);
 
       // Get all rows including child rows flattened into single array
-      const allRows = [...localData];
-      Object.values(groupedData).forEach((childRows) => {
-        allRows.push(...childRows);
+      //const allRows = [...tableData];
+      setRowData((prevData) => {
+        //debugger;
+        const data = prevData.map((row) => {
+          if (row.VendorPaymentId === rowData.VendorPaymentId) {
+            row.PayACH = value === "ach";
+            row.PayCheck = value === "check";
+          }
+          return row;
+        });
+        //console.log(
+        //  data
+        //    .filter((row) => row.VendorPaymentId == rowData.VendorPaymentId)
+        //    .map(({ PayACH, PayCheck, SubTotal, TotalAmount }) => ({
+        //      PayACH,
+        //      PayCheck,
+        //      SubTotal,
+        //      TotalAmount,
+        //    }))
+        //);
+
+        return [...data];
       });
 
-      // Check if there are any existing selections in main or child rows
-      const existingSelections = allRows.find(
-        (row) => (row.PayACH || row.PayCheck) && row.RowId !== rowData.RowId
-      );
+      //// Check if there are any existing selections in main or child rows
+      //const existingSelections = allRows.find(
+      //  (row) => (row.PayACH || row.PayCheck) && row.RowId !== rowData.RowId
+      //);
 
-      // If there are existing selections, ensure new selection matches the payment type
-      if (existingSelections) {
-        const existingMethod = existingSelections.PayACH ? "ach" : "check";
-        if (value !== existingMethod) {
-          // Reset all selections in main data
-          localData.forEach((row) => {
-            row.PayACH = false;
-            row.PayCheck = false;
-          });
+      //// Set the new selection in main data
+      //const targetRow = allRows.find((row) => row.RowId === rowData.RowId);
+      //if (targetRow) {
+      //  targetRow.PayACH = value === "ach";
+      //  targetRow.PayCheck = value === "check";
 
-          // Reset all selections in child rows
-          Object.values(groupedData).forEach((childRows) => {
-            childRows.forEach((childRow) => {
-              childRow.PayACH = false;
-              childRow.PayCheck = false;
-            });
-          });
-        }
-      }
+      //  // If this is a parent row, set the same payment method for all its child rows
+      //  if (groupedData[rowData.VendorPaymentId]) {
+      //    groupedData[rowData.VendorPaymentId].forEach((childRow) => {
+      //      childRow.PayACH = value === "ach";
+      //      childRow.PayCheck = value === "check";
+      //    });
+      //  }
+      //}
 
-      // Set the new selection in main data
-      const targetRow = localData.find((row) => row.RowId === rowData.RowId);
-      if (targetRow) {
-        targetRow.PayACH = value === "ach";
-        targetRow.PayCheck = value === "check";
+      //// Set the new selection in child rows if it's a child row being selected
+      //Object.values(groupedData).forEach((childRows) => {
+      //  const targetChildRow = childRows.find(
+      //    (row) => row.RowId === rowData.RowId
+      //  );
+      //  if (targetChildRow) {
+      //    targetChildRow.PayACH = value === "ach";
+      //    targetChildRow.PayCheck = value === "check";
+      //  }
+      //});
 
-        // If this is a parent row, set the same payment method for all its child rows
-        if (groupedData[rowData.VendorPaymentId]) {
-          groupedData[rowData.VendorPaymentId].forEach((childRow) => {
-            childRow.PayACH = value === "ach";
-            childRow.PayCheck = value === "check";
-          });
-        }
-      }
-
-      // Set the new selection in child rows if it's a child row being selected
-      Object.values(groupedData).forEach((childRows) => {
-        const targetChildRow = childRows.find(
-          (row) => row.RowId === rowData.RowId
-        );
-        if (targetChildRow) {
-          targetChildRow.PayACH = value === "ach";
-          targetChildRow.PayCheck = value === "check";
-        }
-      });
-
-      setLocalData([...localData]);
-      updateSelectedRows();
+      //setLocalData([...localData]);
+      //updateSelectedRows();
     };
+
     const handleCheckboxChange = (row, checked) => {
       const childRows = groupedData[row.VendorPaymentId] || [];
 
@@ -483,7 +508,7 @@ const Table = forwardRef(
               (row) => row.RowId !== rowData.RowId
             );
 
-            const hasChildRows = childRows.length > 0;
+            //const hasChildRows = childRows.length > 0;
 
             //if (hasChildRows && rowData === childRows[0]) {
             //  console.log({ rowData });
@@ -517,7 +542,7 @@ const Table = forwardRef(
               );
             }
 
-            const selectedValue = rowData.PayACH
+            const selectedValue = (childRows[0] || rowData).PayACH
               ? "ach"
               : rowData.PayCheck
               ? "check"
@@ -555,6 +580,7 @@ const Table = forwardRef(
                         name={`payment-${rowData.RowId}`}
                         value="ach"
                         checked={selectedValue === "ach"}
+                        onChange={(e) => {}}
                         onClick={(e) => {
                           handlePaymentChange(
                             rowData,
@@ -565,7 +591,6 @@ const Table = forwardRef(
                           }
                           handleCheckboxChange(rowData, true);
                         }}
-                        onChange={(e) => {}}
                         className="cursor-pointer"
                       />
                     </span>
@@ -603,6 +628,7 @@ const Table = forwardRef(
                       name={`payment-${rowData.RowId}`}
                       value="check"
                       checked={selectedValue === "check"}
+                      onChange={(e) => {}}
                       onClick={(e) => {
                         handlePaymentChange(
                           rowData,
@@ -613,7 +639,6 @@ const Table = forwardRef(
                         }
                         handleCheckboxChange(rowData, true);
                       }}
-                      onChange={(e) => {}}
                       className="cursor-pointer"
                     />
                   </span>
@@ -814,7 +839,6 @@ const Table = forwardRef(
 
       return (
         <>
-          {" "}
           <table className="table-auto w-full">
             <thead>
               <tr>
@@ -855,6 +879,7 @@ const Table = forwardRef(
                       ) : col.field === "GLAccount" ? (
                         editingCell === `${childRow.RowId}-${col.field}` ? (
                           <GroupSelect
+                            isChildRow={true}
                             size="sm"
                             shape="round"
                             options={accounts.map((opt) => ({
@@ -885,8 +910,12 @@ const Table = forwardRef(
                                 col.field
                               ] = `${selectedEntityLabel.value}`;
                               childRow.Change = 1;
+
                               setLocalData([...localData]);
-                              setEditingCell(null);
+                              //setEditingCell(null);
+                            }}
+                            onBlur={() => {
+                              //setEditingCell(null);
                             }}
                             showSearch={true}
                             placeholder="Search GL Account"
@@ -898,7 +927,12 @@ const Table = forwardRef(
                             }}
                           />
                         ) : (
-                          <span
+                          <div
+                            tabIndex={0}
+                            onFocus={(e) => {
+                              e.stopPropagation();
+                              setEditingCell(`${childRow.RowId}-${col.field}`);
+                            }}
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingCell(`${childRow.RowId}-${col.field}`);
@@ -906,11 +940,12 @@ const Table = forwardRef(
                             className="text-[14px] font-normal text-black-900 cursor-pointer"
                           >
                             {childRow[col.field] || ""}
-                          </span>
+                          </div>
                         )
                       ) : col.field === "ClassName" ? (
                         editingCell === `${childRow.RowId}-${col.field}` ? (
                           <GroupSelect
+                            isChildRow={true}
                             size="sm"
                             shape="round"
                             options={Class.map((opt) => ({
@@ -934,7 +969,10 @@ const Table = forwardRef(
                               ] = `${selectedEntityLabel.value}`;
                               childRow.Change = 1;
                               setLocalData([...localData]);
-                              setEditingCell(null);
+                              //setEditingCell(null);
+                            }}
+                            onBlur={() => {
+                              //setEditingCell(null);
                             }}
                             showSearch={true}
                             placeholder="Search Department"
@@ -946,7 +984,12 @@ const Table = forwardRef(
                             }}
                           />
                         ) : (
-                          <span
+                          <div
+                            tabIndex={0}
+                            onFocus={(e) => {
+                              e.stopPropagation();
+                              setEditingCell(`${childRow.RowId}-${col.field}`);
+                            }}
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingCell(`${childRow.RowId}-${col.field}`);
@@ -954,7 +997,7 @@ const Table = forwardRef(
                             className="text-[14px] font-normal text-black-900 cursor-pointer"
                           >
                             {childRow[col.field] || ""}
-                          </span>
+                          </div>
                         )
                       ) : col.field === "TotalAmount" ||
                         col.field === "InvoiceDate" ||
@@ -987,6 +1030,11 @@ const Table = forwardRef(
                           />
                         ) : (
                           <span
+                            tabIndex={0}
+                            onFocus={(e) => {
+                              e.stopPropagation();
+                              setEditingCell(`${childRow.RowId}-${col.field}`);
+                            }}
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingCell(`${childRow.RowId}-${col.field}`);
@@ -998,6 +1046,10 @@ const Table = forwardRef(
                               : childRow[col.field] || ""}
                           </span>
                         )
+                      ) : ["paymentMethodHeader", "MarkPaid"].includes(
+                          col.field
+                        ) ? (
+                        <span className="hidden1">{col.body(childRow)}</span>
                       ) : col.body ? (
                         col.body(childRow)
                       ) : (
@@ -1012,20 +1064,20 @@ const Table = forwardRef(
         </>
       );
     };
-    const addRow = () => {
-      const newRow = createNewRow();
+    const addRow = async () => {
+      const newRow = await createNewRow();
 
       if (!groupedData) {
         groupedData = {};
       }
 
       groupedData[newRow.VendorPaymentId] = [newRow];
-      setLocalData((prevData) => [newRow, ...prevData]);
-
-      setTimeout(() => {
-        const firstEditableField = "Payee";
-        setEditingCell(`${newRow.RowId}-${firstEditableField}`);
-      }, 100);
+      setRowData((prevData) => [newRow, ...prevData]);
+      handleTriggerPayee(newRow.RowId);
+      //setTimeout(() => {
+      //  const firstEditableField = "Payee";
+      //  setEditingCell(`${newRow.RowId}-${firstEditableField}`);
+      //}, 100);
     };
     function saveDataWithChildren(localData) {
       let resultArray = [];
@@ -1066,6 +1118,7 @@ const Table = forwardRef(
       let ChangeXML = "";
       const changedJSON = [];
       const processedData = saveDataWithChildren(localData);
+
       processedData.forEach((val) => {
         const RowId = val.RowId;
 
@@ -1158,7 +1211,7 @@ const Table = forwardRef(
         // Format values
         TotalAmount = FormatValueforCalc(TotalAmount);
         ClassAmount = FormatValueforCalc(ClassAmount);
-        const Change = val.Change || "0";
+        const Change = (val.Change || 0).toString();
 
         const result = OnloadData.find((e) => e.RowId === val.RowId);
 
@@ -1228,16 +1281,39 @@ const Table = forwardRef(
           }
 
           changedJSON.push(changeobj);
+        } else {
+          const changeobj = {
+            VendorPaymentId,
+            VendorId,
+            VendorPaymentDetailId,
+            EntityType,
+            ApprovedBy,
+            ApprovedOn: "",
+            TotalAmount,
+            InvoiceDate: InvDate,
+            InvoiceDue: DueDate,
+            RefNo: RefNo,
+            Memo: InvNum,
+            Payon: PayOn,
+            AccountId: Accounts,
+            Class: ClassId,
+            Amount: ClassAmount,
+            Status: Status,
+            PayACH: PayACH,
+            Paid: Paid,
+          };
+          changedJSON.push(changeobj);
         }
 
         ChangeXML += `<row VendorPaymentId="${VendorPaymentId}" VendorId="${VendorId}" TotalAmount="${TotalAmount}" InvoiceDate="${InvDate}" InvoiceDue="${DueDate}" RefNo="${RefNo}" Memo="${InvNum}" Payon="${PayOn}" Status="${Status}" ApprovedBy="${ApprovedBy}" ApprovedOn="" VendorPaymentDetailId="${VendorPaymentDetailId}" AccountId="${Accounts}" Class="${ClassId}" Amount="${ClassAmount}" Change="${Change}" Paid="${Paid}" PayACH="${PayACH}" EntityType="${EntityType}"/>`;
       });
       ChangeXML = `<PaymentSave BankAccountId="${selectedBank.value}">${ChangeXML}</PaymentSave>`;
+      console.log({ ChangeXML });
 
       // Replace quotes for proper formatting
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
-      console.log({ ChangeXML, jsonString });
+      console.log({ ChangeXML1: ChangeXML.replaceAll("\\", "") });
       //return;
       let obj = { SaveXml: ChangeXML, changedJSON: jsonString };
       const response = await handleAPI({
@@ -1250,6 +1326,7 @@ const Table = forwardRef(
       if (!response || response.trim() === "{}" || response.trim() === "[]") {
       }
     };
+
     useImperativeHandle(ref, () => ({
       addRow,
       savevendorPayment,
@@ -1298,6 +1375,14 @@ const Table = forwardRef(
           VendorPaymentDetailId: VendorPaymentDetailId,
           ACHApprovedDetail: 0,
           imagesHeader: "Upload",
+          Paid: "0",
+          PayACH: false,
+          ClassAmount: "",
+
+          RefNo: "",
+          AccountId: "",
+          Class: "",
+          Amount: "",
           // Add other fields as empty or default values
         };
       } catch (error) {
@@ -1305,17 +1390,29 @@ const Table = forwardRef(
       }
     };
 
-    const expandedColumns = [
-      {
-        expander: true,
-        bodyClassName: "empty-row",
-        field: "expand",
-        "data-field": "expand",
-        body: expandTemplate,
-        style: { width: "48px" },
-      },
-      ...enhancedColumns,
-    ];
+    const expandedColumns = useMemo(() => {
+      return [
+        {
+          expander: true,
+          bodyClassName: "empty-row",
+          field: "expand",
+          "data-field": "expand",
+          body: expandTemplate,
+          style: { width: "48px" },
+        },
+        ...enhancedColumns,
+      ].map((item) => {
+        const { bodyClassName, field } = item;
+        if (
+          bodyClassName !== "empty-row" &&
+          ["GLAccount", "ClassName"].includes(field)
+        ) {
+          item["bodyClassName"] = ({ isParentRow }) =>
+            isParentRow ? bodyClassName + " empty-row" : bodyClassName;
+        }
+        return item;
+      });
+    }, [enhancedColumns, parentRows, tableData]);
 
     const header = (
         <div className="table-header">
@@ -1386,16 +1483,34 @@ const Table = forwardRef(
       setRows(event.rows);
     };
     const cellEditor = (options) => {
-      const rowId = options.rowData.RowId;
+      //if (editingCell && options.rowData.isParentRow) {
+      //  setEditingCell(null);
+      //}
+      let rowId = options.rowData.RowId,
+        rowIndex = tableData.findIndex((x) => x.RowId === rowId),
+        rowData = {};
 
-      options["rowIndex"] = tableData.findIndex((x) => x.RowId === rowId);
-      if (options["rowIndex"] === -1) return <></>;
-      const rowData = tableData[options["rowIndex"]];
+      if (rowIndex === -1) {
+        rowData = parentRows.sort(
+          (a, b) =>
+            paymentIdOrder.indexOf(a.VendorPaymentId) -
+            paymentIdOrder.indexOf(b.VendorPaymentId)
+        )[options["rowIndex"]];
+      } else {
+        options["rowIndex"] = rowIndex;
+        rowData = tableData[options["rowIndex"]];
+      }
 
       options.rowData = {
         ...options.rowData,
         ...tableData[options["rowIndex"]],
       };
+      if (
+        ["GLAccount", "ClassName"].includes(options.field) &&
+        options.rowData.isParentRow
+      ) {
+        return <></>;
+      }
 
       const isEditing = editingRows[rowId]?.includes(options.field) ?? false;
       const isEditable =
@@ -1434,6 +1549,7 @@ const Table = forwardRef(
                         ...row,
                         Account_Id: selected[0].value,
                         GLAccount: selected[1].value,
+                        Change: 1,
                       }
                     : row
                 )
@@ -1537,6 +1653,7 @@ const Table = forwardRef(
                   updatedGroupedData[paymentId][rowIndex] = updatedData;
                   setRowData((prevRowData) => {
                     prevRowData[rowIndex] = updatedData;
+                    prevRowData[rowIndex].Change = 1;
                     return [...prevRowData];
                   });
                 }
@@ -1613,6 +1730,7 @@ const Table = forwardRef(
                         ...row,
                         Class: selectedEntity.value,
                         ClassName: selectedEntityLabel.value,
+                        Change: 1,
                       }
                     : row
                 )
@@ -1706,6 +1824,7 @@ const Table = forwardRef(
               options.editorCallback(e.target.value);
               setRowData((prevData) => {
                 prevData[options.rowIndex][options.field] = e.target.value;
+                prevData[options.rowIndex].Change = 1;
                 return [...prevData];
               });
             }}
@@ -1735,6 +1854,7 @@ const Table = forwardRef(
       //rowData[field] = newValue;
       //rowData.Change = 1;
     };
+
     useEffect(() => setRows(row), [row]);
     // Modify how we calculate pagination values
     const totalRecords = parentRows.length; // Only count parent rows
@@ -1746,6 +1866,7 @@ const Table = forwardRef(
     return (
       <div>
         <DataTable
+          key={tableData.length}
           value={paginatedData}
           expandedRows={expandedRows}
           onRowToggle={(e) => setExpandedRows(e.data)}

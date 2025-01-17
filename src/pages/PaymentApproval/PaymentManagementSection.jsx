@@ -342,25 +342,38 @@ const PaymentManagementSection = forwardRef(
         "width=1200,height=1200,resizable=yes,scrollbars=yes"
       );
     };
-    const handleRemove = async (rowId) => {
-      const recordToRemove = rowData.find((row) => row.RowId === rowId);
 
-      if (recordToRemove) {
-        const { VendorPaymentId, VendorPaymentDetailId } = recordToRemove;
+    useEffect(() => {
+      console.log({ editingRows });
+    }, [editingRows]);
+
+    const handleRemove = async (rowId) => {
+      const recordToRemoveParent = rowData.find((row) => row.RowId === rowId);
+
+      if (recordToRemoveParent) {
+        const { VendorPaymentId } = recordToRemoveParent;
 
         const updatedData = rowData.filter(
-          (row) => row.VendorPaymentId !== VendorPaymentId
-        );
-        setRowData(updatedData);
+            (row) => row.VendorPaymentId !== VendorPaymentId
+          ),
+          recordToRemove = rowData.filter(
+            (row) => row.VendorPaymentId === VendorPaymentId
+          );
 
-        let obj = {
-          VendorPaymentId: VendorPaymentId,
-          VendorPaymentDetailId: VendorPaymentDetailId,
-        };
+        setRowData([...updatedData]);
+        setEditingRows((prev) => {
+          delete prev[rowId];
+          return prev;
+        });
+        setExpandedRows((prev) => prev.filter((item) => item.RowId === rowId));
 
-        const response = await handleAPI({
-          name: "DeleteVendorMonthlyRecords",
-          params: obj,
+        recordToRemove.forEach(({ VendorPaymentId, VendorPaymentDetailId }) => {
+          handleAPI({
+            name: "DeleteVendorMonthlyRecords",
+            params: { VendorPaymentId, VendorPaymentDetailId },
+          }).then((response) => {
+            console.log({ VendorPaymentId, VendorPaymentDetailId, response });
+          });
         });
       } else {
         console.error("Record with the given RowId not found");
@@ -1071,6 +1084,7 @@ const PaymentManagementSection = forwardRef(
                   setShowSecondRow={setShowSecondRow}
                   setShowThirdRow={setShowThirdRow}
                   setPaymentMethod={setPaymentMethod}
+                  handleTriggerPayee={handleTriggerPayee}
                   selectedBank={selectedBank}
                   selectedPrintOrder={selectedPrintOrder}
                   BankOptions={dropDownOptions}

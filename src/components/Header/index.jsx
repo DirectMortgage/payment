@@ -34,6 +34,8 @@ export default function Header({
   }, [companyId]);
 
   const PaymentValidation = async () => {
+    setIsLoading(true);
+    setStatus("loading");
     try {
       let obj = { CompNum: companyId, SessionId: SessionId };
       const response = await handleAPI({
@@ -128,7 +130,9 @@ export default function Header({
   return (
     <header
       {...props}
-      className={`${props.className} flex sm:flex-col items-center px-[46px] py-4 md:px-5 bg-indigo-400 w-full`}
+      className={`${
+        props.className || ""
+      } sticky top-0 z-40 flex sm:flex-col items-center px-[46px] py-4 md:px-5 bg-indigo-400 w-full`}
     >
       <div className="flex items-center w-full lg:flex-row md:flex-col-reverse sm:flex-col-reverse gap-5">
         <div className="flex justify-between md:justify-start gap-5 items-center sm:w-full md:w-full lg:w-3/12 xl:w-4/12 2xl:w-3/12">
@@ -185,6 +189,11 @@ export default function Header({
           </Heading>
         </div>
       </div>
+      <span
+        onClick={() => PaymentValidation()}
+        className="hidden"
+        id="idTriggerDuplicateValidation"
+      ></span>
     </header>
   );
 }

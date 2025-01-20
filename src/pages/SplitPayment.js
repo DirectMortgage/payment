@@ -9,7 +9,6 @@ import {
   queryStringToObject,
 } from "components/CommonFunctions/CommonFunction";
 import { Spinner } from "components/CommonFunctions/Accessories";
-import { Bounce, ToastContainer, toast } from "react-toastify";
 import { Button } from "components";
 
 const groupByKey = (input, key) => {
@@ -361,9 +360,7 @@ const SplitPayment = () => {
       console.error("Error in handleDetailsChange:", error);
     }
   };
-  const handleToast = (message, type) => {
-    toast(message, { type });
-  };
+
   const handleSave = () => {
     handleProcessingStatus("Saving");
     const {
@@ -384,7 +381,6 @@ const SplitPayment = () => {
       apiName: "LoginCredentialsAPI",
     }).then((response) => {
       console.log(response);
-      handleToast("Saved Successfully", "success");
       try {
         const button = window.opener.document.querySelector(
           "#refresh-payment-data"
@@ -478,7 +474,6 @@ const SplitPayment = () => {
           .then((ScanDocId) => {
             if (ScanDocId) {
               if (index === files.length) {
-                handleToast("Image Uploaded Successfully", "success");
                 console.log("All files uploaded successfully", ScanDocId);
                 handleDetailsChange({
                   target: { name: "ScanDocId", value: ScanDocId },
@@ -610,18 +605,7 @@ const SplitPayment = () => {
           Cancel
         </button>
       </div>
-      <ToastContainer
-        position="bottom-right"
-        autoClose={8000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss={false}
-        draggable
-        pauseOnHover
-        transition={Bounce}
-      />
+
       <div className="fixed-footer z-[1000]">
         <div className="mx-auto flex w-full max-w-[1346px] justify-between pl-0 pr-12 md:pl-0 md:pr-5">
           <div className="relative" ref={menuRef}>

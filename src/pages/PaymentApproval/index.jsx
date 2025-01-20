@@ -6,19 +6,24 @@ import React, { useEffect, useState, useRef } from "react";
 import {
   handleAPI,
   queryStringToObject,
-  handleGetSessionData,
   fnOpenWindow,
   handleSaveWindowSize,
 } from "../../components/CommonFunctions/CommonFunction.js";
-import { Bounce, ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faClose, faRotate } from "@fortawesome/free-solid-svg-icons";
 const { CID: iCompanyId = 4 } = queryStringToObject();
 
 export default function DesktopOnePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [companyId, setCompanyId] = useState(iCompanyId);
-  const [validationResult, setValidationResult] = useState([]);
+  const [validationResult, setValidationResult] = useState([]),
+    [isSaveEnabled, setIsSaveEnabled] = useState(false),
+    [processingStatus, setProcessingStatus] = useState([]),
+    [notification, setNotification] = useState({
+      message: "",
+      type: "success",
+    });
 
   const paymentSectionRef = useRef(null);
   let SessionId;
@@ -29,17 +34,25 @@ export default function DesktopOnePage() {
     console.log("Ref current:", paymentSectionRef.current); // Debug log
     paymentSectionRef.current.handleAddRow();
   };
+  const handleNotification = (message, type = "success", isReset = false) => {
+    if (isReset) {
+      setNotification({ message: "", type: "" });
+    } else {
+      setNotification({ message, type });
+      setTimeout(() => handleNotification("", "", 1), 3500);
+    }
+    if (message.includes("Saved Successfully.")) {
+      setProcessingStatus((prev) => prev.filter((item) => item !== "Saving"));
+    }
+  };
   const handleSave = () => {
-    // Access the save function from PaymentManagementSection using ref
-    handleToast("Saved Successfully", "success");
-    //return;
     if (paymentSectionRef.current) {
+      setIsSaveEnabled(false);
+      setProcessingStatus((prev) => [...prev, "Saving"]);
       paymentSectionRef.current.handleSave();
     }
   };
-  const handleToast = (message, type = "success") => {
-    toast(message, { type });
-  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -71,7 +84,7 @@ export default function DesktopOnePage() {
         />
       </Helmet>
       <div className="flex w-full flex-col items-center  bg-white-a700 md:gap-[198px] sm:gap-[132px] pb-[80px]">
-        <div className="flex flex-col gap-[18px] self-stretch">
+        <div className="flex flex-col  self-stretch">
           <Header
             setCompanyId={setCompanyId}
             companyId={companyId}
@@ -84,6 +97,8 @@ export default function DesktopOnePage() {
             ref={paymentSectionRef}
             companyId={companyId}
             validationResult={validationResult}
+            setIsSaveEnabled={setIsSaveEnabled}
+            handleNotification={handleNotification}
           />
         </div>
         <div className="h-[100px] flex w-full"></div>
@@ -113,7 +128,7 @@ export default function DesktopOnePage() {
                         )
                       }
                     >
-                     Old Payment Approval
+                      Old Payment Approval
                     </a>
                   </li>
                   <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 border-b">
@@ -214,27 +229,52 @@ export default function DesktopOnePage() {
               )}
             </div>
 
-            <Button
-              className="flex h-[36px] min-w-[74px] flex-row items-center justify-center rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[14px] font-bold text-white-a700"
-              onClick={handleSave}
-            >
-              Save
-            </Button>
+            <div className="flex flex-row-reverse">
+              {notification["message"] && (
+                <div
+                  className={`flex justify-center self-center mr-2 order-2 p-2 border border-solid rounded-md ${
+                    notification["type"] === "success"
+                      ? "border-[#7bd231] bg-[#dff0d8]"
+                      : "border-[#a94442] bg-[#f2dede]"
+                  }`}
+                >
+                  <span
+                    className={`text-center font-inter text-[11px] ${
+                      notification["type"] === "success"
+                        ? "text-[#7bd231]"
+                        : "text-[#a94442]"
+                    }`}
+                  >
+                    {notification["message"]}
+                    <FontAwesomeIcon
+                      onClick={() => handleNotification("", "", 1)}
+                      icon={faClose}
+                      className="text-600 ml-2 cursor-pointer text-[13px]"
+                    />
+                  </span>
+                </div>
+              )}
+              <Button
+                disabled={!isSaveEnabled || false}
+                className="flex h-[36px] min-w-[74px] flex-row items-center justify-center rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[14px] font-bold text-white-a700 button"
+                onClick={handleSave}
+              >
+                {processingStatus.includes("Saving") ? (
+                  <>
+                    <FontAwesomeIcon
+                      icon={faRotate}
+                      className="text-sm font-bold mr-2 animate-spin"
+                    />
+                    Saving...
+                  </>
+                ) : (
+                  <>Save</>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
-      <ToastContainer
-        position="bottom-right"
-        autoClose={8000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss={false}
-        draggable
-        pauseOnHover
-        transition={Bounce}
-      />
     </>
   );
 }

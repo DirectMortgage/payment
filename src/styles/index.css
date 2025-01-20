@@ -230,3 +230,15 @@ input[type="radio"]:focus {
 .empty-row .p-column-title {
   display: none !important;
 }
+.button:disabled {
+  cursor: not-allowed;
+  background-color: #6c757d;
+  border-color: black;
+}
+.p-datatable-header {
+  position: sticky;
+  background-color: #fff;
+  z-index: 5;
+  top: 71px;
+  padding-top: 20px;
+}

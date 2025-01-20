@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
-import { Toast } from "primereact/toast";
 import { useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -17,7 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { Paginator } from "primereact/paginator";
 import { GroupSelect } from "../GroupSelect/index";
-import { Img, Button, Radio, RadioGroup } from "../../components";
+import { Img, Button } from "../../components";
 import {
   handleAPI,
   FormatValueforCalc,
@@ -63,12 +62,13 @@ const Table = forwardRef(
       setEditingRows = () => {},
       setRowData = () => {},
       handleTriggerPayee = () => {},
+      handleNotification = () => {},
+      setIsSaveEnabled = () => {},
       ...props
     },
     ref
   ) => {
-    const toast = useRef(null),
-      [globalFilter, setGlobalFilter] = useState(null),
+    const [globalFilter, setGlobalFilter] = useState(null),
       [rows, setRows] = useState(5),
       [first, setFirst] = useState(0),
       [editingCell, setEditingCell] = useState(null),
@@ -82,9 +82,7 @@ const Table = forwardRef(
       [hdnBankAcountId, sethdnBankAcountId] = useState(""),
       [localData, setLocalData] = useState([]),
       [OnloadData, setOnloadData] = useState([]);
-    useEffect(() => {
-      console.log("editingCell", editingCell);
-    }, [editingCell]);
+
     const dataArray = useMemo(
       () => (Array.isArray(tableData) && tableData.length > 0 ? tableData : []),
       [tableData, tableData.length]
@@ -104,7 +102,6 @@ const Table = forwardRef(
           acc[paymentId].push(item);
           return acc;
         }, {});
-        debugger;
         // Initialize field maps
         const fieldMaps = {
           classNameMap: {},
@@ -153,8 +150,6 @@ const Table = forwardRef(
             };
           }
         );
-        console.log({ parentRows });
-
         return { groupedData, paymentIdOrder, fieldMaps, parentRows };
       }, [dataArray]);
 
@@ -408,26 +403,23 @@ const Table = forwardRef(
 
       // Get all rows including child rows flattened into single array
       //const allRows = [...tableData];
+      const rdoACH = document.getElementById(`chkACHApproved${rowData.RowId}`),
+        rdoCheck = document.getElementById(`chkPrintChecks${rowData.RowId}`);
+
+      rdoACH.checked = value === "ach";
+      rdoCheck.checked = value === "check";
+
       setRowData((prevData) => {
-        //debugger;
         const data = prevData.map((row) => {
           if (row.VendorPaymentId === rowData.VendorPaymentId) {
             row.PayACH = value === "ach";
             row.PayCheck = value === "check";
+          } else {
+            row.PayACH = false;
+            row.PayCheck = false;
           }
-          return row;
+          return { ...row };
         });
-        //console.log(
-        //  data
-        //    .filter((row) => row.VendorPaymentId == rowData.VendorPaymentId)
-        //    .map(({ PayACH, PayCheck, SubTotal, TotalAmount }) => ({
-        //      PayACH,
-        //      PayCheck,
-        //      SubTotal,
-        //      TotalAmount,
-        //    }))
-        //);
-
         return [...data];
       });
 
@@ -544,7 +536,7 @@ const Table = forwardRef(
 
             const selectedValue = (childRows[0] || rowData).PayACH
               ? "ach"
-              : rowData.PayCheck
+              : (childRows[0] || rowData).PayCheck
               ? "check"
               : "";
 
@@ -579,16 +571,16 @@ const Table = forwardRef(
                         id={`chkACHApproved${rowData.RowId}`}
                         name={`payment-${rowData.RowId}`}
                         value="ach"
-                        checked={selectedValue === "ach"}
+                        // checked={selectedValue === "ach"}
                         onChange={(e) => {}}
                         onClick={(e) => {
                           handlePaymentChange(
                             rowData,
                             selectedValue === "ach" ? null : "ach"
                           );
-                          if (FilterchildRows.length !== 0) {
-                            setExpandedRows((prev) => [...prev, rowData]);
-                          }
+                          //if (FilterchildRows.length !== 0) {
+                          //  setExpandedRows((prev) => [...prev, rowData]);
+                          //}
                           handleCheckboxChange(rowData, true);
                         }}
                         className="cursor-pointer"
@@ -613,9 +605,9 @@ const Table = forwardRef(
                           rowData,
                           selectedValue === "check" ? null : "check"
                         );
-                        if (FilterchildRows.length !== 0) {
-                          setExpandedRows((prev) => [...prev, rowData]);
-                        }
+                        //if (FilterchildRows.length !== 0) {
+                        //  setExpandedRows((prev) => [...prev, rowData]);
+                        //}
                         handleCheckboxChange(rowData, true);
                       }
                     }}
@@ -627,16 +619,16 @@ const Table = forwardRef(
                       id={`chkPrintChecks${rowData.RowId}`}
                       name={`payment-${rowData.RowId}`}
                       value="check"
-                      checked={selectedValue === "check"}
+                      // checked={selectedValue === "check"}
                       onChange={(e) => {}}
                       onClick={(e) => {
                         handlePaymentChange(
                           rowData,
                           selectedValue === "check" ? null : "check"
                         );
-                        if (FilterchildRows.length !== 0) {
-                          setExpandedRows((prev) => [...prev, rowData]);
-                        }
+                        //if (FilterchildRows.length !== 0) {
+                        //  setExpandedRows((prev) => [...prev, rowData]);
+                        //}
                         handleCheckboxChange(rowData, true);
                       }}
                       className="cursor-pointer"
@@ -1049,7 +1041,9 @@ const Table = forwardRef(
                       ) : ["paymentMethodHeader", "MarkPaid"].includes(
                           col.field
                         ) ? (
-                        <span className="hidden1">{col.body(childRow)}</span>
+                        <span className="pointer-events-none opacity-0">
+                          {col.body(childRow)}
+                        </span>
                       ) : col.body ? (
                         col.body(childRow)
                       ) : (
@@ -1211,11 +1205,11 @@ const Table = forwardRef(
         // Format values
         TotalAmount = FormatValueforCalc(TotalAmount);
         ClassAmount = FormatValueforCalc(ClassAmount);
-        const Change = (val.Change || 0).toString();
+        let Change = (val.Change || 0).toString();
 
         const result = OnloadData.find((e) => e.RowId === val.RowId);
 
-        if (result && val.Change === 1) {
+        if (((result && val.Change === 1) || Paid == 1) && !val.isNewRow) {
           const changeobj = {
             VendorPaymentId,
             VendorId,
@@ -1281,7 +1275,7 @@ const Table = forwardRef(
           }
 
           changedJSON.push(changeobj);
-        } else {
+        } else if (val.isNewRow) {
           const changeobj = {
             VendorPaymentId,
             VendorId,
@@ -1304,17 +1298,16 @@ const Table = forwardRef(
           };
           changedJSON.push(changeobj);
         }
-
+        Change = Paid == 1 ? 1 : Change;
         ChangeXML += `<row VendorPaymentId="${VendorPaymentId}" VendorId="${VendorId}" TotalAmount="${TotalAmount}" InvoiceDate="${InvDate}" InvoiceDue="${DueDate}" RefNo="${RefNo}" Memo="${InvNum}" Payon="${PayOn}" Status="${Status}" ApprovedBy="${ApprovedBy}" ApprovedOn="" VendorPaymentDetailId="${VendorPaymentDetailId}" AccountId="${Accounts}" Class="${ClassId}" Amount="${ClassAmount}" Change="${Change}" Paid="${Paid}" PayACH="${PayACH}" EntityType="${EntityType}"/>`;
       });
       ChangeXML = `<PaymentSave BankAccountId="${selectedBank.value}">${ChangeXML}</PaymentSave>`;
-      console.log({ ChangeXML });
-
+      console.log({ ChangeXML, changedJSON });
+      //return;
       // Replace quotes for proper formatting
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
-      console.log({ ChangeXML1: ChangeXML.replaceAll("\\", "") });
-      //return;
+
       let obj = { SaveXml: ChangeXML, changedJSON: jsonString };
       const response = await handleAPI({
         name: "VendorMonthlySave",
@@ -1322,8 +1315,38 @@ const Table = forwardRef(
         method: "POST",
         body: JSON.stringify(obj),
       });
+      let isSaved = false;
 
-      if (!response || response.trim() === "{}" || response.trim() === "[]") {
+      try {
+        isSaved =
+          !response || response.trim() === "{}" || response.trim() === "[]";
+      } catch (error) {}
+
+      if (!isSaved) {
+        try {
+          isSaved = JSON["parse"](response)["Table"].length > 0;
+        } catch (error) {}
+      }
+      if (isSaved) {
+        handleNotification("Saved Successfully.");
+        setIsSaveEnabled(false);
+        setRowData((prevData) => {
+          return [
+            ...prevData
+              .filter(
+                ({ RowId }) =>
+                  !document.getElementById(`chkMarkaspaid${RowId}`)?.checked
+              )
+              .map((item) => {
+                item.Change = 0;
+                item.isNewRow = false;
+                return item;
+              }),
+          ];
+        });
+        setTimeout(() => {
+          document.getElementById("idTriggerDuplicateValidation")?.click();
+        }, 1000);
       }
     };
 
@@ -1378,7 +1401,7 @@ const Table = forwardRef(
           Paid: "0",
           PayACH: false,
           ClassAmount: "",
-
+          isNewRow: true,
           RefNo: "",
           AccountId: "",
           Class: "",
@@ -1938,7 +1961,6 @@ const Table = forwardRef(
             />
           </div>
         )}
-        <Toast ref={toast} />
         <input type="hidden" value={payStatusHtml} id="hdnPayStatusHtml" />
         <input
           type="hidden"

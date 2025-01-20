@@ -30,6 +30,7 @@ import React, {
   useRef,
   forwardRef,
   useImperativeHandle,
+  useMemo,
 } from "react";
 import Table from "../../components/Table/Table.js";
 
@@ -39,7 +40,15 @@ import { Image } from "primereact/image";
 let SessionId;
 
 const PaymentManagementSection = forwardRef(
-  ({ companyId, validationResult }, ref) => {
+  (
+    {
+      companyId,
+      validationResult,
+      setIsSaveEnabled,
+      handleNotification = () => {},
+    },
+    ref
+  ) => {
     const [rowData, setRowData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [glAccounts, setGLAccounts] = useState([]);
@@ -73,6 +82,17 @@ const PaymentManagementSection = forwardRef(
     const [EmpId, SetEmpID] = useState("0");
     const empIdRef = useRef(EmpId);
 
+    const isSaveEnabled = useMemo(() => {
+      return (
+        rowData.length > 0 &&
+        rowData.filter(({ Change = 0 }) => Number(Change)).length > 0
+      );
+    }, [rowData]);
+
+    useEffect(() => {
+      setIsSaveEnabled(isSaveEnabled);
+    }, [isSaveEnabled]);
+
     useImperativeHandle(ref, () => ({
       handleAddRow: () => {
         console.log("Table ref:", tableRef.current); // Debug log
@@ -81,6 +101,7 @@ const PaymentManagementSection = forwardRef(
       handleSave: () => {
         tableRef.current.savevendorPayment();
       },
+      isSaveEnabled,
     }));
     //let FromPipeline = queryString["FromPipeline"];
     SessionId = queryString["SessionID"];
@@ -103,6 +124,17 @@ const PaymentManagementSection = forwardRef(
 
       fetchData();
     }, [companyId]);
+
+    const { iSelectedCount, iMarkPaid } = useMemo(() => {
+      const selectedRow = rowData.filter(
+        ({ PayACH, PayCheck }) => PayCheck || PayACH
+      );
+      if (selectedRow.length > 0) {
+        return { iMarkPaid: selectedRow[0]["TotalAmount"], iSelectedCount: 1 };
+      } else {
+        return { iMarkPaid: "$0.00", iSelectedCount: 0 };
+      }
+    }, [rowData]);
 
     const GetVendorPaymentApprovalData = async (
       CompanyId,
@@ -342,10 +374,6 @@ const PaymentManagementSection = forwardRef(
         "width=1200,height=1200,resizable=yes,scrollbars=yes"
       );
     };
-
-    useEffect(() => {
-      console.log({ editingRows });
-    }, [editingRows]);
 
     const handleRemove = async (rowId) => {
       const recordToRemoveParent = rowData.find((row) => row.RowId === rowId);
@@ -1018,7 +1046,15 @@ const PaymentManagementSection = forwardRef(
               label=""
               name="item"
               id={`chkMarkaspaid${rowData.RowId}`}
-              onChange={(e) => console.log("Checked:", e.target.checked)}
+              onChange={(e) => {
+                setIsSaveEnabled(true);
+              }}
+              onKeyDown={(e) => {
+                if ([32, 13].includes(e.keyCode)) {
+                  e.preventDefault();
+                  setIsSaveEnabled(true);
+                }
+              }}
               className="text-gray-800 check-box"
             />
           </div>
@@ -1032,6 +1068,7 @@ const PaymentManagementSection = forwardRef(
         setColumns([...iColumns]);
       }
     }, [validationResult, viewAllPDFStatus, editingRows, rowData]);
+
     const handlePayment = () => {
       if (tableRef.current) {
         const selectedPaymentType = rowData.find(
@@ -1059,231 +1096,191 @@ const PaymentManagementSection = forwardRef(
 
     return (
       <>
-        <div className="flex justify-center px-14 md:px-5">
+        <div className="flex justify-center px-14 md:px-5 ">
           <div className="mx-auto w-full max-w-[1550px]">
             <div className="flex items-start sm:flex-col">
               <div style={{ padding: "0 3em" }}></div>
             </div>
-            <div className="-mt-2">
-              <div style={{ padding: "0 2em" }}>
-                <Table
-                  ref={tableRef}
-                  paginator
-                  isLoading={isLoading}
-                  tableData={rowData}
-                  setEditingRows={setEditingRows}
-                  accounts={glAccounts}
-                  Class={Class}
-                  vendors={vendors}
-                  columns={columns}
-                  sessionid={SessionId}
-                  companyId={companyId}
-                  setmarkPaid={setmarkPaid}
-                  setSelectedCount={setSelectedCount}
-                  setShowPaymentSection={setShowPaymentSection}
-                  setShowSecondRow={setShowSecondRow}
-                  setShowThirdRow={setShowThirdRow}
-                  setPaymentMethod={setPaymentMethod}
-                  handleTriggerPayee={handleTriggerPayee}
-                  selectedBank={selectedBank}
-                  selectedPrintOrder={selectedPrintOrder}
-                  BankOptions={dropDownOptions}
-                  EmpId={EmpId}
-                  printSuccess={printSuccess}
-                  editingRows={editingRows}
-                  expandedRows={expandedRows}
-                  setExpandedRows={setExpandedRows}
-                  handleRemove={handleRemove}
-                  setRowData={setRowData}
-                  setIsLoadingGo={setIsLoadingGo}
-                  setIsLoadingSave={setIsLoadingSave}
-                  getVendorPaymentApprovalData={GetVendorPaymentApprovalData}
-                  footerContent={
-                    <>
-                      {/* First Row - Existing Content */}
-                      <div className="border-b border-solid border-gray-600">
-                        <div className="flex flex-col gap-4 py-2.5">
-                          {/* First Row */}
-                          <div className="flex items-center">
-                            <div className="flex md:w-[310px] lg:w-[310px] w-[335px] flex-col gap-2">
-                              <div className="flex flex-wrap justify-end gap-6">
-                                <Text
-                                  as="p"
-                                  className="font-inter text-[12px] font-normal text-black-900"
-                                >
-                                  Total bills:{" "}
-                                </Text>
-                                <Heading
-                                  as="p"
-                                  className="font-inter text-[12px] font-semibold text-black-900"
-                                >
-                                  {formatCurrency(totalSubTotal)}
-                                </Heading>
-                              </div>
-                              <div className="flex flex-wrap justify-end gap-6">
-                                <Text
-                                  as="p"
-                                  className="font-inter text-[12px] font-normal text-black-900"
-                                >
-                                  <span>Bills marked to pay&nbsp;</span>
-                                  <span className="font-bold">
-                                    ({markedCount}):
-                                  </span>
-                                </Text>
-                                <Heading
-                                  as="p"
-                                  className="font-inter text-[12px] font-semibold text-black-900"
-                                >
-                                  {formatCurrency(markPaid)}
-                                </Heading>
-                              </div>
-                            </div>
-                            {showPaymentSection && (
-                              <div
-                                className="flex items-end justify-end gap-8 md:self-stretch sm:flex-col md:flex-col w-9/12"
-                                style={{ position: "relative" }}
+            <div style={{ padding: "0 2em" }}>
+              <Table
+                ref={tableRef}
+                paginator
+                setIsSaveEnabled={setIsSaveEnabled}
+                isLoading={isLoading}
+                tableData={rowData}
+                setEditingRows={setEditingRows}
+                accounts={glAccounts}
+                Class={Class}
+                vendors={vendors}
+                columns={columns}
+                sessionid={SessionId}
+                companyId={companyId}
+                handleNotification={handleNotification}
+                setmarkPaid={setmarkPaid}
+                setSelectedCount={setSelectedCount}
+                setShowPaymentSection={setShowPaymentSection}
+                setShowSecondRow={setShowSecondRow}
+                setShowThirdRow={setShowThirdRow}
+                setPaymentMethod={setPaymentMethod}
+                handleTriggerPayee={handleTriggerPayee}
+                selectedBank={selectedBank}
+                selectedPrintOrder={selectedPrintOrder}
+                BankOptions={dropDownOptions}
+                EmpId={EmpId}
+                printSuccess={printSuccess}
+                editingRows={editingRows}
+                expandedRows={expandedRows}
+                setExpandedRows={setExpandedRows}
+                handleRemove={handleRemove}
+                setRowData={setRowData}
+                setIsLoadingGo={setIsLoadingGo}
+                setIsLoadingSave={setIsLoadingSave}
+                getVendorPaymentApprovalData={GetVendorPaymentApprovalData}
+                footerContent={
+                  <>
+                    {/* First Row - Existing Content */}
+                    <div className="border-b border-solid border-gray-600">
+                      <div className="flex flex-col gap-4 py-2.5">
+                        {/* First Row */}
+                        <div className="flex items-center">
+                          <div className="flex md:w-[310px] lg:w-[310px] w-[335px] flex-col gap-2">
+                            <div className="flex flex-wrap justify-end gap-6">
+                              <Text
+                                as="p"
+                                className="font-inter text-[12px] font-normal text-black-900"
                               >
-                                <div className="flex flex-col items-start justify-center gap-0.5 w-[250px]">
-                                  <Text
-                                    as="p"
-                                    className="font-inter text-[14px] font-normal text-black-900 mb-1"
-                                  >
-                                    Pay From Account
-                                  </Text>
-                                  <SelectBox
-                                    wClassName="s-wrap w-full"
-                                    name="Account Dropdown"
-                                    options={dropDownOptions}
-                                    value={selectedBank.value}
-                                    onChange={(selectedOption) => {
-                                      setSelectedBank(selectedOption);
-                                      const selectedBankOption =
-                                        dropDownOptions?.find(
-                                          (option) =>
-                                            option?.value ===
-                                            selectedOption?.value
-                                        ) || {
-                                          checkNum: 0,
-                                          label: "",
-                                          selected: false,
-                                          value: "",
-                                        };
-                                      setChecknumber(
-                                        selectedBankOption.checkNum || 0
-                                      );
-                                    }}
-                                    // onChange={setSelectedBank}
-                                  />
-                                </div>
-                                <Button
-                                  onClick={handlePayment}
-                                  disabled={isButtonEnabled}
-                                  style={{
-                                    cursor: isButtonEnabled
-                                      ? "not-allowed"
-                                      : "pointer",
-                                    opacity: isButtonEnabled ? 0.8 : 1,
-                                  }}
-                                  leftIcon={
-                                    paymentMethod === "ach" ? (
-                                      <Img
-                                        src="images/img_arrowright.svg"
-                                        alt="Arrow Right"
-                                        className="h-[18px] w-[18px]"
-                                      />
-                                    ) : (
-                                      <img
-                                        src={PrintIcon}
-                                        alt="Print Check"
-                                        className="cursor-pointer"
-                                        style={{
-                                          width: "25px",
-                                          height: "25px",
-                                          objectFit: "contain",
-                                          filter: "brightness(0) invert(1)",
-                                        }}
-                                        onClick={() =>
-                                          handleImageClick(rowData.LinkId)
-                                        }
-                                      />
-                                    )
-                                  }
-                                  className="flex h-[38px] min-w-[118px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
-                                  data-payment-type={paymentMethod}
-                                >
-                                  {getButtonLabel()}
-                                </Button>
-                              </div>
-                            )}
+                                Total bills:{" "}
+                              </Text>
+                              <Heading
+                                as="p"
+                                className="font-inter text-[12px] font-semibold text-black-900"
+                              >
+                                {formatCurrency(totalSubTotal)}
+                              </Heading>
+                            </div>
+                            <div className="flex flex-wrap justify-end gap-6">
+                              <Text
+                                as="p"
+                                className="font-inter text-[12px] font-normal text-black-900"
+                              >
+                                <span>Bills marked to pay&nbsp;</span>
+                                <span className="font-bold">
+                                  ({iSelectedCount}):
+                                </span>
+                              </Text>
+                              <Heading
+                                as="p"
+                                className="font-inter text-[12px] font-semibold text-black-900"
+                              >
+                                {iMarkPaid}
+                              </Heading>
+                            </div>
                           </div>
-
-                          {showSecondRow && (
-                            <div className="flex items-center w-full justify-end px-[185px]">
-                              <div className="flex items-center gap-4 ">
-                                <div className="w-[250px]">
-                                  <input
-                                    type="text"
-                                    className="w-full h-[38px] rounded border border-solid border-black-900 bg-white-a700 px-3 py-1 font-inter text-[14px]"
-                                    placeholder="Enter Check Number"
-                                    value={checknumber}
-                                  />
-                                </div>
-                                <div className="flex items-center gap-8">
-                                  <SelectBox
-                                    wClassName="s-wrap w-[250px]"
-                                    name="Second Dropdown"
-                                    options={printOrder}
-                                    onChange={setSelectedPrintOrder}
-                                  />
-                                  <div className="min-w-[115px]">
-                                    <Button
-                                      onClick={handleCheckPaymentGo}
-                                      className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 "
-                                    >
-                                      Go
-                                    </Button>
-                                    {isLoadingGo && (
-                                      <FontAwesomeIcon
-                                        icon={faRotate}
-                                        className="spinner"
-                                        color="#508BC9"
-                                        style={{
-                                          fontSize: 16,
-                                          marginLeft: 5,
-                                          marginTop: 3,
-                                          animation: "spin 1s linear infinite",
-                                        }}
-                                      />
-                                    )}
-                                  </div>
-                                </div>
+                          {showPaymentSection && paymentMethod && (
+                            <div
+                              className="flex items-end justify-end gap-8 md:self-stretch sm:flex-col md:flex-col w-9/12"
+                              style={{ position: "relative" }}
+                            >
+                              <div className="flex flex-col items-start justify-center gap-0.5 w-[250px]">
+                                <Text
+                                  as="p"
+                                  className="font-inter text-[14px] font-normal text-black-900 mb-1"
+                                >
+                                  Pay From Account
+                                </Text>
+                                <SelectBox
+                                  wClassName="s-wrap w-full"
+                                  name="Account Dropdown"
+                                  options={dropDownOptions}
+                                  value={selectedBank.value}
+                                  onChange={(selectedOption) => {
+                                    setSelectedBank(selectedOption);
+                                    const selectedBankOption =
+                                      dropDownOptions?.find(
+                                        (option) =>
+                                          option?.value ===
+                                          selectedOption?.value
+                                      ) || {
+                                        checkNum: 0,
+                                        label: "",
+                                        selected: false,
+                                        value: "",
+                                      };
+                                    setChecknumber(
+                                      selectedBankOption.checkNum || 0
+                                    );
+                                  }}
+                                  // onChange={setSelectedBank}
+                                />
                               </div>
+                              <Button
+                                onClick={handlePayment}
+                                disabled={isButtonEnabled}
+                                style={{
+                                  cursor: isButtonEnabled
+                                    ? "not-allowed"
+                                    : "pointer",
+                                  opacity: isButtonEnabled ? 0.8 : 1,
+                                }}
+                                leftIcon={
+                                  paymentMethod === "ach" ? (
+                                    <Img
+                                      src="images/img_arrowright.svg"
+                                      alt="Arrow Right"
+                                      className="h-[18px] w-[18px]"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={PrintIcon}
+                                      alt="Print Check"
+                                      className="cursor-pointer"
+                                      style={{
+                                        width: "25px",
+                                        height: "25px",
+                                        objectFit: "contain",
+                                        filter: "brightness(0) invert(1)",
+                                      }}
+                                      onClick={() =>
+                                        handleImageClick(rowData.LinkId)
+                                      }
+                                    />
+                                  )
+                                }
+                                className="flex h-[38px] min-w-[118px] flex-row items-center justify-center gap-2.5 rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-[19px] text-center font-inter text-[12px] font-bold text-white-a700"
+                                data-payment-type={paymentMethod}
+                              >
+                                {getButtonLabel()}
+                              </Button>
                             </div>
                           )}
+                        </div>
 
-                          {showThirdRow && (
-                            <div className="flex items-center w-full justify-end px-[185px]">
-                              <div className="flex items-center gap-8">
-                                <Text
-                                  as="p"
-                                  className="font-inter text-[14px] font-normal text-black-900"
-                                >
-                                  Did checks print successfully?
-                                </Text>
+                        {showSecondRow && (
+                          <div className="flex items-center w-full justify-end px-[185px]">
+                            <div className="flex items-center gap-4 ">
+                              <div className="w-[250px]">
                                 <input
-                                  type="checkbox"
-                                  checked={printSuccess}
-                                  onChange={handleCheckboxChange}
-                                  className="h-5 w-5 rounded border border-solid border-black-900"
+                                  type="text"
+                                  className="w-full h-[38px] rounded border border-solid border-black-900 bg-white-a700 px-3 py-1 font-inter text-[14px]"
+                                  placeholder="Enter Check Number"
+                                  value={checknumber}
+                                />
+                              </div>
+                              <div className="flex items-center gap-8">
+                                <SelectBox
+                                  wClassName="s-wrap w-[250px]"
+                                  name="Second Dropdown"
+                                  options={printOrder}
+                                  onChange={setSelectedPrintOrder}
                                 />
                                 <div className="min-w-[115px]">
                                   <Button
-                                    onClick={handleSaveCheckPayment}
-                                    className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700"
+                                    onClick={handleCheckPaymentGo}
+                                    className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 "
                                   >
-                                    Save
+                                    Go
                                   </Button>
-                                  {isLoadingSave && (
+                                  {isLoadingGo && (
                                     <FontAwesomeIcon
                                       icon={faRotate}
                                       className="spinner"
@@ -1299,13 +1296,53 @@ const PaymentManagementSection = forwardRef(
                                 </div>
                               </div>
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
+
+                        {showThirdRow && (
+                          <div className="flex items-center w-full justify-end px-[185px]">
+                            <div className="flex items-center gap-8">
+                              <Text
+                                as="p"
+                                className="font-inter text-[14px] font-normal text-black-900"
+                              >
+                                Did checks print successfully?
+                              </Text>
+                              <input
+                                type="checkbox"
+                                checked={printSuccess}
+                                onChange={handleCheckboxChange}
+                                className="h-5 w-5 rounded border border-solid border-black-900"
+                              />
+                              <div className="min-w-[115px]">
+                                <Button
+                                  onClick={handleSaveCheckPayment}
+                                  className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700"
+                                >
+                                  Save
+                                </Button>
+                                {isLoadingSave && (
+                                  <FontAwesomeIcon
+                                    icon={faRotate}
+                                    className="spinner"
+                                    color="#508BC9"
+                                    style={{
+                                      fontSize: 16,
+                                      marginLeft: 5,
+                                      marginTop: 3,
+                                      animation: "spin 1s linear infinite",
+                                    }}
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </>
-                  }
-                />
-              </div>
+                    </div>
+                  </>
+                }
+              />
             </div>
           </div>
         </div>

@@ -24,6 +24,8 @@ import {
   formatDate,
   cleanValue,
 } from "../../components/CommonFunctions/CommonFunction.js";
+import { Tooltip } from "react-tooltip";
+import "react-tooltip/dist/react-tooltip.css";
 
 const Table = forwardRef(
   (
@@ -1995,6 +1997,7 @@ const Table = forwardRef(
             />
           ))}
         </DataTable>
+        <Tooltip id="tooltip" place="right" effect="solid" />
         {paginator && (
           <div className="custom-footer">
             <div className="footer-content-wrapper">

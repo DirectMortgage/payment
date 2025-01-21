@@ -11,6 +11,7 @@ import { faPencil, faRotate } from "@fortawesome/free-solid-svg-icons";
 import uploadPdfImage from "../../components/Images/upload-pdf.png";
 import OpenPdfImage from "../../components/Images/open_in_new.png";
 import PrintIcon from "../../components/Images/Print-Icon.png";
+import "primereact/resources/themes/lara-light-blue/theme.css"; // PrimeReact Theme
 import {
   handleAPI,
   queryStringToObject,
@@ -33,7 +34,7 @@ import React, {
   useMemo,
 } from "react";
 import Table from "../../components/Table/Table.js";
-
+import { Dialog } from "primereact/dialog";
 import "react-datepicker/dist/react-datepicker.css";
 import { Image } from "primereact/image";
 
@@ -374,8 +375,27 @@ const PaymentManagementSection = forwardRef(
         "width=1200,height=1200,resizable=yes,scrollbars=yes"
       );
     };
-
+    const [dialogDetails, setDialogDetails] = useState({
+      isShow: false,
+      title: "",
+      message: "",
+    });
     const handleRemove = async (rowId) => {
+      const { Payee } = rowData.find((row) => row.RowId === rowId);
+
+      setDialogDetails({
+        isShow: true,
+        title: "Confirmation",
+        message: (
+          <>
+            Are you sure you want to delete the payment record for{" "}
+            <b>{Payee}</b>?
+          </>
+        ),
+        rowId,
+      });
+    };
+    const handleRemoveWithConfirmation = async (rowId) => {
       const recordToRemoveParent = rowData.find((row) => row.RowId === rowId);
 
       if (recordToRemoveParent) {
@@ -606,6 +626,8 @@ const PaymentManagementSection = forwardRef(
                   onClick={(e) =>
                     handlePayeeClick(rowData.VendorId, rowData, rowData.RowId)
                   }
+                  data-tooltip-id="tooltip"
+                  data-tooltip-html={rowData["EntityAddress"]}
                   className="cursor-pointer hover:underline"
                 >
                   {rowData.Payee}
@@ -1357,6 +1379,54 @@ const PaymentManagementSection = forwardRef(
             GetVendorPaymentApprovalData(companyId, empId, false);
           }}
         ></div>
+        <Dialog
+          modal
+          draggable={false}
+          position="top"
+          className="custom-tailwind-modal"
+          header={dialogDetails["title"]}
+          visible={dialogDetails["isShow"]}
+          headerClassName="p-5"
+          footer={
+            <>
+              <button
+                className="px-5 py-2 rounded-lg border-2 mr-4"
+                style={{ color: "#3872af", borderColor: "#3872af" }}
+                onClick={() => {
+                  setDialogDetails({
+                    isShow: false,
+                  });
+                }}
+              >
+                No
+              </button>
+              <button
+                autoFocus={true}
+                className="bg-[#3872af] px-5 py-2 rounded-lg border-2"
+                style={{ color: "white", borderColor: "#3872af" }}
+                onClick={() => {
+                  handleRemoveWithConfirmation(dialogDetails["rowId"]);
+                  setDialogDetails({
+                    isShow: false,
+                  });
+                }}
+              >
+                Yes
+              </button>
+            </>
+          }
+          onHide={() => {
+            setDialogDetails({
+              isShow: false,
+              title: "",
+              message: "",
+            });
+          }}
+        >
+          <p className="mb-5 py-6 px-3 border-y border-solid">
+            {dialogDetails["message"]}
+          </p>
+        </Dialog>
       </>
     );
   }

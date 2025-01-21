@@ -273,3 +273,20 @@ input[type="radio"]:focus {
   background: #888;
   cursor: pointer;
 }
+#tooltip {
+  z-index: 1000;
+  border-radius: 5px;
+}
+.p-component-overlay {
+  background-color: transparent !important;
+}
+.p-dialog-mask {
+  background-color: #00000082 !important;
+  padding-top: 140px;
+}
+.p-dialog-content {
+  padding-bottom: 0px !important;
+}
+.p-dialog-header-close-icon {
+  color: red;
+}

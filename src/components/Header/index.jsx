@@ -1,15 +1,9 @@
-import { Heading, SelectBox, Img } from "./..";
+import { Heading, SelectBox } from "./..";
 import { React, useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { faRotate } from "@fortawesome/free-solid-svg-icons";
-import {
-  handleAPI,
-  queryStringToObject,
-  handleGetSessionData,
-  fnOpenWindow,
-  handleSaveWindowSize,
-} from "../../components/CommonFunctions/CommonFunction.js";
+import { handleAPI } from "../../components/CommonFunctions/CommonFunction.js";
 
 const dropDownOptions = [
   { label: "Select Company", value: "0" },
@@ -130,6 +124,7 @@ export default function Header({
   return (
     <header
       {...props}
+      id="main-header"
       className={`${
         props.className || ""
       } sticky top-0 z-40 flex sm:flex-col items-center px-[46px] py-4 md:px-5 bg-indigo-400 w-full`}

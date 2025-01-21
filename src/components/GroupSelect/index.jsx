@@ -50,6 +50,7 @@ const GroupSelect = ({
   VendorPaymentId,
   defaultMenuIsOpen = true,
   isChildRow = false,
+  menuPlacement = "auto",
   ...restProps
 }) => {
   const [customOptions, setCustomOptions] = useState([]);
@@ -156,6 +157,7 @@ const GroupSelect = ({
         labelField={labelKey}
         valueField={valueKey}
         value={iValue}
+        menuPlacement={menuPlacement}
         onChange={handleChange}
         disabled={loading}
         className={`${className} block s-dropdown w-full cursor-pointer font-[10px] items-center justify-center border border-solid bg-white-a700 rounded ${

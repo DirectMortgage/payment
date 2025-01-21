@@ -403,6 +403,7 @@ const Table = forwardRef(
 
       // Get all rows including child rows flattened into single array
       //const allRows = [...tableData];
+
       const rdoACH = document.getElementById(`chkACHApproved${rowData.RowId}`),
         rdoCheck = document.getElementById(`chkPrintChecks${rowData.RowId}`);
 
@@ -417,6 +418,14 @@ const Table = forwardRef(
           } else {
             row.PayACH = false;
             row.PayCheck = false;
+            const radioACH = document.getElementById(
+                `chkACHApproved${row.RowId}`
+              ),
+              radioCheck = document.getElementById(
+                `chkPrintChecks${row.RowId}`
+              );
+            if (radioACH) radioACH.checked = false;
+            if (radioCheck) radioCheck.checked = false;
           }
           return { ...row };
         });
@@ -874,6 +883,9 @@ const Table = forwardRef(
                             isChildRow={true}
                             size="sm"
                             shape="round"
+                            menuPlacement={
+                              index >= allRows.length - 5 ? "top" : "auto"
+                            }
                             options={accounts.map((opt) => ({
                               label: `${opt.Account_Id} - ${opt.Account_Name}`,
                               value: opt.Account_Id,
@@ -940,6 +952,9 @@ const Table = forwardRef(
                             isChildRow={true}
                             size="sm"
                             shape="round"
+                            menuPlacement={
+                              index >= allRows.length - 5 ? "top" : "auto"
+                            }
                             options={Class.map((opt) => ({
                               label: `${opt.label}`,
                               value: opt.Class_Id,
@@ -1437,8 +1452,35 @@ const Table = forwardRef(
       });
     }, [enhancedColumns, parentRows, tableData]);
 
+    const handleTableHeight = () => {
+      console.log("handleTableHeight");
+
+      if (tableData.length > 0) {
+        try {
+          const tableHeight =
+            document.querySelector("#main-header")?.offsetHeight +
+            document.querySelector(".p-datatable-header")?.offsetHeight +
+            document.querySelector(".fixed-footer")?.offsetHeight +
+            120;
+
+          document.documentElement.style.setProperty(
+            "--table-height",
+            window.innerHeight - tableHeight + "px"
+          );
+        } catch (error) {
+          document.documentElement.style.setProperty("--table-height", "auto");
+        }
+      }
+    };
+    useEffect(() => {
+      window.addEventListener("resize", handleTableHeight);
+      return () => {
+        window.removeEventListener("resize", handleTableHeight);
+      };
+    }, []);
+    handleTableHeight();
     const header = (
-        <div className="table-header">
+        <div className="table-header" id="table-header">
           <h6>{tableTitle}</h6>
           <div className="flex w-full justify-between items-center">
             <div className="flex-start flex gap-2">
@@ -1556,6 +1598,9 @@ const Table = forwardRef(
               Account_Id: opt.Account_Id,
               Account_Name: opt.Account_Name,
             }))}
+            menuPlacement={
+              options.rowIndex >= tableData.length - 5 ? "top" : "auto"
+            }
             name="Account"
             valueKey="Account_Id"
             labelKey="label"
@@ -1614,6 +1659,9 @@ const Table = forwardRef(
             size="sm"
             shape="round"
             options={vendors}
+            menuPlacement={
+              options.rowIndex >= tableData.length - 5 ? "top" : "auto"
+            }
             VendorPaymentDetailId={VendorPaymentDetailId}
             VendorPaymentId={VendorPaymentId}
             name="Vendors"
@@ -1735,6 +1783,9 @@ const Table = forwardRef(
               Class_Id: opt.Class_Id,
               Class_Name: opt.Class_Name,
             }))}
+            menuPlacement={
+              options.rowIndex >= tableData.length - 5 ? "top" : "auto"
+            }
             name="Class"
             valueKey="Class_Id"
             labelKey="label"
@@ -1887,7 +1938,7 @@ const Table = forwardRef(
     // Update how we slice the data for pagination
     const paginatedData = localData.slice(first, first + rows);
     return (
-      <div>
+      <div style={{ height: "var(--table-height)" }} className="table-wrapper">
         <DataTable
           key={tableData.length}
           value={paginatedData}
@@ -1899,7 +1950,7 @@ const Table = forwardRef(
               ? "empty-page-data-table pb-[5em]"
               : isLoading
               ? "empty-data-table"
-              : "data-table py-[0em] px-[2em]"
+              : "data-table"
           }
           paginator={false}
           rows={rows}

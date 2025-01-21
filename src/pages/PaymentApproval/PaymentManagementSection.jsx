@@ -1101,7 +1101,7 @@ const PaymentManagementSection = forwardRef(
             <div className="flex items-start sm:flex-col">
               <div style={{ padding: "0 3em" }}></div>
             </div>
-            <div style={{ padding: "0 2em" }}>
+            <div>
               <Table
                 ref={tableRef}
                 paginator

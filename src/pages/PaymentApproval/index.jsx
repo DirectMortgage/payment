@@ -84,7 +84,7 @@ export default function DesktopOnePage() {
         />
       </Helmet>
       <div className="flex w-full flex-col items-center  bg-white-a700 md:gap-[198px] sm:gap-[132px] pb-[80px]">
-        <div className="flex flex-col  self-stretch">
+        <div className="flex flex-col self-stretch">
           <Header
             setCompanyId={setCompanyId}
             companyId={companyId}

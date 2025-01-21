@@ -1,3 +1,7 @@
+:root {
+  --table-height: auto;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -241,4 +245,31 @@ input[type="radio"]:focus {
   z-index: 5;
   top: 71px;
   padding-top: 20px;
+}
+.p-datatable-scrollable-header,
+.p-datatable .p-datatable-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+}
+
+.table-wrapper ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.table-wrapper ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.table-wrapper ::-webkit-scrollbar-thumb {
+  background: #9999;
+  border-radius: 10px;
+}
+
+.table-wrapper ::-webkit-scrollbar-thumb:hover {
+  background: #888;
+  cursor: pointer;
 }

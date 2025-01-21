@@ -175,7 +175,10 @@ const handleGetSessionData = async (strSessionId, SessVarName) => {
   }).then((response) => {
     if (["Output", undefined, null, "", "0"].includes(response))
       handleRedirectLoginPage();
-    else return response;
+    else {
+      updateWebURL({ EmpNum: response });
+      return response;
+    }
   });
   return response;
 };
@@ -358,6 +361,23 @@ const formatSpecialCharacters = (text) => {
 
   return formattedText;
 };
+async function updateWebURL(params) {
+  let queryString = new URLSearchParams(window.location?.search || "");
+
+  if (params !== undefined) {
+    for (const [key, value] of Object.entries(params)) {
+      if (value) {
+        queryString.set(key, value);
+      } else {
+        queryString.delete(key);
+      }
+    }
+  }
+  let newUrl = `${window.location.pathname}?${queryString}`;
+  newUrl = newUrl.replaceAll("%7B", "{").replaceAll("%7D", "}");
+  window.history.replaceState(null, "", newUrl);
+}
+
 export {
   handleAPI,
   fnGetIndex,
@@ -377,4 +397,5 @@ export {
   FormatValueforCalc,
   formatSpecialCharacters,
   formatDate,
+  updateWebURL,
 };

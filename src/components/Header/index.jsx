@@ -138,13 +138,13 @@ export default function Header({
             options={dropDownOptions}
             value={companyId}
             onChange={handleCompanyChange}
-            wClassName="s-wrap"
+            wClassName="s-wrap min-w-[185px]"
           />
           <div className="flex items-center">
             <div className="relative">
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center w-[180px] rounded-[8px] ${getBackgroundColor()} px-5 py-[3px] text-[14px] text-white-a700 md:w-[180px] mt-1`}
+                className={`flex items-center w-[180px] rounded-[5px] ${getBackgroundColor()} px-5 py-[5px] text-[14px] text-white-a700 md:w-[180px]`}
               >
                 <span className="whitespace-nowrap">Duplicate payments</span>
                 {isLoading ? (

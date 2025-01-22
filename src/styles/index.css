@@ -290,3 +290,14 @@ input[type="radio"]:focus {
 .p-dialog-header-close-icon {
   color: red;
 }
+.p-column-resizer {
+  width: 3px;
+  background-color: #8080806b;
+  cursor: ew-resize;
+  height: 25px;
+  top: 35%;
+}
+.p-resizable-column:first-of-type .p-column-resizer,
+.p-resizable-column:last-of-type .p-column-resizer {
+  display: none;
+}

@@ -741,7 +741,7 @@ const PaymentManagementSection = forwardRef(
           </Text>
         ),
         style: {
-          width: "156px",
+          width: "150px",
           padding: "0.5rem",
           whiteSpace: "normal",
           wordWrap: "break-word",
@@ -845,7 +845,7 @@ const PaymentManagementSection = forwardRef(
           </Text>
         ),
         style: {
-          width: "96px",
+          width: "120px",
           padding: "0.5rem",
           whiteSpace: "normal",
           wordWrap: "break-word",
@@ -892,7 +892,7 @@ const PaymentManagementSection = forwardRef(
             Images
           </Text>
         ),
-        style: { width: "100px" },
+        style: { width: "80px", minWidth: "80px" },
         body: (rowData) => (
           <FileUpload
             id={`file-upload-${rowData?.RowId}`} // _${rowData.Scandoctype}_${rowData.ID}
@@ -973,25 +973,19 @@ const PaymentManagementSection = forwardRef(
         bodyClassName: "empty-row",
         editable: false,
         header: () => (
-          <Text
-            size="headingmd"
-            as="h1"
-            className="text-[12px] font-semibold text-indigo-700"
+          <span
+            onClick={handleViewAllPDF}
+            className="cursor-pointer hover:underline flex text-center text-[12px] font-semibold text-indigo-700"
           >
-            <span
-              onClick={handleViewAllPDF}
-              className="cursor-pointer hover:underline flex items-center pl-6"
-            >
-              View All PDF
-              {viewAllPDFStatus.includes("loading") && (
-                <span className="ml-1">
-                  <Spinner size="xxs" />
-                </span>
-              )}
-            </span>
-          </Text>
+            View All PDF
+            {viewAllPDFStatus.includes("loading") && (
+              <span className="ml-1">
+                <Spinner size="xxs" />
+              </span>
+            )}
+          </span>
         ),
-        style: { width: "130px" },
+        style: { width: "90px" },
         body: (rowData) => {
           return rowData.FileCount > 0 ? (
             <div className="flex gap-2 justify-center items-center">
@@ -1045,7 +1039,7 @@ const PaymentManagementSection = forwardRef(
             Payment Method
           </Text>
         ),
-        style: { width: "136px" },
+        style: { width: "110px" },
       },
       {
         field: "MarkPaid",

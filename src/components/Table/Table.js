@@ -791,7 +791,7 @@ const Table = forwardRef(
             }
           }}
           onClick={() => toggleRow(data)}
-          className="p-2 hover:bg-gray-100 rounded"
+          className="p-1 hover:bg-gray-100 rounded"
         >
           {expandedRows.some((row) => row.RowId === data.RowId) ? (
             <FontAwesomeIcon
@@ -863,7 +863,7 @@ const Table = forwardRef(
             <tbody>
               {allRows.map((childRow, index) => (
                 <tr key={index} className="p-row border-none">
-                  <td className="w-[48px] flex-shrink-0 border-none"></td>
+                  <td className="w-[25px] flex-shrink-0 border-none"></td>
                   {enhancedColumns.map((col, colIndex) => (
                     <td key={colIndex} className="p-col border-none">
                       {col.field === "Payee" ? (
@@ -1438,7 +1438,7 @@ const Table = forwardRef(
           field: "expand",
           "data-field": "expand",
           body: expandTemplate,
-          style: { width: "48px" },
+          style: { width: "25px" },
         },
         ...enhancedColumns,
       ].map((item) => {
@@ -1943,6 +1943,9 @@ const Table = forwardRef(
       <div style={{ height: "var(--table-height)" }} className="table-wrapper">
         <DataTable
           key={tableData.length}
+          resizableColumns
+          columnResizeMode="expand"
+          showGridlines
           value={paginatedData}
           expandedRows={expandedRows}
           onRowToggle={(e) => setExpandedRows(e.data)}

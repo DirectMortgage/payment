@@ -238,7 +238,8 @@ const handleShowUploadingStatus = (selector) => {
     .classList.remove("primary");
   document.querySelector('label[for="' + selector + '"]').classList.add("dark");
 };
-const cleanValue = (value = 0) => {
+const cleanValue = (value = 0, isCurrency) => {
+  isCurrency = isCurrency || value.includes("$");
   value = (value ?? "")
     .toString()
     .replaceAll("(", "")
@@ -247,8 +248,20 @@ const cleanValue = (value = 0) => {
     .replaceAll("%", "")
     .replaceAll(",", "");
 
-  return Number(value);
+  return isCurrency ? parseFloat(value) : Number(value);
 };
+function removeCurrencyFormatting(value) {
+  if (typeof value !== "string") return ""; // Ensure it's a string
+  value = value.replace(/[^0-9.-]/g, "");
+  const dotCount = (value.match(/\./g) || []).length;
+  if (dotCount > 1) {
+    value =
+      value.slice(0, value.lastIndexOf(".")) +
+      value.slice(value.lastIndexOf(".") + 1); // Remove extra dots
+  }
+  if (value <= 0 || value === ".") return "";
+  return value;
+}
 const formatDate = (date) => {
   if (date === "" || !date) return "";
   const currentDate = new Date();
@@ -393,6 +406,7 @@ export {
   fnOpenWindow,
   handleShowUploadingStatus,
   cleanValue,
+  removeCurrencyFormatting,
   formatCurrency,
   FormatValueforCalc,
   formatSpecialCharacters,

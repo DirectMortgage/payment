@@ -23,6 +23,7 @@ import {
   fnOpenWindow,
   formatDate,
   cleanValue,
+  removeCurrencyFormatting,
 } from "../../components/CommonFunctions/CommonFunction.js";
 import { Tooltip } from "react-tooltip";
 import "react-tooltip/dist/react-tooltip.css";
@@ -1455,8 +1456,6 @@ const Table = forwardRef(
     }, [enhancedColumns, parentRows, tableData]);
 
     const handleTableHeight = () => {
-      console.log("handleTableHeight");
-
       if (tableData.length > 0) {
         try {
           const tableHeight =
@@ -1893,7 +1892,7 @@ const Table = forwardRef(
             type="text"
             value={
               options.field === "TotalAmount"
-                ? cleanValue(options.value) || ""
+                ? removeCurrencyFormatting(options.value) || ""
                 : options.value || ""
             }
             onChange={(e) => {
@@ -1918,6 +1917,19 @@ const Table = forwardRef(
                       });
                     }, 0);
                   }
+                : options.field === "TotalAmount"
+                ? () =>
+                    setTimeout(() => {
+                      options.editorCallback(
+                        Number(options.value || 0)?.toFixed(2)
+                      );
+                      setRowData((prevData) => {
+                        prevData[options.rowIndex][options.field] = Number(
+                          options.value || 0
+                        )?.toFixed(2);
+                        return [...prevData];
+                      });
+                    }, 0)
                 : () => {}
             }
           />

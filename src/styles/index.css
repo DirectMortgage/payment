@@ -301,3 +301,6 @@ input[type="radio"]:focus {
 .p-resizable-column:last-of-type .p-column-resizer {
   display: none;
 }
+.p-cell-editing {
+  overflow: unset !important;
+}

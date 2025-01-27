@@ -1956,7 +1956,7 @@ const Table = forwardRef(
     // Update how we slice the data for pagination
     const paginatedData = localData.slice(first, first + rows);
     return (
-      <div style={{ height: "var(--table-height)" }} className="table-wrapper">
+      <div className="table-wrapper">
         <DataTable
           key={tableData.length}
           resizableColumns

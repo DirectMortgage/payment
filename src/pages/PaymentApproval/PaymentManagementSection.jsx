@@ -362,7 +362,7 @@ const PaymentManagementSection = forwardRef(
       // Handle the click event here
       let URL =
         "../../../NewDMAcct/GetUploadedImage.aspx?CompanyId=" +
-        4 +
+        (companyId || 4) +
         "&LinkId=" +
         LinkId;
 

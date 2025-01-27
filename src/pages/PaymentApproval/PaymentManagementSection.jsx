@@ -1078,9 +1078,9 @@ const PaymentManagementSection = forwardRef(
       },
     ];
 
-    const [columns, setColumns] = useState(iColumns);
+    const [columns, setColumns] = useState();
     useEffect(() => {
-      if (validationResult.length > 0) {
+      if (validationResult.length > 0 || rowData.length > 0) {
         setColumns([...iColumns]);
       }
     }, [validationResult, viewAllPDFStatus, editingRows, rowData]);

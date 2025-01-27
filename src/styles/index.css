@@ -305,5 +305,5 @@ input[type="radio"]:focus {
   overflow: unset !important;
 }
 .p-datatable {
-  height: var(--table-height);
+  max-height: var(--table-height);
 }

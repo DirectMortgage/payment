@@ -1078,7 +1078,7 @@ const PaymentManagementSection = forwardRef(
       },
     ];
 
-    const [columns, setColumns] = useState();
+    const [columns, setColumns] = useState(iColumns);
     useEffect(() => {
       if (validationResult.length > 0 || rowData.length > 0) {
         setColumns([...iColumns]);

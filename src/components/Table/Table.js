@@ -1479,6 +1479,10 @@ const Table = forwardRef(
         window.removeEventListener("resize", handleTableHeight);
       };
     }, []);
+    useEffect(() => {
+      document.documentElement.style.setProperty("--table-height", "auto");
+      handleTableHeight();
+    }, [isLoading]);
     handleTableHeight();
     const header = (
         <div className="table-header" id="table-header">

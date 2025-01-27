@@ -304,3 +304,6 @@ input[type="radio"]:focus {
 .p-cell-editing {
   overflow: unset !important;
 }
+.p-datatable {
+  height: var(--table-height);
+}

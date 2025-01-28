@@ -34,10 +34,14 @@
   } */
 .p-paginator {
   justify-content: flex-end;
+  display: inline-flex;
+  float: right;
   /* border-top: 1px solid #b1b1b1;
     padding-top: 20px; */
 }
-
+.pagination-info {
+  display: inline-flex;
+}
 .footer-divider {
   /* border-top: 1px solid #b1b1b1; */
   border-top: 1px solid rgb(127, 127, 127);
@@ -121,7 +125,10 @@ select {
   flex-direction: column;
   width: 100%;
 }
-
+.table-auto {
+  table-layout: fixed;
+  text-wrap: auto;
+}
 .table-header > div {
   display: flex;
   justify-content: space-between;

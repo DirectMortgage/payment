@@ -144,23 +144,34 @@ export default function Header({
             <div className="relative">
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center w-[180px] rounded-[5px] ${getBackgroundColor()} px-5 py-[5px] text-[14px] text-white-a700 md:w-[180px]`}
+                className={`flex items-center rounded-[5px] ${getBackgroundColor()} px-5 py-[5px] text-[14px] text-white-a700 md:w-[180px]`}
               >
-                <span className="whitespace-nowrap">Duplicate payments</span>
+                <span className="whitespace-nowrap mr-2">
+                  {isLoading
+                    ? "Checking for duplicate payments"
+                    : status === "PASS"
+                    ? "There is no duplicate payments"
+                    : "Duplicate payments"}
+                </span>
                 {isLoading ? (
                   <FontAwesomeIcon
                     icon={faRotate}
-                    className="text-white-a700 text-xs ml-1 animate-spin"
+                    className="text-white-a700 text-xs animate-spin"
                   />
                 ) : (
                   <FontAwesomeIcon
                     icon={faCaretDown}
-                    className="text-white-a700 text-xs ml-1"
+                    className="text-white-a700 text-xs"
                   />
                 )}
               </button>
               {isOpen && (
-                <div className="coverAll">
+                <div
+                  className="coverAll"
+                  style={{
+                    alignItems: status === "PASS" ? "center" : "flex-start",
+                  }}
+                >
                   <button
                     type="button"
                     className="close"

@@ -852,7 +852,7 @@ const Table = forwardRef(
                     style={{
                       width:
                         Number(col.style?.width.replace("px", "")) +
-                          (i > 4 ? -3 : 0) +
+                          // (i > 4 ? -3 : 0) +
                           "px" || "auto",
                       padding: 0,
                     }}
@@ -1059,7 +1059,15 @@ const Table = forwardRef(
                       ) : ["paymentMethodHeader", "MarkPaid"].includes(
                           col.field
                         ) ? (
-                        <span className="pointer-events-none opacity-0">
+                        <span
+                          className={
+                            [166624, 167753].includes(
+                              Number(childRow["VendorId"])
+                            )
+                              ? ""
+                              : "pointer-events-none opacity-0"
+                          }
+                        >
                           {col.body(childRow)}
                         </span>
                       ) : col.body ? (
@@ -1462,7 +1470,7 @@ const Table = forwardRef(
             document.querySelector("#main-header")?.offsetHeight +
             document.querySelector(".p-datatable-header")?.offsetHeight +
             document.querySelector(".fixed-footer")?.offsetHeight +
-            120;
+            90;
 
           document.documentElement.style.setProperty(
             "--table-height",
@@ -1955,6 +1963,7 @@ const Table = forwardRef(
 
     // Update how we slice the data for pagination
     const paginatedData = localData.slice(first, first + rows);
+
     return (
       <div className="table-wrapper">
         <DataTable

@@ -420,7 +420,7 @@ const PaymentManagementSection = forwardRef(
             name: "DeleteVendorMonthlyRecords",
             params: { VendorPaymentId, VendorPaymentDetailId },
           }).then((response) => {
-            console.log({ VendorPaymentId, VendorPaymentDetailId, response });
+            //console.log({ VendorPaymentId, VendorPaymentDetailId, response });
           });
         });
       } else {

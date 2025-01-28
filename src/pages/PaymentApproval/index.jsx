@@ -101,7 +101,6 @@ export default function DesktopOnePage() {
             handleNotification={handleNotification}
           />
         </div>
-        <div className="h-[100px] flex w-full"></div>
         <div className="fixed-footer z-[1000]">
           <div className="mx-auto flex w-full max-w-[1346px] justify-between pl-0 pr-12 md:pl-0 md:pr-5">
             <div className="relative" ref={menuRef}>

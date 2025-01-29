@@ -84,7 +84,8 @@ const Table = forwardRef(
       [hdnGlo_Hud_VA, sethdnGlo_Hud_VA] = useState(""),
       [hdnBankAcountId, sethdnBankAcountId] = useState(""),
       [localData, setLocalData] = useState([]),
-      [OnloadData, setOnloadData] = useState([]);
+      [OnloadData, setOnloadData] = useState([]),
+      [resizeColumn, setResizableColumn] = useState(null);
 
     const dataArray = useMemo(
       () => (Array.isArray(tableData) && tableData.length > 0 ? tableData : []),
@@ -851,9 +852,12 @@ const Table = forwardRef(
                     key={col.field}
                     style={{
                       width:
+                        document.querySelectorAll(".p-resizable-column")[i]
+                          .clientWidth ||
                         Number(col.style?.width.replace("px", "")) +
                           // (i > 4 ? -3 : 0) +
-                          "px" || "auto",
+                          "px" ||
+                        "auto",
                       padding: 0,
                     }}
                     className="text-left bg-gray-100 text-sm border-none font-medium text-black-900"
@@ -1972,6 +1976,9 @@ const Table = forwardRef(
           columnResizeMode="expand"
           showGridlines
           value={paginatedData}
+          onColumnResizeEnd={(e) => {
+            setResizableColumn(e);
+          }}
           expandedRows={expandedRows}
           onRowToggle={(e) => setExpandedRows(e.data)}
           rowExpansionTemplate={rowExpansionTemplate}

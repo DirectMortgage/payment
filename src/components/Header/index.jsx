@@ -130,7 +130,7 @@ export default function Header({
       } sticky top-0 z-40 flex sm:flex-col items-center px-[46px] py-4 md:px-5 bg-indigo-400 w-full`}
     >
       <div className="flex items-center w-full lg:flex-row md:flex-col-reverse sm:flex-col-reverse gap-5">
-        <div className="flex justify-between md:justify-start gap-5 items-center sm:w-full md:w-full lg:w-3/12 xl:w-4/12 2xl:w-3/12">
+        <div className="flex justify-between md:justify-start gap-5 items-center sm:w-full md:w-full lg:w-5/12 xl:w-4/12 2xl:w-3/12">
           <SelectBox
             labelKey="label"
             valueKey="value"
@@ -144,7 +144,7 @@ export default function Header({
             <div className="relative">
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center rounded-[5px] ${getBackgroundColor()} px-5 py-[5px] text-[14px] text-white-a700 md:w-[180px]`}
+                className={`flex items-center rounded-[5px] ${getBackgroundColor()} px-5 py-[5px] text-[14px] text-white-a700`}
               >
                 <span className="whitespace-nowrap mr-2">
                   {isLoading

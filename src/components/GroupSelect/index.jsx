@@ -150,14 +150,29 @@ const GroupSelect = ({
         isClearable={isClearable}
         autoFocus={isChildRow}
         menuIsOpen={menuIsOpen}
-        onMenuOpen={() => setMenuIsOpen(true)}
-        onMenuClose={() => setMenuIsOpen(false)}
+        onMenuOpen={() => {
+          setMenuIsOpen(true);
+          try {
+            const ele = window.event.target.closest("td"),
+              width = ele.offsetWidth;
+            ele.style.position = "absolute";
+            ele.style.width = width + "px";
+          } catch (error) {}
+        }}
+        onMenuClose={() => {
+          setMenuIsOpen(false);
+          try {
+            const ele = window.event.target.closest("td");
+            ele.style.position = "";
+            ele.style.width = "auto";
+          } catch (error) {}
+        }}
         //onFocus={() => (isChildRow ? setMenuIsOpen(true) : null)}
         ref={selectRef}
         labelField={labelKey}
         valueField={valueKey}
         value={iValue}
-        menuPlacement={menuPlacement}
+        // menuPlacement={menuPlacement}
         onChange={handleChange}
         disabled={loading}
         className={`${className} block s-dropdown w-full cursor-pointer font-[10px] items-center justify-center border border-solid bg-white-a700 rounded ${

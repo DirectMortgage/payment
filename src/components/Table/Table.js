@@ -529,7 +529,7 @@ const Table = forwardRef(
                     className="btnCustom"
                     onClick={() => handlePayHUD(rowData.VendorPaymentId)}
                   >
-                    Pay HUD
+                    {rowData.isParentRow ? "Pay All HUD" : "Pay HUD"}
                   </button>
                 </div>
               );
@@ -541,7 +541,7 @@ const Table = forwardRef(
                     className="btnCustom"
                     onClick={() => handlePayVA(rowData.VendorPaymentId)}
                   >
-                    Pay VA
+                    {rowData.isParentRow ? "Pay All VA" : "Pay VA"}
                   </button>
                 </div>
               );
@@ -1936,12 +1936,11 @@ const Table = forwardRef(
                 : options.field === "TotalAmount"
                 ? () =>
                     setTimeout(() => {
-                      options.editorCallback(
-                        Number(options.value || 0)?.toFixed(2)
-                      );
+                      let value = cleanValue(options.value) || 0;
+                      options.editorCallback(Number(value || 0)?.toFixed(2));
                       setRowData((prevData) => {
                         prevData[options.rowIndex][options.field] = Number(
-                          options.value || 0
+                          value || 0
                         )?.toFixed(2);
                         return [...prevData];
                       });

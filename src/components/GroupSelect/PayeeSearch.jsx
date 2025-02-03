@@ -1,11 +1,25 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import PropTypes from "prop-types";
-import Select from "react-select";
+import AsyncSelect from "react-select/async";
 import { Heading } from "../Heading";
 import Close from "../../components/Images/close.png";
 import Add from "../../components/Images/add.png";
-import { fnOpenWindow } from "../../components/CommonFunctions/CommonFunction.js";
-
+import {
+  fnOpenWindow,
+  formatSpecialCharacters,
+  handleAPI,
+} from "../../components/CommonFunctions/CommonFunction.js";
+const groupByKey = (input, key) => {
+  let data = input.reduce((acc, currentValue) => {
+    let groupKey = currentValue[key];
+    if (!acc[groupKey]) {
+      acc[groupKey] = [];
+    }
+    acc[groupKey].push(currentValue);
+    return acc;
+  }, {});
+  return data;
+};
 const shapes = {
   round: "rounded",
 };
@@ -21,7 +35,7 @@ const sizes = {
   xs: "text-[14px]",
 };
 
-const GroupSelect = ({
+const PayeeSearch = ({
   className = "",
   options = [],
   value = "",
@@ -122,7 +136,32 @@ const GroupSelect = ({
   }, [value, validatedOptions]);
 
   const selectRef = useRef(null);
+  const handleSearch = async (searchText = "") => {
+    return searchText.length <= 2
+      ? []
+      : await handleAPI({
+          name: "searchPayeeDetails",
+          params: { companyId, searchText: searchText },
+        }).then((response) => {
+          response = formatSpecialCharacters(response);
 
+          let iPayeeOptions = groupByKey(JSON.parse(response), "category");
+          iPayeeOptions = Object.keys(iPayeeOptions).reduce((acc, key) => {
+            acc = [
+              ...acc,
+              {
+                label: key,
+                options: iPayeeOptions[key],
+              },
+            ];
+            // acc = [...acc, { Entity_Name: key, VendorId: -1 }];
+            // acc = [...acc, ...iPayeeOptions[key]];
+            return acc;
+          }, []);
+
+          return iPayeeOptions;
+        });
+  };
   const handleKeyDown = (e) => {
     const select = selectRef.current;
     if (!select) return;
@@ -139,10 +178,20 @@ const GroupSelect = ({
     }
   };
   const [menuIsOpen, setMenuIsOpen] = useState(false);
+  const formatGroupLabel = (data) => (
+    <div style={groupStyles}>
+      <span>{data.label}</span>
+      <span style={groupBadgeStyles}>{data.options.length}</span>
+    </div>
+  );
   return (
     <>
-      <Select
-        onKeyDown={(event) => handleKeyDown(event)}
+      <AsyncSelect
+        cacheOptions
+        defaultOptions
+        loadOptions={handleSearch}
+        // onKeyDown={(event) => handleKeyDown(event)}
+        formatGroupLabel={formatGroupLabel}
         options={validatedOptions}
         name={name}
         placeholder={placeholder}
@@ -287,8 +336,27 @@ const GroupSelect = ({
     </>
   );
 };
+const groupStyles = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  fontSize: 12,
+  fontWeight: "bold",
+};
+const groupBadgeStyles = {
+  backgroundColor: "#EBECF0",
+  borderRadius: "2em",
+  color: "#172B4D",
+  display: "inline-block",
+  fontSize: 12,
+  fontWeight: "normal",
+  lineHeight: "1",
+  minWidth: 1,
+  padding: "0.16666666666667em 0.5em",
+  textAlign: "center",
+};
 
-GroupSelect.propTypes = {
+PayeeSearch.propTypes = {
   className: PropTypes.string,
   options: PropTypes.arrayOf(
     PropTypes.shape({
@@ -312,4 +380,4 @@ GroupSelect.propTypes = {
   showRemoveRow: PropTypes.bool,
 };
 
-export { GroupSelect };
+export { PayeeSearch };

@@ -315,8 +315,8 @@ const SplitPayment = () => {
     try {
       if (params["target"]["name"] === "payee") {
         const { VendorId, Account_Id, Account_Name, Entity_Name } =
-            params["target"]["value"],
-          account = (Account_Id + " - " + Account_Name).trim();
+          params["target"]["value"];
+        let account = (Account_Id + " - " + Account_Name).trim();
         if (account == "0 -") account = account.replaceAll("0 -", "");
         params = [
           { name: "VendorId", value: VendorId },

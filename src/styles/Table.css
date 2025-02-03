@@ -79,7 +79,8 @@ select {
   position: relative;
   /* display: inline-flex; */
 }
-.p-datatable-emptymessage {
+.p-datatable-emptymessage,
+.p-datatable-emptymessage td {
   text-align: center;
 }
 .empty-data-table .p-datatable-footer,

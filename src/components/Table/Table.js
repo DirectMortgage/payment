@@ -27,6 +27,7 @@ import {
 } from "../../components/CommonFunctions/CommonFunction.js";
 import { Tooltip } from "react-tooltip";
 import "react-tooltip/dist/react-tooltip.css";
+import { PayeeSearch } from "components/GroupSelect/PayeeSearch";
 
 const Table = forwardRef(
   (
@@ -250,7 +251,9 @@ const Table = forwardRef(
       const checkNum = selectedBankOption.checkNum || 0;
       const BankAccount = selectedBankOption.value || 0;
 
-      selectedRows.forEach((row) => {
+      const selectedRow = tableData.filter(({ PayCheck }) => PayCheck);
+
+      selectedRow.forEach((row) => {
         // Check if VendorPaymentId is not already processed
         if (!VendorPayArray.includes(row.VendorPaymentId)) {
           // Append VendorPaymentId with separator
@@ -323,7 +326,9 @@ const Table = forwardRef(
       let VendorPayArray = [];
       let VendorPaymentId = "";
 
-      selectedRows.forEach((row) => {
+      const selectedRow = tableData.filter(({ PayACH }) => PayACH);
+
+      selectedRow.forEach((row) => {
         // Check if VendorPaymentId is not already processed
         if (!VendorPayArray.includes(row.VendorPaymentId)) {
           // Append VendorPaymentId with separator
@@ -410,9 +415,8 @@ const Table = forwardRef(
 
       const rdoACH = document.getElementById(`chkACHApproved${rowData.RowId}`),
         rdoCheck = document.getElementById(`chkPrintChecks${rowData.RowId}`);
-
-      rdoACH.checked = value === "ach";
-      rdoCheck.checked = value === "check";
+      if (rdoACH) rdoACH.checked = value === "ach";
+      if (rdoCheck) rdoCheck.checked = value === "check";
 
       setRowData((prevData) => {
         const data = prevData.map((row) => {
@@ -420,16 +424,16 @@ const Table = forwardRef(
             row.PayACH = value === "ach";
             row.PayCheck = value === "check";
           } else {
-            row.PayACH = false;
-            row.PayCheck = false;
+            if (value === "ach") row.PayCheck = false;
+            else if (value === "check") row.PayACH = false;
             const radioACH = document.getElementById(
                 `chkACHApproved${row.RowId}`
               ),
               radioCheck = document.getElementById(
                 `chkPrintChecks${row.RowId}`
               );
-            if (radioACH) radioACH.checked = false;
-            if (radioCheck) radioCheck.checked = false;
+            if (radioACH && value === "check") radioACH.checked = false;
+            if (radioCheck && value === "ach") radioCheck.checked = false;
           }
           return { ...row };
         });
@@ -1224,9 +1228,12 @@ const Table = forwardRef(
           : 0;
         let PayACH = 0;
 
-        if (document.getElementById(`chkACHApproved${RowId}`)?.checked) {
+        const rdoACH = document.getElementById(`chkACHApproved${RowId}`),
+          rdoCheck = document.getElementById(`chkPrintChecks${RowId}`);
+
+        if (rdoACH && rdoACH?.checked) {
           PayACH = 1;
-        } else if (document.getElementById(`chkPrintChecks${RowId}`)?.checked) {
+        } else if (rdoCheck && rdoCheck?.checked) {
           PayACH = 2;
         }
 
@@ -1672,7 +1679,7 @@ const Table = forwardRef(
         const { VendorPaymentDetailId, VendorPaymentId } = rowData;
 
         return (
-          <GroupSelect
+          <PayeeSearch
             size="sm"
             shape="round"
             options={vendors}

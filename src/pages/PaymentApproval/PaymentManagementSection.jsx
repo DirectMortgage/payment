@@ -20,6 +20,7 @@ import {
   formatCurrency,
   FormatValueforCalc,
   formatSpecialCharacters,
+  cleanValue,
 } from "../../components/CommonFunctions/CommonFunction.js";
 import {
   FileUpload,
@@ -131,9 +132,19 @@ const PaymentManagementSection = forwardRef(
         ({ PayACH, PayCheck }) => PayCheck || PayACH
       );
       if (selectedRow.length > 0) {
-        return { iMarkPaid: selectedRow[0]["TotalAmount"], iSelectedCount: 1 };
+        const selectedAmount = [
+          ...new Set(selectedRow.map(({ TotalAmount }) => TotalAmount)),
+        ];
+
+        return {
+          iMarkPaid: selectedAmount.reduce(
+            (acc, item) => acc + cleanValue(item),
+            0
+          ),
+          iSelectedCount: selectedAmount.length,
+        };
       } else {
-        return { iMarkPaid: "$0.00", iSelectedCount: 0 };
+        return { iMarkPaid: 0, iSelectedCount: 0 };
       }
     }, [rowData]);
 
@@ -357,7 +368,35 @@ const PaymentManagementSection = forwardRef(
         // Add other fields as empty or default values
       };
     };
+    const handleAllImageClick = ({
+      VendorPaymentDetailId,
+      VendorPaymentId,
+      RowId,
+      VendorId,
+    }) => {
+      let URL =
+        "../../../FeeCollection/Presentation/Webforms/VendorPaymentDetailDocuments.aspx?VendorPaymentDetailId=" +
+        VendorPaymentDetailId +
+        "&SessionId=" +
+        SessionId +
+        "&CompanyId=" +
+        (companyId || 4) +
+        "&VendorPaymentId=" +
+        VendorPaymentId +
+        "&EntityID=" +
+        VendorId +
+        "&RowId=" +
+        RowId;
 
+      if (window.location.host.includes("localhost")) {
+        URL = URL.replace("../../../", "https://www.directcorp.com/");
+      }
+      window.open(
+        URL,
+        "",
+        "width=1200,height=1200,resizable=yes,scrollbars=yes"
+      );
+    };
     const handleImageClick = (LinkId) => {
       // Handle the click event here
       let URL =
@@ -447,6 +486,8 @@ const PaymentManagementSection = forwardRef(
       vendorPaymentDetailId,
       spinner,
       headerText,
+      RowId,
+      FileCount,
     }) => {
       const currentEmpId = empIdRef.current;
       if (files.length) {
@@ -484,6 +525,7 @@ const PaymentManagementSection = forwardRef(
           })
             .then((ScanDocId) => {
               if (ScanDocId) {
+                GetVendorPaymentApprovalData(companyId, EmpId, false);
                 setTimeout(() => {
                   if (spinner && headerText) {
                     spinner.style.display = "none";
@@ -491,6 +533,14 @@ const PaymentManagementSection = forwardRef(
                   }
                 }, 500);
                 if (index === files.length) {
+                  setRowData((prevRowData) => {
+                    prevRowData.forEach((item) => {
+                      if (RowId == item["RowId"]) {
+                        item.FileCount = (FileCount || 0) + 1;
+                      }
+                    });
+                    return [...prevRowData];
+                  });
                 }
               }
               index++;
@@ -504,6 +554,7 @@ const PaymentManagementSection = forwardRef(
     const [viewAllPDFStatus, setViewAllPDFStatus] = useState([]);
     const handleViewAllPDF = () => {
       setViewAllPDFStatus(["loading"]);
+      // debugger;
       const linkIds = [
         ...new Set(rowData.map(({ LinkId = "" }) => LinkId).filter((_) => _)),
       ].join(",");
@@ -892,7 +943,7 @@ const PaymentManagementSection = forwardRef(
             Images
           </Text>
         ),
-        style: { width: "80px", minWidth: "80px" },
+        style: { width: "100px", minWidth: "80px" },
         body: (rowData) => (
           <FileUpload
             id={`file-upload-${rowData?.RowId}`} // _${rowData.Scandoctype}_${rowData.ID}
@@ -931,11 +982,11 @@ const PaymentManagementSection = forwardRef(
             onChange={(event) => {
               // Show spinner and "Uploading..." message
 
-              setRowData((prevData) =>
-                prevData.map((row) =>
-                  row.RowId === rowData.RowId ? { ...row, FileCount: 1 } : row
-                )
-              );
+              // setRowData((prevData) =>
+              //   prevData.map((row) =>
+              //     row.RowId === rowData.RowId ? { ...row, FileCount: 1 } : row
+              //   )
+              // );
 
               const spinner = document.getElementById(
                 `spinner-${rowData.RowId}`
@@ -959,6 +1010,8 @@ const PaymentManagementSection = forwardRef(
                 vendorPaymentDetailId: rowData.VendorPaymentDetailId,
                 spinner,
                 headerText,
+                RowId: rowData.RowId,
+                FileCount: rowData.FileCount,
               });
 
               // Clear the input
@@ -1011,12 +1064,12 @@ const PaymentManagementSection = forwardRef(
                   onKeyDown={(e) => {
                     if ([32, 13].includes(e.keyCode)) {
                       e.preventDefault();
-                      handleImageClick(rowData.LinkId);
+                      handleAllImageClick(rowData);
                     }
                   }}
                   tabIndex={0}
                   className="w-6 h-6 object-contain cursor-pointer"
-                  onClick={() => handleImageClick(rowData.LinkId)}
+                  onClick={() => handleAllImageClick(rowData)}
                 />
               )}
             </div>
@@ -1171,7 +1224,9 @@ const PaymentManagementSection = forwardRef(
                                 as="p"
                                 className="font-inter text-[12px] font-semibold text-black-900"
                               >
-                                {formatCurrency(totalSubTotal)}
+                                {isLoading
+                                  ? "$0.00"
+                                  : formatCurrency(totalSubTotal)}
                               </Heading>
                             </div>
                             <div className="flex flex-wrap justify-end gap-6">
@@ -1188,7 +1243,7 @@ const PaymentManagementSection = forwardRef(
                                 as="p"
                                 className="font-inter text-[12px] font-semibold text-black-900"
                               >
-                                {iMarkPaid}
+                                {formatCurrency(iMarkPaid || 0)}
                               </Heading>
                             </div>
                           </div>

@@ -147,10 +147,14 @@ const PaymentManagementSection = forwardRef(
         });
 
         setRowData((prevData) => {
-          return [
-            ...prevData.filter((row) => row.VendorPaymentId != VendorPaymentId),
-            ...rRowData,
-          ];
+          const iPrevData = prevData.map((item) => {
+            const row = rRowData.find((row) => item["RowId"] == row["RowId"]);
+            if (row) {
+              item = { ...row };
+            }
+            return item;
+          });
+          return [...iPrevData];
         });
       });
     };
@@ -433,22 +437,20 @@ const PaymentManagementSection = forwardRef(
 
     const handleImageClick = (LinkId, RowId) => {
       // Handle the click event here
-      if (LinkId) {
-        let URL =
-          "../../../NewDMAcct/GetUploadedImage.aspx?CompanyId=" +
-          (companyId || 4) +
-          "&LinkId=" +
-          LinkId;
+      let URL =
+        "../../../NewDMAcct/GetUploadedImage.aspx?CompanyId=" +
+        (companyId || 4) +
+        "&LinkId=" +
+        LinkId;
 
-        if (window.location.host.includes("localhost")) {
-          URL = URL.replace("../../../", "https://www.directcorp.com/");
-        }
-        window.open(
-          URL,
-          "",
-          "width=1200,height=1200,resizable=yes,scrollbars=yes"
-        );
+      if (window.location.host.includes("localhost")) {
+        URL = URL.replace("../../../", "https://www.directcorp.com/");
       }
+      window.open(
+        URL,
+        "",
+        "width=1200,height=1200,resizable=yes,scrollbars=yes"
+      );
     };
     const [dialogDetails, setDialogDetails] = useState({
       isShow: false,

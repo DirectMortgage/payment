@@ -237,7 +237,7 @@ const Table = forwardRef(
     };
 
     const ProcessPrintChecks = async () => {
-      debugger;
+      // debugger;
       setIsLoadingGo(true);
       let VendorPayArray = [];
       let VendorPaymentId = "";
@@ -272,7 +272,7 @@ const Table = forwardRef(
         PrintOrder: selectedPrintOrder.value,
         EmpNum: EmpId,
       };
-      return;
+      console.log("VendorPaymentApprovalPrintChecks ===> ", obj);
       const response = await handleAPI({
         name: "VendorPaymentApprovalPrintChecks",
         params: {},
@@ -325,7 +325,7 @@ const Table = forwardRef(
       }
     };
     const ProcessACHPayment = async () => {
-      debugger;
+      // debugger;
       let tBody = "";
       let VendorPayArray = [];
       let VendorPaymentId = "";
@@ -396,7 +396,8 @@ const Table = forwardRef(
         BankAccountId: BankAccountId,
         EmpNum: EmpId,
       };
-      return;
+      console.log("VendorPaymentApprovalACHPayments ===> ", obj);
+
       const response = await handleAPI({
         name: "VendorPaymentApprovalACHPayments",
         params: {},

@@ -67,7 +67,7 @@ const PaymentManagementSection = forwardRef(
     const [showThirdRow, setShowThirdRow] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState(null);
 
-    const [selectedBank, setSelectedBank] = useState(null);
+    const [selectedBank, setSelectedBank] = useState({});
     const [selectedPrintOrder, setSelectedPrintOrder] = useState("0");
     const [checknumber, setChecknumber] = useState("");
     const [printOrder, setPrintOrder] = useState([
@@ -127,6 +127,34 @@ const PaymentManagementSection = forwardRef(
       fetchData();
     }, [companyId]);
 
+    const handleGetPaymentRowData = async ({ VendorPaymentId }) => {
+      handleAPI({
+        name: "VendorMonthlyPaymentByPaymentId",
+        params: { VendorPaymentId, companyId },
+      }).then((response) => {
+        let rRowData = processPaymentInfo(JSON.parse(response)["Table"] || []);
+        rRowData = JSON.parse(rRowData).map((item) => {
+          if ((item["GLAccount"] || "").startsWith("0-")) {
+            item["GLAccount"] = (item["GLAccount"] || "")
+              ?.toString()
+              ?.replace("0-", "")
+              .trim();
+          }
+          item["Account_Id"] = Number(
+            ((item["GLAccount"] || "")?.split("-")[0] || "")?.trim() || 0
+          );
+          return item;
+        });
+
+        setRowData((prevData) => {
+          return [
+            ...prevData.filter((row) => row.VendorPaymentId != VendorPaymentId),
+            ...rRowData,
+          ];
+        });
+      });
+    };
+
     const { iSelectedCount, iMarkPaid } = useMemo(() => {
       const selectedRow = rowData.filter(
         ({ PayACH, PayCheck }) => PayCheck || PayACH
@@ -163,7 +191,9 @@ const PaymentManagementSection = forwardRef(
         setShowSecondRow(false);
         setShowThirdRow(false);
         setPaymentMethod(null);
-        setSelectedBank(null);
+        setSelectedBank({
+          value: CompanyId == "4" ? "8" : CompanyId == "2" ? "2" : "0",
+        });
         setSelectedPrintOrder("0");
         setChecknumber("");
         //setPrintOrder('0');
@@ -175,7 +205,9 @@ const PaymentManagementSection = forwardRef(
         setShowSecondRow(false);
         setShowThirdRow(false);
         setPaymentMethod(null);
-        setSelectedBank(null);
+        setSelectedBank({
+          value: CompanyId == "4" ? "8" : CompanyId == "2" ? "2" : "0",
+        });
         setSelectedPrintOrder("0");
         setChecknumber("");
         //setPrintOrder('0');
@@ -210,7 +242,8 @@ const PaymentManagementSection = forwardRef(
             const vendors = responseJson.VendorPayment[1].Vendors;
             const dropDownOptions = formatDropdownOptions(htmlString);
             setDropDownOptions(dropDownOptions);
-            if (companyId === "4") {
+
+            if (companyId == "4") {
               setSelectedBank(
                 dropDownOptions.find((option) => option.value === "8")
               );
@@ -219,7 +252,7 @@ const PaymentManagementSection = forwardRef(
               );
               setChecknumber(dropdownList.checkNum);
             }
-            if (companyId === "2") {
+            if (companyId == "2") {
               setSelectedBank(
                 dropDownOptions.find((option) => option.value === "2")
               );
@@ -397,22 +430,25 @@ const PaymentManagementSection = forwardRef(
         "width=1200,height=1200,resizable=yes,scrollbars=yes"
       );
     };
-    const handleImageClick = (LinkId) => {
-      // Handle the click event here
-      let URL =
-        "../../../NewDMAcct/GetUploadedImage.aspx?CompanyId=" +
-        (companyId || 4) +
-        "&LinkId=" +
-        LinkId;
 
-      if (window.location.host.includes("localhost")) {
-        URL = URL.replace("../../../", "https://www.directcorp.com/");
+    const handleImageClick = (LinkId, RowId) => {
+      // Handle the click event here
+      if (LinkId) {
+        let URL =
+          "../../../NewDMAcct/GetUploadedImage.aspx?CompanyId=" +
+          (companyId || 4) +
+          "&LinkId=" +
+          LinkId;
+
+        if (window.location.host.includes("localhost")) {
+          URL = URL.replace("../../../", "https://www.directcorp.com/");
+        }
+        window.open(
+          URL,
+          "",
+          "width=1200,height=1200,resizable=yes,scrollbars=yes"
+        );
       }
-      window.open(
-        URL,
-        "",
-        "width=1200,height=1200,resizable=yes,scrollbars=yes"
-      );
     };
     const [dialogDetails, setDialogDetails] = useState({
       isShow: false,
@@ -435,36 +471,46 @@ const PaymentManagementSection = forwardRef(
       });
     };
     const handleRemoveWithConfirmation = async (rowId) => {
-      const recordToRemoveParent = rowData.find((row) => row.RowId === rowId);
+      let updatedData = {};
+      setRowData((prevRowData) => {
+        const recordToRemoveParent = prevRowData.find(
+          (row) => row.RowId === rowId
+        );
 
-      if (recordToRemoveParent) {
-        const { VendorPaymentId } = recordToRemoveParent;
+        if (recordToRemoveParent) {
+          const { VendorPaymentId } = recordToRemoveParent;
 
-        const updatedData = rowData.filter(
+          updatedData = prevRowData.filter(
             (row) => row.VendorPaymentId !== VendorPaymentId
-          ),
-          recordToRemove = rowData.filter(
+          );
+          const recordToRemove = prevRowData.filter(
             (row) => row.VendorPaymentId === VendorPaymentId
           );
 
-        setRowData([...updatedData]);
-        setEditingRows((prev) => {
-          delete prev[rowId];
-          return prev;
-        });
-        setExpandedRows((prev) => prev.filter((item) => item.RowId === rowId));
+          setExpandedRows((prev) =>
+            prev.filter((item) => item.RowId === rowId)
+          );
 
-        recordToRemove.forEach(({ VendorPaymentId, VendorPaymentDetailId }) => {
-          handleAPI({
-            name: "DeleteVendorMonthlyRecords",
-            params: { VendorPaymentId, VendorPaymentDetailId },
-          }).then((response) => {
-            //console.log({ VendorPaymentId, VendorPaymentDetailId, response });
+          recordToRemove.forEach(
+            ({ VendorPaymentId, VendorPaymentDetailId }) => {
+              handleAPI({
+                name: "DeleteVendorMonthlyRecords",
+                params: { VendorPaymentId, VendorPaymentDetailId },
+              }).then((response) => {
+                //console.log({ VendorPaymentId, VendorPaymentDetailId, response });
+              });
+            }
+          );
+
+          setEditingRows((prev) => {
+            delete prev[rowId];
+            return prev;
           });
-        });
-      } else {
-        console.error("Record with the given RowId not found");
-      }
+        } else {
+          console.error("Record with the given RowId not found");
+        }
+        return [...updatedData];
+      });
     };
     function formatDropdownOptions(htmlString) {
       const parser = new DOMParser();
@@ -525,7 +571,6 @@ const PaymentManagementSection = forwardRef(
           })
             .then((ScanDocId) => {
               if (ScanDocId) {
-                GetVendorPaymentApprovalData(companyId, EmpId, false);
                 setTimeout(() => {
                   if (spinner && headerText) {
                     spinner.style.display = "none";
@@ -533,14 +578,7 @@ const PaymentManagementSection = forwardRef(
                   }
                 }, 500);
                 if (index === files.length) {
-                  setRowData((prevRowData) => {
-                    prevRowData.forEach((item) => {
-                      if (RowId == item["RowId"]) {
-                        item.FileCount = (FileCount || 0) + 1;
-                      }
-                    });
-                    return [...prevRowData];
-                  });
+                  handleGetPaymentRowData({ VendorPaymentId: vendorPaymentId });
                 }
               }
               index++;
@@ -652,7 +690,7 @@ const PaymentManagementSection = forwardRef(
             InsertVendorInfo(SessionId, VendorId);
 
             fnOpenWindow(
-              `/NewDMAcct/CustomerVendorOptions.aspx?SessionID=${SessionId}`,
+              `/NewDMAcct/CustomerVendorOptions.aspx?SessionID=${SessionId}&VendorPaymentId=${rowData.VendorPaymentId}`,
               "/NewDMAcct/CustomerVendorOptions.aspx",
               SessionId
             );
@@ -1050,11 +1088,13 @@ const PaymentManagementSection = forwardRef(
                   onKeyDown={(e) => {
                     if ([32, 13].includes(e.keyCode)) {
                       e.preventDefault();
-                      handleImageClick(rowData.LinkId);
+                      handleImageClick(rowData.LinkId, rowData.RowId);
                     }
                   }}
                   tabIndex={0}
-                  onClick={() => handleImageClick(rowData.LinkId)}
+                  onClick={() =>
+                    handleImageClick(rowData.LinkId, rowData.RowId)
+                  }
                 />
               )}
               {rowData.FileCount > 1 && (
@@ -1137,6 +1177,26 @@ const PaymentManagementSection = forwardRef(
         setColumns([...iColumns]);
       }
     }, [validationResult, viewAllPDFStatus, editingRows, rowData]);
+
+    useEffect(() => {
+      if (rowData.length > 0) {
+        const iRowData = rowData.find(
+          ({ PayACH, PayCheck }) => PayCheck || PayACH
+        );
+        setPaymentMethod(
+          iRowData?.PayACH ? "ach" : iRowData?.PayCheck ? "check" : null
+        );
+        setTimeout(() => {
+          rowData.forEach((row) => {
+            const { RowId, PayACH = false, PayCheck = false } = row;
+            const rdoACH = document.getElementById(`chkACHApproved${RowId}`),
+              rdoCheck = document.getElementById(`chkPrintChecks${RowId}`);
+            if (rdoACH && !rdoACH.checked) rdoACH.checked = PayACH;
+            if (rdoCheck && !rdoCheck.checked) rdoCheck.checked = PayCheck;
+          });
+        }, 0);
+      }
+    }, [rowData]);
 
     const handlePayment = () => {
       if (tableRef.current) {
@@ -1423,9 +1483,13 @@ const PaymentManagementSection = forwardRef(
           data-company-id=""
           data-emp-id=""
           onClick={(e) => {
-            const companyId = e.target.getAttribute("data-company-id");
-            const empId = e.target.getAttribute("data-emp-id");
-            GetVendorPaymentApprovalData(companyId, empId, false);
+            // const companyId = e.target.getAttribute("data-company-id");
+            // const empId = e.target.getAttribute("data-emp-id");
+            // GetVendorPaymentApprovalData(companyId, empId, false);
+            const VendorPaymentId = e.target.getAttribute(
+              "data-VendorPaymentId"
+            );
+            handleGetPaymentRowData({ VendorPaymentId });
           }}
         ></div>
         <Dialog

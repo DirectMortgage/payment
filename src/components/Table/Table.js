@@ -139,8 +139,10 @@ const Table = forwardRef(
               displayParentRow.ClassName = "";
               displayParentRow.GLAccount = "";
               // displayParentRow.InvoiceDate = ""; // Commented out as per original logic
-              displayParentRow.Invoice =
-                displayParentRow.Invoice.split("-")[0] || "";
+              let { Invoice } = displayParentRow;
+              Invoice = Invoice.split("-");
+              Invoice.pop();
+              displayParentRow.Invoice = Invoice.join("-");
               displayParentRow.Memo = displayParentRow.Memo.split("-")[0] || "";
               displayParentRow.isParentRow = true;
             }
@@ -235,6 +237,7 @@ const Table = forwardRef(
     };
 
     const ProcessPrintChecks = async () => {
+      debugger;
       setIsLoadingGo(true);
       let VendorPayArray = [];
       let VendorPaymentId = "";
@@ -269,7 +272,7 @@ const Table = forwardRef(
         PrintOrder: selectedPrintOrder.value,
         EmpNum: EmpId,
       };
-      // return
+      return;
       const response = await handleAPI({
         name: "VendorPaymentApprovalPrintChecks",
         params: {},
@@ -322,6 +325,7 @@ const Table = forwardRef(
       }
     };
     const ProcessACHPayment = async () => {
+      debugger;
       let tBody = "";
       let VendorPayArray = [];
       let VendorPaymentId = "";
@@ -392,7 +396,7 @@ const Table = forwardRef(
         BankAccountId: BankAccountId,
         EmpNum: EmpId,
       };
-      // return
+      return;
       const response = await handleAPI({
         name: "VendorPaymentApprovalACHPayments",
         params: {},
@@ -405,7 +409,7 @@ const Table = forwardRef(
     };
 
     const handlePaymentChange = (rowData, value) => {
-      setPaymentMethod(value);
+      // setPaymentMethod(value);
       setShowPaymentSection(true);
       setShowSecondRow(false);
       setShowThirdRow(false);
@@ -1475,21 +1479,19 @@ const Table = forwardRef(
     }, [enhancedColumns, parentRows, tableData]);
 
     const handleTableHeight = () => {
-      if (tableData.length > 0) {
-        try {
-          const tableHeight =
-            document.querySelector("#main-header")?.offsetHeight +
-            document.querySelector(".p-datatable-header")?.offsetHeight +
-            document.querySelector(".fixed-footer")?.offsetHeight +
-            90;
+      try {
+        const tableHeight =
+          document.querySelector("#main-header")?.offsetHeight +
+          document.querySelector(".p-datatable-header")?.offsetHeight +
+          document.querySelector(".fixed-footer")?.offsetHeight +
+          90;
 
-          document.documentElement.style.setProperty(
-            "--table-height",
-            window.innerHeight - tableHeight + "px"
-          );
-        } catch (error) {
-          document.documentElement.style.setProperty("--table-height", "auto");
-        }
+        document.documentElement.style.setProperty(
+          "--table-height",
+          window.innerHeight - tableHeight + "px"
+        );
+      } catch (error) {
+        document.documentElement.style.setProperty("--table-height", "auto");
       }
     };
     useEffect(() => {

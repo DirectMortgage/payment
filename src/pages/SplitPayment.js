@@ -387,6 +387,8 @@ const SplitPayment = () => {
         );
         button.setAttribute("data-company-id", companyId);
         button.setAttribute("data-emp-id", empNumber);
+        button.setAttribute("data-VendorPaymentId", VendorPaymentId);
+
         button.click();
       } catch (error) {}
       handleProcessingStatus("Saving", false);

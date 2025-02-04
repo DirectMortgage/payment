@@ -150,7 +150,9 @@ const PaymentManagementSection = forwardRef(
           const iPrevData = prevData.map((item) => {
             const row = rRowData.find((row) => item["RowId"] == row["RowId"]);
             if (row) {
-              item = { ...item, ...row };
+              if (item["FileCount"] != row["FileCount"])
+                item["FileCount"] = row["FileCount"];
+              else item = { ...item, ...row };
             }
             return item;
           });

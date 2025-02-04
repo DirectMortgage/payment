@@ -383,11 +383,11 @@ const SplitPayment = () => {
       console.log(response);
       try {
         const button = window.opener.document.querySelector(
-          "#refresh-payment-data"
+          "#refresh-payment-data-all"
         );
         button.setAttribute("data-company-id", companyId);
         button.setAttribute("data-emp-id", empNumber);
-        button.setAttribute("data-VendorPaymentId", VendorPaymentId);
+        // button.setAttribute("data-VendorPaymentId", VendorPaymentId);
 
         button.click();
       } catch (error) {}

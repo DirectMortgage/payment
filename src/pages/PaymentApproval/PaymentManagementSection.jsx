@@ -1494,6 +1494,17 @@ const PaymentManagementSection = forwardRef(
             handleGetPaymentRowData({ VendorPaymentId });
           }}
         ></div>
+        <div
+          id="refresh-payment-data-all"
+          className="none"
+          data-company-id=""
+          data-emp-id=""
+          onClick={(e) => {
+            const companyId = e.target.getAttribute("data-company-id");
+            const empId = e.target.getAttribute("data-emp-id");
+            GetVendorPaymentApprovalData(companyId, empId, false);
+          }}
+        ></div>
         <Dialog
           modal
           draggable={false}

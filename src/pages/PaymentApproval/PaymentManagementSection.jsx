@@ -127,6 +127,12 @@ const PaymentManagementSection = forwardRef(
       fetchData();
     }, [companyId]);
 
+    const handleRemovePaymentRowData = async ({ VendorPaymentId }) => {
+      setRowData((prevRowData) =>
+        prevRowData.filter((item) => item.VendorPaymentId != VendorPaymentId)
+      );
+    };
+
     const handleGetPaymentRowData = async ({ VendorPaymentId }) => {
       handleAPI({
         name: "VendorMonthlyPaymentByPaymentId",
@@ -1494,6 +1500,20 @@ const PaymentManagementSection = forwardRef(
               "data-VendorPaymentId"
             );
             handleGetPaymentRowData({ VendorPaymentId });
+          }}
+        ></div>
+        <div
+          id="remove-payment-data"
+          className="none"
+          data-VendorPaymentId=""
+          onClick={(e) => {
+            // const companyId = e.target.getAttribute("data-company-id");
+            // const empId = e.target.getAttribute("data-emp-id");
+            // GetVendorPaymentApprovalData(companyId, empId, false);
+            const VendorPaymentId = e.target.getAttribute(
+              "data-VendorPaymentId"
+            );
+            handleRemovePaymentRowData({ VendorPaymentId });
           }}
         ></div>
         <div

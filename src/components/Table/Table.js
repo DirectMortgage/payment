@@ -143,7 +143,10 @@ const Table = forwardRef(
               Invoice = Invoice.split("-");
               Invoice.pop();
               displayParentRow.Invoice = Invoice.join("-");
-              displayParentRow.Memo = displayParentRow.Memo.split("-")[0] || "";
+              let { Memo } = displayParentRow;
+              Memo = Memo.split("-");
+              Memo.pop();
+              displayParentRow.Memo = Memo.join("-");
               displayParentRow.isParentRow = true;
             }
 
@@ -229,14 +232,22 @@ const Table = forwardRef(
       }
 
       if (paymentType === "ACH") {
-        ProcessACHPayment();
+        savevendorPayment();
+        setTimeout(() => {
+          ProcessACHPayment();
+        }, 750);
       }
       if (paymentType === "CHECK") {
         setShowSecondRow(true);
       }
     };
-
-    const ProcessPrintChecks = async () => {
+    const ProcessPrintChecks = () => {
+      savevendorPayment();
+      setTimeout(() => {
+        ProcessPrintCheckCallBack();
+      }, 750);
+    };
+    const ProcessPrintCheckCallBack = async () => {
       // debugger;
       setIsLoadingGo(true);
       let VendorPayArray = [];
@@ -326,6 +337,7 @@ const Table = forwardRef(
     };
     const ProcessACHPayment = async () => {
       // debugger;
+
       let tBody = "";
       let VendorPayArray = [];
       let VendorPaymentId = "";
@@ -371,7 +383,7 @@ const Table = forwardRef(
       });
 
       setPayStatusHtml(tBody);
-      setPayStatusVendorID(VendorPayArray);
+      setPayStatusVendorID(VendorPaymentId);
       sethdnBankAcountId(selectedBank.value);
 
       fnOpenWindow(
@@ -428,6 +440,7 @@ const Table = forwardRef(
           if (row.VendorPaymentId === rowData.VendorPaymentId) {
             row.PayACH = value === "ach";
             row.PayCheck = value === "check";
+            // row.Change = 1;
           } else {
             if (value === "ach") row.PayCheck = false;
             else if (value === "check") row.PayACH = false;
@@ -710,7 +723,14 @@ const Table = forwardRef(
       }
       return col;
     });
+
     const handlePayHUD = (VendorPaymentId) => {
+      savevendorPayment({ VendorPaymentId, isCheck: true });
+      setTimeout(() => {
+        handlePayHUDCallBack(VendorPaymentId);
+      }, 750);
+    };
+    const handlePayHUDCallBack = (VendorPaymentId) => {
       const HudVendorPaymentId = VendorPaymentId + "~";
       sethdnGlo_Hud_VA(HudVendorPaymentId);
       sethdnpayCheck("0");
@@ -722,6 +742,12 @@ const Table = forwardRef(
       );
     };
     const handlePayVA = (VendorPaymentId) => {
+      savevendorPayment({ VendorPaymentId, isCheck: false });
+      setTimeout(() => {
+        handlePayVACallBack(VendorPaymentId);
+      }, 750);
+    };
+    const handlePayVACallBack = (VendorPaymentId) => {
       const VAVendorPaymentId = VendorPaymentId + "~";
       sethdnGlo_Hud_VA(VAVendorPaymentId);
       sethdnpayCheck("1");
@@ -1147,11 +1173,14 @@ const Table = forwardRef(
 
       return resultArray;
     }
-    const savevendorPayment = async () => {
+    const savevendorPayment = async ({
+      VendorPaymentId: iVendorPaymentId = "",
+      isCheck: iIsCheck = false,
+    } = {}) => {
       let ChangeXML = "";
       const changedJSON = [];
       const processedData = saveDataWithChildren(localData);
-
+      debugger;
       processedData.forEach((val) => {
         const RowId = val.RowId;
 
@@ -1231,16 +1260,6 @@ const Table = forwardRef(
         const Paid = document.getElementById(`chkMarkaspaid${RowId}`)?.checked
           ? 1
           : 0;
-        let PayACH = 0;
-
-        const rdoACH = document.getElementById(`chkACHApproved${RowId}`),
-          rdoCheck = document.getElementById(`chkPrintChecks${RowId}`);
-
-        if (rdoACH && rdoACH?.checked) {
-          PayACH = 1;
-        } else if (rdoCheck && rdoCheck?.checked) {
-          PayACH = 2;
-        }
 
         const ApprovedBy = Status === 0 ? "" : ApprovedBy;
 
@@ -1249,9 +1268,27 @@ const Table = forwardRef(
         ClassAmount = FormatValueforCalc(ClassAmount);
         let Change = (val.Change || 0).toString();
 
+        let PayACH = 0;
+
+        const rdoACH = document.getElementById(`chkACHApproved${RowId}`),
+          rdoCheck = document.getElementById(`chkPrintChecks${RowId}`);
+
+        if (rdoACH && rdoACH?.checked) {
+          PayACH = 1;
+          Change = 1;
+        } else if (rdoCheck && rdoCheck?.checked) {
+          PayACH = 2;
+          Change = 1;
+        }
+
+        if (VendorPaymentId == iVendorPaymentId && iIsCheck) {
+          PayACH = 2;
+          Change = 1;
+        }
+
         const result = OnloadData.find((e) => e.RowId === val.RowId);
 
-        if (((result && val.Change === 1) || Paid == 1) && !val.isNewRow) {
+        if (((result && Change == 1) || Paid == 1) && !val.isNewRow) {
           const changeobj = {
             VendorPaymentId,
             VendorId,
@@ -1262,34 +1299,34 @@ const Table = forwardRef(
           };
 
           // Compare with OnloadData and add changed fields
-          if (FormatValueforCalc(result.TotalAmount) !== TotalAmount) {
+          if (FormatValueforCalc(result.TotalAmount) != TotalAmount) {
             changeobj.TotalAmount = TotalAmount;
           }
 
-          if (result.InvoiceDate !== InvDate) {
+          if (result.InvoiceDate != InvDate) {
             changeobj.InvoiceDate = InvDate;
           }
 
-          if (result.InvoiceDue !== DueDate) {
+          if (result.InvoiceDue != DueDate) {
             changeobj.InvoiceDue = DueDate;
           }
 
-          if (result.Invoice !== RefNo) {
+          if (result.Invoice != RefNo) {
             changeobj.RefNo = RefNo;
           }
 
-          if (result.Memo !== InvNum) {
+          if (result.Memo != InvNum) {
             changeobj.Memo = InvNum;
           }
 
-          if (result.Payon !== PayOn) {
+          if (result.Payon != PayOn) {
             changeobj.Payon = PayOn;
           }
-          if (result.GLAccount.split("-")[0].trim() !== Accounts) {
+          if (result.GLAccount.split("-")[0].trim() != Accounts) {
             changeobj.AccountId = Accounts;
           }
 
-          if (parseInt(result.Class) !== parseInt(ClassId)) {
+          if (parseInt(result.Class) != parseInt(ClassId)) {
             changeobj.Class = ClassId;
           }
 
@@ -1297,22 +1334,22 @@ const Table = forwardRef(
             changeobj.Amount = ClassAmount;
           }
 
-          if (parseInt(result.Status) !== parseInt(Status)) {
+          if (parseInt(result.Status) != parseInt(Status)) {
             changeobj.Status = Status;
           }
 
-          if (result.ACHApprovedDetail !== PayACH) {
+          if (result.ACHApprovedDetail != PayACH || (PayACH && Change == 1)) {
             changeobj.PayACH = PayACH;
           }
 
           if (
-            result.ACHApprovedDetail === 0 &&
-            result.ACHApprovedDetail !== Paid
+            result.ACHApprovedDetail == 0 &&
+            result.ACHApprovedDetail != Paid
           ) {
             changeobj.Paid = Paid;
           }
 
-          if (Paid === 1 && result.ACHApprovedDetail !== 3) {
+          if (Paid == 1 && result.ACHApprovedDetail != 3) {
             changeobj.Paid = Paid;
           }
 
@@ -1345,7 +1382,7 @@ const Table = forwardRef(
       });
       ChangeXML = `<PaymentSave BankAccountId="${selectedBank.value}">${ChangeXML}</PaymentSave>`;
       console.log({ ChangeXML, changedJSON });
-      //return;
+      // return;
       // Replace quotes for proper formatting
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
@@ -1705,6 +1742,7 @@ const Table = forwardRef(
             showAddPaymentSplit={true} // Control visibility of Add Payment Split
             showRemoveRow={true}
             onChange={(selected) => {
+              debugger;
               if (selected.length > 0 || true) {
                 setEditingRows((prev) => {
                   prev[rowData.RowId] = (prev[rowData.RowId] || []).filter(
@@ -1742,18 +1780,22 @@ const Table = forwardRef(
               const updatedGroupedData = { ...groupedData };
               const paymentId = rowData.VendorPaymentId;
 
+              const rRowIndex = tableData.findIndex(
+                ({ VendorPaymentId }) => VendorPaymentId == paymentId
+              );
+              if (rRowIndex !== -1)
+                setRowData((prevRowData) => {
+                  prevRowData[rRowIndex] = updatedData;
+                  prevRowData[rRowIndex].Change = 1;
+                  return [...prevRowData];
+                });
               if (updatedGroupedData[paymentId]) {
-                const rowIndex = updatedGroupedData[paymentId].findIndex(
+                updatedGroupedData[paymentId].findIndex(
                   (row) => row.RowId === rowData.RowId
                 );
 
                 if (rowIndex !== -1) {
                   updatedGroupedData[paymentId][rowIndex] = updatedData;
-                  setRowData((prevRowData) => {
-                    prevRowData[rowIndex] = updatedData;
-                    prevRowData[rowIndex].Change = 1;
-                    return [...prevRowData];
-                  });
                 }
               }
               const updatedLocalData = Object.entries(updatedGroupedData).map(

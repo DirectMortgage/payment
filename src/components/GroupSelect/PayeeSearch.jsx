@@ -201,22 +201,29 @@ const PayeeSearch = ({
         menuIsOpen={menuIsOpen}
         onMenuOpen={() => {
           setMenuIsOpen(true);
-          if (isChildRow) {
+          if (isChildRow || true) {
             try {
               const ele = window.event.target.closest("td"),
-                width = ele.offsetWidth;
-              ele.style.position = "absolute";
+                eleTr = window.event.target.closest("tr"),
+                width = ele.offsetWidth,
+                height = ele.offsetHeight;
+              ele.style.position = "fixed";
               ele.style.width = width + "px";
+              eleTr.style.minHeight = height + "px";
+              eleTr.style.height = height + "px";
             } catch (error) {}
           }
         }}
         onMenuClose={() => {
           setMenuIsOpen(false);
-          if (isChildRow) {
+          if (isChildRow || true) {
             try {
-              const ele = window.event.target.closest("td");
+              const ele = window.event.target.closest("td"),
+                eleTr = window.event.target.closest("tr");
               ele.style.position = "";
               ele.style.width = "auto";
+              eleTr.style.minHeight = "auto";
+              eleTr.style.height = "auto";
             } catch (error) {}
           }
         }}
@@ -290,6 +297,20 @@ const PayeeSearch = ({
             ...base,
             fontSize: 12,
             padding: 0,
+          }),
+          option: (provided, state) => ({
+            ...provided,
+            backgroundColor: state.isFocused ? "#B2D4FF" : "white",
+            color: "black",
+            cursor: "pointer",
+          }),
+          control: (provided) => ({
+            ...provided,
+            borderColor: "#ccc", // Ensure no unnecessary blue border
+            boxShadow: "none",
+            "&:hover": {
+              borderColor: "#aaa",
+            },
           }),
         }}
         searchInputProps={{

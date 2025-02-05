@@ -373,6 +373,7 @@ const PaymentManagementSection = forwardRef(
           EntityAddress: full.EntityAddress,
           FileExists: full.FileExists,
           FileCount: full.FileCount,
+          allFileCount: full.allFileCount,
           LinkId: full.LinkId,
           FulfillmentURL: full.FulfillmentURL,
           Class: full.Class,
@@ -1088,26 +1089,10 @@ const PaymentManagementSection = forwardRef(
         ),
         style: { width: "90px" },
         body: (rowData) => {
-          return rowData.FileCount > 0 ? (
+          return rowData.allFileCount > 0 || rowData.FileCount > 0 ? (
             <div className="flex gap-2 justify-center items-center">
-              {rowData.FileCount === 1 && (
-                <Image
-                  src={uploadPdfImage}
-                  alt="Upload"
-                  className="w-6 h-6 object-contain cursor-pointer"
-                  onKeyDown={(e) => {
-                    if ([32, 13].includes(e.keyCode)) {
-                      e.preventDefault();
-                      handleImageClick(rowData.LinkId, rowData.RowId);
-                    }
-                  }}
-                  tabIndex={0}
-                  onClick={() =>
-                    handleImageClick(rowData.LinkId, rowData.RowId)
-                  }
-                />
-              )}
-              {rowData.FileCount > 1 && (
+              {(rowData.FileCount === 0 && rowData.allFileCount > 0) ||
+              rowData.allFileCount > 1 ? (
                 <Image
                   src={OpenPdfImage}
                   alt="Open Image"
@@ -1121,6 +1106,24 @@ const PaymentManagementSection = forwardRef(
                   className="w-6 h-6 object-contain cursor-pointer"
                   onClick={() => handleAllImageClick(rowData)}
                 />
+              ) : (
+                rowData.FileCount === 1 && (
+                  <Image
+                    src={uploadPdfImage}
+                    alt="Upload"
+                    className="w-6 h-6 object-contain cursor-pointer"
+                    onKeyDown={(e) => {
+                      if ([32, 13].includes(e.keyCode)) {
+                        e.preventDefault();
+                        handleImageClick(rowData.LinkId, rowData.RowId);
+                      }
+                    }}
+                    tabIndex={0}
+                    onClick={() =>
+                      handleImageClick(rowData.LinkId, rowData.RowId)
+                    }
+                  />
+                )
               )}
             </div>
           ) : (

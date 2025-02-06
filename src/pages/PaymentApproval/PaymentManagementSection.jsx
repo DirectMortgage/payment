@@ -1529,7 +1529,7 @@ const PaymentManagementSection = forwardRef(
                                   as="p"
                                   className="font-inter text-[14px] font-normal text-black-900 mb-1"
                                 >
-                                  Starting Check number
+                                  Check number
                                 </Text>
                                 <input
                                   type="text"
@@ -1543,7 +1543,7 @@ const PaymentManagementSection = forwardRef(
                                   as="p"
                                   className="font-inter text-[14px] font-normal text-black-900 mb-1"
                                 >
-                                  Check # Print Order
+                                  Print Sort Order
                                 </Text>
                                 <SelectBox
                                   wClassName="s-wrap w-[250px]"

@@ -1217,8 +1217,10 @@ const PaymentManagementSection = forwardRef(
 
     useEffect(() => {
       if (rowData.length > 0) {
-        setShowSecondRow(false);
-        setShowThirdRow(false);
+        if (rowData.find(({ Change }) => Change)) {
+          setShowSecondRow(false);
+          setShowThirdRow(false);
+        }
         const iRowData = rowData.find(
           ({ PayACH, PayCheck }) => PayCheck || PayACH
         );

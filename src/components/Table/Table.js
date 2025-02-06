@@ -310,7 +310,9 @@ const Table = forwardRef(
       setIsLoadingSave(true);
       let VendorPayArray = [];
       let VendorPaymentId = "";
-      selectedRows.forEach((row) => {
+
+      const selectedRow = tableData.filter(({ PayCheck }) => PayCheck);
+      selectedRow.forEach((row) => {
         // Check if VendorPaymentId is not already processed
         if (!VendorPayArray.includes(row.VendorPaymentId)) {
           // Append VendorPaymentId with separator

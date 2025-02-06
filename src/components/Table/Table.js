@@ -280,7 +280,7 @@ const Table = forwardRef(
         VendorPaymentId: VendorPaymentId,
         CheckNum: checkNum,
         BankAccountId: BankAccount,
-        PrintOrder: selectedPrintOrder.value,
+        PrintOrder: selectedPrintOrder,
         EmpNum: EmpId,
       };
       console.log("VendorPaymentApprovalPrintChecks ===> ", obj);
@@ -578,8 +578,8 @@ const Table = forwardRef(
             return (
               <div className="flex gap-2">
                 {rowData.ACHApproved === 2 ? (
-                  <span className="text-red-500 text-xs font-bold">
-                    Refused
+                  <span className="whitespace-normal text-center text-red-500 text-xs font-bold">
+                    ACH Refused
                   </span>
                 ) : (
                   <div className="flex items-center gap-1">
@@ -1180,7 +1180,6 @@ const Table = forwardRef(
       let ChangeXML = "";
       const changedJSON = [];
       const processedData = saveDataWithChildren(localData);
-      debugger;
       processedData.forEach((val) => {
         const RowId = val.RowId;
 
@@ -1742,7 +1741,6 @@ const Table = forwardRef(
             showAddPaymentSplit={true} // Control visibility of Add Payment Split
             showRemoveRow={true}
             onChange={(selected) => {
-              debugger;
               if (selected.length > 0 || true) {
                 setEditingRows((prev) => {
                   prev[rowData.RowId] = (prev[rowData.RowId] || []).filter(

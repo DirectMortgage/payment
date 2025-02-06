@@ -109,6 +109,17 @@ const PaymentManagementSection = forwardRef(
     SessionId = queryString["SessionID"];
     useEffect(() => {
       empIdRef.current = EmpId;
+      if (EmpId) {
+        handleAPI({
+          name: "GetUserDetails_Payment",
+          method: "GET",
+          params: { empId: EmpId },
+        }).then((response) => {
+          response = JSON.parse(response)["Table"] || [];
+          const [{ CheckPrintOrder = 2 }] = response;
+          setSelectedPrintOrder(CheckPrintOrder);
+        });
+      }
     }, [EmpId]);
 
     useEffect(() => {
@@ -162,6 +173,7 @@ const PaymentManagementSection = forwardRef(
               ) {
                 item["FileCount"] = row["FileCount"];
                 item["allFileCount"] = row["allFileCount"];
+                item["LinkId"] = row["LinkId"];
               } else item = { ...item, ...row };
             }
             return item;
@@ -470,6 +482,11 @@ const PaymentManagementSection = forwardRef(
       title: "",
       message: "",
     });
+    const [alertDetails, setAlertDetails] = useState({
+      isShow: false,
+      title: "",
+      message: "",
+    });
     const handleRemove = async (rowId) => {
       const { Payee } = rowData.find((row) => row.RowId === rowId);
 
@@ -590,6 +607,9 @@ const PaymentManagementSection = forwardRef(
                   if (spinner && headerText) {
                     spinner.style.display = "none";
                     headerText.textContent = "Uploaded";
+                    setTimeout(() => {
+                      headerText.textContent = "Upload";
+                    }, 300);
                   }
                 }, 500);
                 if (index === files.length) {
@@ -1197,6 +1217,8 @@ const PaymentManagementSection = forwardRef(
 
     useEffect(() => {
       if (rowData.length > 0) {
+        setShowSecondRow(false);
+        setShowThirdRow(false);
         const iRowData = rowData.find(
           ({ PayACH, PayCheck }) => PayCheck || PayACH
         );
@@ -1214,6 +1236,67 @@ const PaymentManagementSection = forwardRef(
         }, 0);
       }
     }, [rowData]);
+    useEffect(() => {
+      const handleBeforeUnload = (event) => {
+        console.log("handleBeforeUnload");
+
+        // isSaveEnabled &&
+        //   setAlertDetails({
+        //     isShow: true,
+        //     title: "Confirmation",
+        //     message: (
+        //       <>
+        //         <p>
+        //           Are you sure you want to leave? All unsaved changes will be
+        //           lost.
+        //         </p>
+        //       </>
+        //     ),
+        //     footer: (
+        //       <>
+        //         <button
+        //           className="px-5 py-2 rounded-lg border-2 mr-4"
+        //           style={{ color: "#3872af", borderColor: "#3872af" }}
+        //           onClick={() => {
+        //             setAlertDetails({
+        //               isShow: false,
+        //             });
+        //           }}
+        //         >
+        //           Cancel
+        //         </button>
+        //         <button
+        //           autoFocus={true}
+        //           className="bg-[#3872af] px-5 py-2 rounded-lg border-2"
+        //           style={{ color: "white", borderColor: "#3872af" }}
+        //           onClick={() => {
+        //             tableRef.current.savevendorPayment();
+        //             setAlertDetails({
+        //               isShow: false,
+        //             });
+        //           }}
+        //         >
+        //           Save and Leave
+        //         </button>
+        //       </>
+        //     ),
+        //   });
+        event.returnValue = false;
+        return false;
+      };
+
+      window.addEventListener(
+        "beforeunload",
+        isSaveEnabled ? handleBeforeUnload : () => {}
+      );
+
+      return () => {
+        window.removeEventListener(
+          "beforeunload",
+          isSaveEnabled ? handleBeforeUnload : () => {}
+        );
+      };
+    }, [isSaveEnabled]);
 
     const handlePayment = () => {
       if (tableRef.current) {
@@ -1221,8 +1304,44 @@ const PaymentManagementSection = forwardRef(
           (row) => row.PayACH || row.PayCheck
         );
         const paymentFlag = selectedPaymentType?.PayACH ? "ACH" : "CHECK";
-        console.log(paymentFlag);
-        tableRef.current.handlePaymentProcess(paymentFlag);
+        const selectedRow = rowData.filter(({ PayCheck }) => PayCheck),
+          inCompletedRow = selectedRow.filter(
+            ({ VendorId = 0, TotalAmount = 0, Account_Id = 0 }) => {
+              return !VendorId || !Account_Id || !cleanValue(TotalAmount);
+            }
+          );
+        if (inCompletedRow.length > 0) {
+          setAlertDetails({
+            isShow: true,
+            title: "Missing Payment Details",
+            message: (
+              <>
+                <p>
+                  Please complete the missing payment details for the selected
+                  transactions.
+                </p>
+              </>
+            ),
+            footer: (
+              <>
+                <button
+                  autoFocus={true}
+                  className="bg-[#3872af] px-5 py-2 rounded-lg border-2"
+                  style={{ color: "white", borderColor: "#3872af" }}
+                  onClick={() => {
+                    setAlertDetails({
+                      isShow: false,
+                    });
+                  }}
+                >
+                  Close
+                </button>
+              </>
+            ),
+          });
+        } else {
+          tableRef.current.handlePaymentProcess(paymentFlag);
+        }
       }
     };
     const handleCheckPaymentGo = () => {
@@ -1388,9 +1507,6 @@ const PaymentManagementSection = forwardRef(
                                         objectFit: "contain",
                                         filter: "brightness(0) invert(1)",
                                       }}
-                                      onClick={() =>
-                                        handleImageClick(rowData.LinkId)
-                                      }
                                     />
                                   )
                                 }
@@ -1404,9 +1520,15 @@ const PaymentManagementSection = forwardRef(
                         </div>
 
                         {showSecondRow && (
-                          <div className="flex items-center w-full justify-end px-[185px]">
-                            <div className="flex items-center gap-4 ">
+                          <div className="flex items-center w-full justify-end">
+                            <div className="flex items-end gap-4 ">
                               <div className="w-[250px]">
+                                <Text
+                                  as="p"
+                                  className="font-inter text-[14px] font-normal text-black-900 mb-1"
+                                >
+                                  Starting Check number
+                                </Text>
                                 <input
                                   type="text"
                                   className="w-full h-[38px] rounded border border-solid border-black-900 bg-white-a700 px-3 py-1 font-inter text-[14px]"
@@ -1414,14 +1536,25 @@ const PaymentManagementSection = forwardRef(
                                   value={checknumber}
                                 />
                               </div>
-                              <div className="flex items-center gap-8">
+                              <div className="flex-col">
+                                <Text
+                                  as="p"
+                                  className="font-inter text-[14px] font-normal text-black-900 mb-1"
+                                >
+                                  Check # Print Order
+                                </Text>
                                 <SelectBox
                                   wClassName="s-wrap w-[250px]"
                                   name="Second Dropdown"
                                   options={printOrder}
-                                  onChange={setSelectedPrintOrder}
+                                  onChange={({ value }) => {
+                                    setSelectedPrintOrder(value);
+                                  }}
+                                  value={selectedPrintOrder}
                                 />
-                                <div className="min-w-[115px]">
+                              </div>
+                              <div className="flex items-center gap-8">
+                                <div className="min-w-[225px] ml-[20px]">
                                   <Button
                                     onClick={handleCheckPaymentGo}
                                     className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 "
@@ -1448,7 +1581,7 @@ const PaymentManagementSection = forwardRef(
                         )}
 
                         {showThirdRow && (
-                          <div className="flex items-center w-full justify-end px-[185px]">
+                          <div className="flex items-center w-full justify-end">
                             <div className="flex items-center gap-8">
                               <Text
                                 as="p"
@@ -1462,7 +1595,7 @@ const PaymentManagementSection = forwardRef(
                                 onChange={handleCheckboxChange}
                                 className="h-5 w-5 rounded border border-solid border-black-900"
                               />
-                              <div className="min-w-[115px]">
+                              <div className="min-w-[225px]">
                                 <Button
                                   onClick={handleSaveCheckPayment}
                                   className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700"
@@ -1580,6 +1713,27 @@ const PaymentManagementSection = forwardRef(
         >
           <p className="mb-5 py-6 px-3 border-y border-solid">
             {dialogDetails["message"]}
+          </p>
+        </Dialog>
+        <Dialog
+          modal
+          draggable={false}
+          position="top"
+          className="custom-tailwind-modal"
+          header={alertDetails["title"]}
+          visible={alertDetails["isShow"]}
+          headerClassName="p-5"
+          footer={alertDetails["footer"]}
+          onHide={() => {
+            setAlertDetails({
+              isShow: false,
+              title: "",
+              message: "",
+            });
+          }}
+        >
+          <p className="mb-5 py-6 px-3 border-y border-solid">
+            {alertDetails["message"]}
           </p>
         </Dialog>
       </>

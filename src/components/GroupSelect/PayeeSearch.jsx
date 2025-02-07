@@ -65,6 +65,7 @@ const PayeeSearch = ({
   defaultMenuIsOpen = true,
   isChildRow = false,
   menuPlacement = "auto",
+  valueText = "",
   ...restProps
 }) => {
   const [customOptions, setCustomOptions] = useState([]);
@@ -130,6 +131,8 @@ const PayeeSearch = ({
     .filter(Boolean);
 
   const iValue = useMemo(() => {
+    console.log({ validatedOptions, value });
+
     if (validatedOptions.length > 0 && value) {
       return [validatedOptions.find((option) => option[valueKey] === value)];
     }
@@ -194,20 +197,20 @@ const PayeeSearch = ({
         formatGroupLabel={formatGroupLabel}
         options={validatedOptions}
         name={name}
-        placeholder={placeholder}
+        placeholder={valueText || placeholder}
         isSearchable={true}
         isClearable={isClearable}
         autoFocus={isChildRow}
         menuIsOpen={menuIsOpen}
         onMenuOpen={() => {
           setMenuIsOpen(true);
-          if (isChildRow || true) {
+          if (isChildRow) {
             try {
               const ele = window.event.target.closest("td"),
                 eleTr = window.event.target.closest("tr"),
                 width = ele.offsetWidth,
                 height = ele.offsetHeight;
-              ele.style.position = "fixed";
+              ele.style.position = "absolute";
               ele.style.width = width + "px";
               eleTr.style.minHeight = height + "px";
               eleTr.style.height = height + "px";
@@ -216,7 +219,7 @@ const PayeeSearch = ({
         }}
         onMenuClose={() => {
           setMenuIsOpen(false);
-          if (isChildRow || true) {
+          if (isChildRow) {
             try {
               const ele = window.event.target.closest("td"),
                 eleTr = window.event.target.closest("tr");
@@ -232,7 +235,7 @@ const PayeeSearch = ({
         labelField={labelKey}
         valueField={valueKey}
         value={iValue}
-        // menuPlacement={menuPlacement}
+        menuPlacement={menuPlacement}
         onChange={handleChange}
         disabled={loading}
         className={`${className} block s-dropdown w-full cursor-pointer font-[10px] items-center justify-center border border-solid bg-white-a700 rounded ${

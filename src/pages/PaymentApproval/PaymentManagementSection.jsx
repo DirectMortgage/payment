@@ -127,8 +127,9 @@ const PaymentManagementSection = forwardRef(
         let fetchedEmpNum = queryString["EmpNum"] || "0";
 
         if (fetchedEmpNum === "0") {
-          fetchedEmpNum = await handleGetSessionData(SessionId, "empnum");
+          // fetchedEmpNum =
         }
+        await handleGetSessionData(SessionId, "empnum");
 
         SetEmpID(fetchedEmpNum);
 
@@ -625,12 +626,44 @@ const PaymentManagementSection = forwardRef(
       }
     };
     const [viewAllPDFStatus, setViewAllPDFStatus] = useState([]);
-    const handleViewAllPDF = () => {
+    const handleViewAllPDF = async () => {
       setViewAllPDFStatus(["loading"]);
-      // debugger;
+
       const linkIds = [
-        ...new Set(rowData.map(({ LinkId = "" }) => LinkId).filter((_) => _)),
-      ].join(",");
+        ...new Set(
+          await Promise.all(
+            rowData
+              .map(
+                async ({
+                  allFileCount = 0,
+                  LinkId = "",
+                  VendorPaymentDetailId,
+                }) => {
+                  if (allFileCount > 1) {
+                    const multipleLinkId = await handleAPI({
+                      name: "vendorPaymentGetScannedDocument",
+                      params: { VendorPaymentDetailId, companyId },
+                      method: "GET",
+                    });
+                    return [
+                      ...new Set(
+                        JSON.parse(multipleLinkId)
+                          ["AccDocs"].filter(
+                            ({ Usedoc }) => Number(Usedoc) === 1
+                          )
+                          .map(({ LinkId }) => LinkId)
+                      ),
+                    ];
+                  }
+                  return LinkId;
+                }
+              )
+              .flatMap((_) => _)
+          )
+        ),
+      ]
+        .filter((_) => _)
+        .join(",");
 
       handleAPI({
         name: "getMergedInvoice",
@@ -1306,10 +1339,13 @@ const PaymentManagementSection = forwardRef(
           (row) => row.PayACH || row.PayCheck
         );
         const paymentFlag = selectedPaymentType?.PayACH ? "ACH" : "CHECK";
+        debugger;
         const selectedRow = rowData.filter(({ PayCheck }) => PayCheck),
           inCompletedRow = selectedRow.filter(
-            ({ VendorId = 0, TotalAmount = 0, Account_Id = 0 }) => {
-              return !VendorId || !Account_Id || !cleanValue(TotalAmount);
+            ({ VendorId = 0, TotalAmount = 0, Account_Id = 0, Memo = "" }) => {
+              return (
+                !VendorId || !Account_Id || !cleanValue(TotalAmount) || !Memo
+              );
             }
           );
         if (inCompletedRow.length > 0) {
@@ -1318,10 +1354,38 @@ const PaymentManagementSection = forwardRef(
             title: "Missing Payment Details",
             message: (
               <>
-                <p>
-                  Please complete the missing payment details for the selected
+                <p className="mb-5">
+                  Please complete the missing payment details for the following
                   transactions.
                 </p>
+                <ul className="list-none list-inside">
+                  {inCompletedRow.map(
+                    (
+                      {
+                        Payee,
+                        VendorId = 0,
+                        TotalAmount = 0,
+                        Account_Id = 0,
+                        Memo = "",
+                      },
+                      index
+                    ) => {
+                      const missingKey = [];
+                      if (!cleanValue(TotalAmount)) missingKey.push("Amount");
+                      if (!Account_Id) missingKey.push("G/L Account");
+                      if (!Memo) missingKey.push("Memo");
+
+                      return missingKey.length > 0 ? (
+                        <li key={index}>
+                          <span className="font-semibold mr-1">{Payee}:</span>
+                          {missingKey.join(", ")}.
+                        </li>
+                      ) : (
+                        <></>
+                      );
+                    }
+                  )}
+                </ul>
               </>
             ),
             footer: (
@@ -1558,8 +1622,9 @@ const PaymentManagementSection = forwardRef(
                               <div className="flex items-center gap-8">
                                 <div className="min-w-[225px] ml-[20px]">
                                   <Button
+                                    disabled={isLoadingGo}
                                     onClick={handleCheckPaymentGo}
-                                    className="h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 "
+                                    className="button h-[38px] min-w-[80px] rounded-lg border border-solid border-indigo-700 bg-indigo-400 px-4 text-center font-inter text-[12px] font-bold text-white-a700 "
                                   >
                                     Go
                                   </Button>

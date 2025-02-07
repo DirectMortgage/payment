@@ -152,13 +152,13 @@ const GroupSelect = ({
         menuIsOpen={menuIsOpen}
         onMenuOpen={() => {
           setMenuIsOpen(true);
-          if (isChildRow || true) {
+          if (isChildRow) {
             try {
               const ele = window.event.target.closest("td"),
                 eleTr = window.event.target.closest("tr"),
                 width = ele.offsetWidth,
                 height = ele.offsetHeight;
-              ele.style.position = "fixed";
+              ele.style.position = "absolute";
               ele.style.width = width + "px";
               eleTr.style.minHeight = height + "px";
               eleTr.style.height = height + "px";
@@ -168,7 +168,7 @@ const GroupSelect = ({
         }}
         onMenuClose={() => {
           setMenuIsOpen(false);
-          if (isChildRow || true) {
+          if (isChildRow) {
             // debugger;
             try {
               const ele = window.event.target.closest("td"),
@@ -186,7 +186,7 @@ const GroupSelect = ({
         labelField={labelKey}
         valueField={valueKey}
         value={iValue}
-        // menuPlacement={menuPlacement}
+        menuPlacement={menuPlacement}
         onChange={handleChange}
         disabled={loading}
         className={`${className} block s-dropdown w-full cursor-pointer font-[10px] items-center justify-center border border-solid bg-white-a700 rounded ${

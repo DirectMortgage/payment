@@ -34,12 +34,17 @@ export default function DesktopOnePage() {
     console.log("Ref current:", paymentSectionRef.current); // Debug log
     paymentSectionRef.current.handleAddRow();
   };
-  const handleNotification = (message, type = "success", isReset = false) => {
+  const handleNotification = (
+    message,
+    type = "success",
+    isReset = false,
+    timeStamp = 3500
+  ) => {
     if (isReset) {
       setNotification({ message: "", type: "" });
     } else {
       setNotification({ message, type });
-      setTimeout(() => handleNotification("", "", 1), 3500);
+      setTimeout(() => handleNotification("", "", 1), timeStamp);
     }
     if (message.includes("Saved Successfully.")) {
       setProcessingStatus((prev) => prev.filter((item) => item !== "Saving"));

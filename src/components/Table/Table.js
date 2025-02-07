@@ -232,7 +232,7 @@ const Table = forwardRef(
       }
 
       if (paymentType === "ACH") {
-        savevendorPayment();
+        savevendorPayment({ showMessage: false });
         setTimeout(() => {
           ProcessACHPayment();
         }, 750);
@@ -242,7 +242,7 @@ const Table = forwardRef(
       }
     };
     const ProcessPrintChecks = () => {
-      savevendorPayment();
+      savevendorPayment({ showMessage: false });
       setTimeout(() => {
         ProcessPrintCheckCallBack();
       }, 750);
@@ -290,20 +290,24 @@ const Table = forwardRef(
         method: "POST",
         body: JSON.stringify(obj),
       });
+      try {
+        if (response && response.trim() !== "{}" && response.trim() !== "[]") {
+          setShowThirdRow(true);
+          setIsLoadingGo(false);
+          const currentURL = window.location.href;
+          const baseURL = currentURL.split("Payment")[0];
 
-      if (response && response.trim() !== "{}" && response.trim() !== "[]") {
-        setShowThirdRow(true);
+          const finalURL = baseURL + response;
+
+          window.open(
+            finalURL,
+            "",
+            "width=1200,height=1200,resizable=yes,scrollbars=yes"
+          );
+        }
+      } catch (error) {
         setIsLoadingGo(false);
-        const currentURL = window.location.href;
-        const baseURL = currentURL.split("Payment")[0];
-
-        const finalURL = baseURL + response;
-
-        window.open(
-          finalURL,
-          "",
-          "width=1200,height=1200,resizable=yes,scrollbars=yes"
-        );
+        handleNotification("Error while printing checks.", "error", 0, 6000);
       }
     };
     const SavePrintCheckPayment = async () => {
@@ -332,9 +336,14 @@ const Table = forwardRef(
         method: "POST",
         body: JSON.stringify(obj),
       });
-      if (response && response.trim() !== "{}" && response.trim() !== "[]") {
-        setIsLoadingSave(false);
-        getVendorPaymentApprovalData(companyId, EmpId, false);
+      try {
+        if (response && response.trim() !== "{}" && response.trim() !== "[]") {
+          setIsLoadingSave(false);
+          getVendorPaymentApprovalData(companyId, EmpId, false);
+        }
+      } catch (error) {
+        setIsLoadingGo(false);
+        handleNotification("Error while printing checks.", "error", 0, 6000);
       }
     };
     const ProcessACHPayment = async () => {
@@ -1178,6 +1187,7 @@ const Table = forwardRef(
     const savevendorPayment = async ({
       VendorPaymentId: iVendorPaymentId = "",
       isCheck: iIsCheck = false,
+      showMessage = true,
     } = {}) => {
       let ChangeXML = "";
       const changedJSON = [];
@@ -1408,7 +1418,7 @@ const Table = forwardRef(
         } catch (error) {}
       }
       if (isSaved) {
-        handleNotification("Saved Successfully.");
+        showMessage && handleNotification("Saved Successfully.");
         setIsSaveEnabled(false);
         setRowData((prevData) => {
           return [
@@ -1675,6 +1685,8 @@ const Table = forwardRef(
             RowId={rowData.RowId}
             handleRemove={handleRemove}
             onChange={(selected) => {
+              console.log({ selected });
+
               setRowData((prevData) =>
                 prevData.map((row) =>
                   row.RowId === rowData.RowId
@@ -1717,8 +1729,8 @@ const Table = forwardRef(
         ) {
           toggleRow(rowData);
         }
-        const { VendorPaymentDetailId, VendorPaymentId } = rowData;
-
+        const { VendorPaymentDetailId, VendorPaymentId, Payee = "" } = rowData;
+        debugger;
         return (
           <PayeeSearch
             size="sm"
@@ -1730,6 +1742,7 @@ const Table = forwardRef(
             VendorPaymentDetailId={VendorPaymentDetailId}
             VendorPaymentId={VendorPaymentId}
             name="Vendors"
+            valueText={Payee}
             valueKey="VendorId"
             labelKey="label"
             sessionid={sessionid}

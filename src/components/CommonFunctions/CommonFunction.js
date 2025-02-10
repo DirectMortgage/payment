@@ -176,6 +176,9 @@ const handleGetSessionData = async (strSessionId, SessVarName) => {
     if (["Output", undefined, null, "", "0"].includes(response))
       handleRedirectLoginPage();
     else {
+      setTimeout(() => {
+        handleGetSessionData(strSessionId, SessVarName);
+      }, 2000);
       updateWebURL({ EmpNum: response });
       return response;
     }

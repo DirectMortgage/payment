@@ -99,7 +99,9 @@ const Table = forwardRef(
     const { groupedData, paymentIdOrder, fieldMaps, parentRows } =
       useMemo(() => {
         const paymentIdOrder = [];
-
+        if (OnloadData.length === 0 && dataArray.length > 0) {
+          setOnloadData(JSON["parse"](JSON.stringify(dataArray)));
+        }
         // Group data by `VendorPaymentId` and track order
         const groupedData = dataArray.reduce((acc, item) => {
           const paymentId = item.VendorPaymentId;
@@ -210,9 +212,7 @@ const Table = forwardRef(
       });
 
       // Set OnloadData with the updated and structured clone of sorted rows
-      if (OnloadData.length === 0 && updatedParentRows.length > 0) {
-        setOnloadData(JSON["parse"](JSON.stringify(updatedParentRows)));
-      }
+
       setLocalData(sortedParentRows);
       setSelectedRows([]);
     }, [tableData]);
@@ -1007,7 +1007,7 @@ const Table = forwardRef(
                                 col.field
                               ] = `${selectedEntityLabel.value}`;
                               childRow.Change = 1;
-
+                              setIsSaveEnabled(true);
                               setLocalData([...localData]);
                               //setEditingCell(null);
                             }}
@@ -1070,6 +1070,7 @@ const Table = forwardRef(
                               childRow.Change = 1;
                               setLocalData([...localData]);
                               //setEditingCell(null);
+                              setIsSaveEnabled(true);
                             }}
                             onBlur={() => {
                               //setEditingCell(null);
@@ -1120,6 +1121,7 @@ const Table = forwardRef(
                               }
                               childRow.Change = 1;
                               setLocalData([...localData]);
+                              setIsSaveEnabled(true);
                             }}
                             className="text-[12px] font-normal text-black-900 clsGridInput w-full"
                             onBlur={() => {
@@ -1231,10 +1233,13 @@ const Table = forwardRef(
     } = {}) => {
       let ChangeXML = "";
       const changedJSON = [];
-      const processedData = saveDataWithChildren(localData);
+      const processedData =
+        (dataArray || []).length > 0
+          ? dataArray
+          : saveDataWithChildren(localData);
+
       processedData.forEach((val) => {
         const RowId = val.RowId;
-
         const childRow = groupedData[val.VendorPaymentId] || [];
         const childRows = childRow.filter((row) => row.RowId !== val.RowId);
         const hasChildRows = childRows.length > 0;
@@ -1327,13 +1332,17 @@ const Table = forwardRef(
         if (rdoACH && rdoACH?.checked) {
           PayACH = 1;
           Change = 1;
+          iVendorPaymentId = VendorPaymentId;
+          iIsCheck = false;
         } else if (rdoCheck && rdoCheck?.checked) {
           PayACH = 2;
           Change = 1;
+          iVendorPaymentId = VendorPaymentId;
+          iIsCheck = true;
         }
 
-        if (VendorPaymentId == iVendorPaymentId && iIsCheck) {
-          PayACH = 2;
+        if (VendorPaymentId == iVendorPaymentId) {
+          PayACH = iIsCheck ? 2 : 1;
           Change = 1;
         }
 
@@ -1433,7 +1442,7 @@ const Table = forwardRef(
       });
       ChangeXML = `<PaymentSave BankAccountId="${selectedBank.value}">${ChangeXML}</PaymentSave>`;
       console.log({ ChangeXML, changedJSON });
-      // return;
+
       // Replace quotes for proper formatting
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);
@@ -1837,12 +1846,14 @@ const Table = forwardRef(
               const rRowIndex = tableData.findIndex(
                 ({ VendorPaymentId }) => VendorPaymentId == paymentId
               );
-              if (rRowIndex !== -1)
+              if (rRowIndex !== -1) {
                 setRowData((prevRowData) => {
                   prevRowData[rRowIndex] = updatedData;
                   prevRowData[rRowIndex].Change = 1;
                   return [...prevRowData];
                 });
+                setIsSaveEnabled(true);
+              }
               if (updatedGroupedData[paymentId]) {
                 updatedGroupedData[paymentId].findIndex(
                   (row) => row.RowId === rowData.RowId
@@ -2019,6 +2030,7 @@ const Table = forwardRef(
             }
             onChange={(e) => {
               options.editorCallback(e.target.value);
+              setIsSaveEnabled(true);
               setRowData((prevData) => {
                 prevData[options.rowIndex][options.field] = e.target.value;
                 prevData[options.rowIndex].Change = 1;

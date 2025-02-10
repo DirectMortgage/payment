@@ -128,7 +128,7 @@ const PaymentManagementSection = forwardRef(
         if (fetchedEmpNum === "0") {
           // fetchedEmpNum =
         }
-        await handleGetSessionData(SessionId, "empnum");
+        fetchedEmpNum = await handleGetSessionData(SessionId, "empnum");
 
         SetEmpID(fetchedEmpNum);
 
@@ -143,11 +143,13 @@ const PaymentManagementSection = forwardRef(
         prevRowData.filter((item) => item.VendorPaymentId != VendorPaymentId)
       );
     };
-
-    const handleGetPaymentRowData = async ({ VendorPaymentId }) => {
-      handleAPI({
+    const getLinkIdForVendor = async ({
+      VendorPaymentId,
+      vendorPaymentDetailId,
+    }) => {
+      return await handleAPI({
         name: "VendorMonthlyPaymentByPaymentId",
-        params: { VendorPaymentId, companyId },
+        params: { companyId, VendorPaymentId },
       }).then((response) => {
         let rRowData = processPaymentInfo(JSON.parse(response)["Table"] || []);
         rRowData = JSON.parse(rRowData).map((item) => {
@@ -162,33 +164,62 @@ const PaymentManagementSection = forwardRef(
           );
           return item;
         });
-        setRowData((prevData) => {
-          const iPrevData = prevData.map((item) => {
-            const row = rRowData.find((row) => item["RowId"] == row["RowId"]);
-            if (row) {
-              const rdoACH = document.getElementById(
-                  `chkACHApproved${item.RowId}`
-                ),
-                rdoCheck = document.getElementById(
-                  `chkPrintChecks${item.RowId}`
-                );
-              if (rdoACH) row.PayACH = rdoACH.checked;
-              if (rdoCheck) row.PayCheck = rdoCheck.checked;
 
-              if (
-                item["FileCount"] != row["FileCount"] ||
-                item["allFileCount"] != row["allFileCount"]
-              ) {
-                item["FileCount"] = row["FileCount"];
-                item["allFileCount"] = row["allFileCount"];
-                item["LinkId"] = row["LinkId"];
-                item["Change"] = 1;
-              } else item = { ...row, ...item, Change: 1 };
-            }
-            return item;
-          });
-          return [...iPrevData];
+        rRowData = rRowData.filter((item) => {
+          return (
+            item["VendorPaymentDetailId"] == vendorPaymentDetailId &&
+            item["VendorPaymentId"] == VendorPaymentId
+          );
         });
+        return rRowData[0]["LinkId"];
+      });
+    };
+    const handleGetPaymentRowData = async () => {
+      handleAPI({
+        name: "VendorMonthlyPaymentJson",
+        params: { companyId },
+      }).then((response) => {
+        let rRowData = processPaymentInfo(JSON.parse(response)["Table"] || []);
+        rRowData = JSON.parse(rRowData).map((item) => {
+          if ((item["GLAccount"] || "").startsWith("0-")) {
+            item["GLAccount"] = (item["GLAccount"] || "")
+              ?.toString()
+              ?.replace("0-", "")
+              .trim();
+          }
+          item["Account_Id"] = Number(
+            ((item["GLAccount"] || "")?.split("-")[0] || "")?.trim() || 0
+          );
+          return item;
+        });
+        setRowData([...rRowData]);
+        // setRowData((prevData) => {
+        //   const iPrevData = prevData.map((item) => {
+        //     const row = rRowData.find((row) => item["RowId"] == row["RowId"]);
+        //     if (row) {
+        //       const rdoACH = document.getElementById(
+        //           `chkACHApproved${item.RowId}`
+        //         ),
+        //         rdoCheck = document.getElementById(
+        //           `chkPrintChecks${item.RowId}`
+        //         );
+        //       if (rdoACH) row.PayACH = rdoACH.checked;
+        //       if (rdoCheck) row.PayCheck = rdoCheck.checked;
+
+        //       if (
+        //         item["FileCount"] != row["FileCount"] ||
+        //         item["allFileCount"] != row["allFileCount"]
+        //       ) {
+        //         item["FileCount"] = row["FileCount"];
+        //         item["allFileCount"] = row["allFileCount"];
+        //         item["LinkId"] = row["LinkId"];
+        //         item["Change"] = 1;
+        //       } else item = { ...row, ...item, Change: 1 };
+        //     }
+        //     return item;
+        //   });
+        //   return [...iPrevData];
+        // });
       });
     };
 
@@ -315,6 +346,8 @@ const PaymentManagementSection = forwardRef(
               );
               return item;
             });
+            console.log({ iRowData });
+
             setRowData(iRowData);
             //console.log(iRowData);
             calculateTotalSubTotal(JSON.parse(processedData));
@@ -610,7 +643,7 @@ const PaymentManagementSection = forwardRef(
             params: details || {},
             requestOptions: requestOptions,
           })
-            .then((ScanDocId) => {
+            .then(async (ScanDocId) => {
               if (ScanDocId) {
                 setTimeout(() => {
                   if (spinner && headerText) {
@@ -622,7 +655,26 @@ const PaymentManagementSection = forwardRef(
                   }
                 }, 500);
                 if (index === files.length) {
-                  handleGetPaymentRowData({ VendorPaymentId: vendorPaymentId });
+                  let linkId = "";
+                  if ((FileCount || 0) == 0) {
+                    linkId = await getLinkIdForVendor({
+                      vendorPaymentDetailId,
+                      VendorPaymentId: vendorPaymentId,
+                    });
+                  }
+                  setRowData((prevRowData) => {
+                    return prevRowData.map((item) => {
+                      if (
+                        item["VendorPaymentDetailId"] == vendorPaymentDetailId
+                      ) {
+                        item["LinkId"] = linkId || "";
+                        item["FileExists"] = 1;
+                        item["FileCount"] = Number(item["FileCount"]) + 1;
+                        item["allFileCount"] = Number(item["allFileCount"]) + 1;
+                      }
+                      return item;
+                    });
+                  });
                 }
               }
               index++;

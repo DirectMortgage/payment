@@ -299,7 +299,7 @@ const Table = forwardRef(
           setIsLoadingGo(false);
           const currentURL = window.location.href;
           const baseURL = currentURL.split("Payment")[0];
-          handleGetCheckNumber({ accountId: Number(BankAccount || 0) });
+
           const finalURL = baseURL + response;
 
           window.open(
@@ -361,6 +361,17 @@ const Table = forwardRef(
       try {
         if (response && response.trim() !== "{}" && response.trim() !== "[]") {
           setIsLoadingSave(false);
+          const selectedBankOption = BankOptions?.find(
+            (option) => option?.value === selectedBank?.value
+          ) || {
+            checkNum: 0,
+            label: "",
+            selected: false,
+            value: "",
+          };
+
+          const BankAccount = selectedBankOption.value || 0;
+          handleGetCheckNumber({ accountId: Number(BankAccount) });
           getVendorPaymentApprovalData(companyId, EmpId, false);
         }
       } catch (error) {

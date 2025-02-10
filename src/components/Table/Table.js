@@ -68,6 +68,9 @@ const Table = forwardRef(
       handleTriggerPayee = () => {},
       handleNotification = () => {},
       setIsSaveEnabled = () => {},
+      checknumber,
+      setChecknumber,
+      setDropDownOptions,
       ...props
     },
     ref
@@ -248,7 +251,6 @@ const Table = forwardRef(
       }, 750);
     };
     const ProcessPrintCheckCallBack = async () => {
-      // debugger;
       setIsLoadingGo(true);
       let VendorPayArray = [];
       let VendorPaymentId = "";
@@ -262,7 +264,7 @@ const Table = forwardRef(
         value: "",
       };
 
-      const checkNum = selectedBankOption.checkNum || 0;
+      const checkNum = checknumber || selectedBankOption.checkNum || 0;
       const BankAccount = selectedBankOption.value || 0;
 
       const selectedRow = tableData.filter(({ PayCheck }) => PayCheck);
@@ -283,6 +285,7 @@ const Table = forwardRef(
         PrintOrder: selectedPrintOrder,
         EmpNum: EmpId,
       };
+
       console.log("VendorPaymentApprovalPrintChecks ===> ", obj);
       const response = await handleAPI({
         name: "VendorPaymentApprovalPrintChecks",
@@ -296,7 +299,7 @@ const Table = forwardRef(
           setIsLoadingGo(false);
           const currentURL = window.location.href;
           const baseURL = currentURL.split("Payment")[0];
-
+          handleGetCheckNumber({ accountId: Number(BankAccount || 0) });
           const finalURL = baseURL + response;
 
           window.open(
@@ -309,6 +312,25 @@ const Table = forwardRef(
         setIsLoadingGo(false);
         handleNotification("Error while printing checks.", "error", 0, 6000);
       }
+    };
+    const handleGetCheckNumber = async ({ accountId }) => {
+      try {
+        handleAPI({
+          name: "getCheckNumber",
+          method: "GET",
+          params: { companyId, accountId },
+        }).then((response) => {
+          setDropDownOptions((prevDropDownOptions) => {
+            prevDropDownOptions.forEach((item) => {
+              if (item.value == accountId) {
+                item.checkNum = response;
+              }
+            });
+            return prevDropDownOptions;
+          });
+          setChecknumber(response);
+        });
+      } catch (error) {}
     };
     const SavePrintCheckPayment = async () => {
       setIsLoadingSave(true);
@@ -329,7 +351,7 @@ const Table = forwardRef(
         PrintCheckStatus: printSuccess,
         EmpNum: EmpId,
       };
-      //return
+
       const response = await handleAPI({
         name: "VendorPaymentMarkPrintChecks",
         params: {},
@@ -347,8 +369,6 @@ const Table = forwardRef(
       }
     };
     const ProcessACHPayment = async () => {
-      // debugger;
-
       let tBody = "";
       let VendorPayArray = [];
       let VendorPaymentId = "";
@@ -811,6 +831,15 @@ const Table = forwardRef(
 
       setmarkPaid(total);
       setSelectedCount(uniqueVendorPayments.size);
+    };
+    const getVendorACHStatus = async ({ vendorId }) => {
+      return await handleAPI({
+        name: "getVendorACHStatus",
+        params: { vendorId },
+        method: "GET",
+      }).then((response) => {
+        return Number(response);
+      });
     };
     const toggleRow = (data) => {
       setExpandedRows((prev) => {
@@ -1730,7 +1759,7 @@ const Table = forwardRef(
           toggleRow(rowData);
         }
         const { VendorPaymentDetailId, VendorPaymentId, Payee = "" } = rowData;
-        debugger;
+
         return (
           <PayeeSearch
             size="sm"
@@ -1755,14 +1784,12 @@ const Table = forwardRef(
             handleRemove={handleRemove}
             showAddPaymentSplit={true} // Control visibility of Add Payment Split
             showRemoveRow={true}
-            onChange={(selected) => {
+            onChange={async (selected) => {
               if (selected.length > 0 || true) {
                 setEditingRows((prev) => {
                   prev[rowData.RowId] = (prev[rowData.RowId] || []).filter(
                     (field) => field !== options.field
                   );
-                  console.log({ prev });
-
                   return { ...prev };
                 });
               }
@@ -1788,6 +1815,9 @@ const Table = forwardRef(
                 GLAccount: account,
                 Account_Id: parseInt(selectedVendor?.Account_Id || 0) || "",
                 Change: 1,
+                ACHApproved: await getVendorACHStatus({
+                  vendorId: selectedEntity.value,
+                }),
               };
 
               const updatedGroupedData = { ...groupedData };

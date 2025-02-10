@@ -71,7 +71,6 @@ const PaymentManagementSection = forwardRef(
     const [selectedPrintOrder, setSelectedPrintOrder] = useState("0");
     const [checknumber, setChecknumber] = useState("");
     const [printOrder, setPrintOrder] = useState([
-      { label: "Select", value: "0" },
       { label: "Back to Front", value: "2" },
       { label: "Front to Back", value: "1" },
     ]);
@@ -163,11 +162,19 @@ const PaymentManagementSection = forwardRef(
           );
           return item;
         });
-
         setRowData((prevData) => {
           const iPrevData = prevData.map((item) => {
             const row = rRowData.find((row) => item["RowId"] == row["RowId"]);
             if (row) {
+              const rdoACH = document.getElementById(
+                  `chkACHApproved${item.RowId}`
+                ),
+                rdoCheck = document.getElementById(
+                  `chkPrintChecks${item.RowId}`
+                );
+              if (rdoACH) row.PayACH = rdoACH.checked;
+              if (rdoCheck) row.PayCheck = rdoCheck.checked;
+
               if (
                 item["FileCount"] != row["FileCount"] ||
                 item["allFileCount"] != row["allFileCount"]
@@ -175,7 +182,8 @@ const PaymentManagementSection = forwardRef(
                 item["FileCount"] = row["FileCount"];
                 item["allFileCount"] = row["allFileCount"];
                 item["LinkId"] = row["LinkId"];
-              } else item = { ...item, ...row };
+                item["Change"] = 1;
+              } else item = { ...row, ...item, Change: 1 };
             }
             return item;
           });
@@ -629,10 +637,15 @@ const PaymentManagementSection = forwardRef(
     const handleViewAllPDF = async () => {
       setViewAllPDFStatus(["loading"]);
 
+      let selectedRow = rowData.filter(
+        ({ PayCheck, PayACH }) => PayCheck || PayACH
+      );
+      if (selectedRow.length === 0) selectedRow = rowData;
+
       const linkIds = [
         ...new Set(
           await Promise.all(
-            rowData
+            selectedRow
               .map(
                 async ({
                   allFileCount = 0,
@@ -1339,7 +1352,7 @@ const PaymentManagementSection = forwardRef(
           (row) => row.PayACH || row.PayCheck
         );
         const paymentFlag = selectedPaymentType?.PayACH ? "ACH" : "CHECK";
-        debugger;
+
         const selectedRow = rowData.filter(({ PayCheck }) => PayCheck),
           inCompletedRow = selectedRow.filter(
             ({ VendorId = 0, TotalAmount = 0, Account_Id = 0, Memo = "" }) => {
@@ -1457,6 +1470,9 @@ const PaymentManagementSection = forwardRef(
                 selectedBank={selectedBank}
                 selectedPrintOrder={selectedPrintOrder}
                 BankOptions={dropDownOptions}
+                setDropDownOptions={setDropDownOptions}
+                checknumber={checknumber}
+                setChecknumber={setChecknumber}
                 EmpId={EmpId}
                 printSuccess={printSuccess}
                 editingRows={editingRows}

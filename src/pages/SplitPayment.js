@@ -383,7 +383,7 @@ const SplitPayment = () => {
       console.log(response);
       try {
         const button = window.opener.document.querySelector(
-          "#refresh-payment-data-all"
+          "#refresh-payment-data"
         );
         button.setAttribute("data-company-id", companyId);
         button.setAttribute("data-emp-id", empNumber);

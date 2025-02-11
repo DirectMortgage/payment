@@ -131,8 +131,6 @@ const PayeeSearch = ({
     .filter(Boolean);
 
   const iValue = useMemo(() => {
-    console.log({ validatedOptions, value });
-
     if (validatedOptions.length > 0 && value) {
       return [validatedOptions.find((option) => option[valueKey] === value)];
     }

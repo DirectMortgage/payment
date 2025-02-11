@@ -178,7 +178,7 @@ const handleGetSessionData = async (strSessionId, SessVarName) => {
     else {
       setTimeout(() => {
         handleGetSessionData(strSessionId, SessVarName);
-      }, 2000);
+      }, 3500);
       updateWebURL({ EmpNum: response });
       return response;
     }

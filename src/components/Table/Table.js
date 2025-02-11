@@ -285,7 +285,7 @@ const Table = forwardRef(
         PrintOrder: selectedPrintOrder,
         EmpNum: EmpId,
       };
-
+      // return; //-remove
       console.log("VendorPaymentApprovalPrintChecks ===> ", obj);
       const response = await handleAPI({
         name: "VendorPaymentApprovalPrintChecks",
@@ -451,7 +451,7 @@ const Table = forwardRef(
         EmpNum: EmpId,
       };
       console.log("VendorPaymentApprovalACHPayments ===> ", obj);
-
+      // return; //-remove
       const response = await handleAPI({
         name: "VendorPaymentApprovalACHPayments",
         params: {},
@@ -591,7 +591,13 @@ const Table = forwardRef(
                   <button
                     tabIndex={0}
                     className="btnCustom"
-                    onClick={() => handlePayHUD(rowData.VendorPaymentId)}
+                    onClick={() =>
+                      handlePayHUD(
+                        rowData.VendorPaymentId,
+                        rowData.isParentRow,
+                        rowData.VendorPaymentDetailId
+                      )
+                    }
                   >
                     {rowData.isParentRow ? "Pay All HUD" : "Pay HUD"}
                   </button>
@@ -603,7 +609,13 @@ const Table = forwardRef(
                   <button
                     tabIndex={0}
                     className="btnCustom"
-                    onClick={() => handlePayVA(rowData.VendorPaymentId)}
+                    onClick={() =>
+                      handlePayVA(
+                        rowData.VendorPaymentId,
+                        rowData.isParentRow,
+                        rowData.VendorPaymentDetailId
+                      )
+                    }
                   >
                     {rowData.isParentRow ? "Pay All VA" : "Pay VA"}
                   </button>
@@ -766,8 +778,14 @@ const Table = forwardRef(
       return col;
     });
 
-    const handlePayHUD = (VendorPaymentId) => {
-      savevendorPayment({ VendorPaymentId, isCheck: true });
+    const handlePayHUD = (VendorPaymentId, isPayAll, vendorPaymentDetailId) => {
+      savevendorPayment({
+        VendorPaymentId,
+        isCheck: true,
+        isPayAll,
+        vendorPaymentDetailId,
+        isHudVa: true,
+      });
       setTimeout(() => {
         handlePayHUDCallBack(VendorPaymentId);
       }, 750);
@@ -783,8 +801,14 @@ const Table = forwardRef(
         sessionid
       );
     };
-    const handlePayVA = (VendorPaymentId) => {
-      savevendorPayment({ VendorPaymentId, isCheck: false });
+    const handlePayVA = (VendorPaymentId, isPayAll, vendorPaymentDetailId) => {
+      savevendorPayment({
+        VendorPaymentId,
+        isCheck: false,
+        isPayAll,
+        vendorPaymentDetailId,
+        isHudVa: true,
+      });
       setTimeout(() => {
         handlePayVACallBack(VendorPaymentId);
       }, 750);
@@ -1230,6 +1254,9 @@ const Table = forwardRef(
       VendorPaymentId: iVendorPaymentId = "",
       isCheck: iIsCheck = false,
       showMessage = true,
+      isPayAll = false,
+      vendorPaymentDetailId,
+      isHudVa = false,
     } = {}) => {
       let ChangeXML = "";
       const changedJSON = [];
@@ -1340,8 +1367,12 @@ const Table = forwardRef(
           iVendorPaymentId = VendorPaymentId;
           iIsCheck = true;
         }
-
-        if (VendorPaymentId == iVendorPaymentId) {
+        if (isHudVa && !isPayAll) {
+          if (VendorPaymentDetailId == vendorPaymentDetailId) {
+            PayACH = iIsCheck ? 2 : 1;
+            Change = 1;
+          }
+        } else if (VendorPaymentId == iVendorPaymentId) {
           PayACH = iIsCheck ? 2 : 1;
           Change = 1;
         }
@@ -1442,7 +1473,7 @@ const Table = forwardRef(
       });
       ChangeXML = `<PaymentSave BankAccountId="${selectedBank.value}">${ChangeXML}</PaymentSave>`;
       console.log({ ChangeXML, changedJSON });
-
+      // return; //-remove
       // Replace quotes for proper formatting
       ChangeXML = ChangeXML.replaceAll('"', "~").replaceAll("~", '\\"');
       const jsonString = JSON.stringify(changedJSON);

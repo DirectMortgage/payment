@@ -71,6 +71,8 @@ const Table = forwardRef(
       checknumber,
       setChecknumber,
       setDropDownOptions,
+      OnloadData = [],
+      setOnloadData = () => {},
       ...props
     },
     ref
@@ -88,7 +90,6 @@ const Table = forwardRef(
       [hdnGlo_Hud_VA, sethdnGlo_Hud_VA] = useState(""),
       [hdnBankAcountId, sethdnBankAcountId] = useState(""),
       [localData, setLocalData] = useState([]),
-      [OnloadData, setOnloadData] = useState([]),
       [resizeColumn, setResizableColumn] = useState(null);
 
     const dataArray = useMemo(

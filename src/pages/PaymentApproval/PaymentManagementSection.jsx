@@ -53,6 +53,7 @@ const PaymentManagementSection = forwardRef(
   ) => {
     const [rowData, setRowData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [OnloadData, setOnloadData] = useState([]);
     const [glAccounts, setGLAccounts] = useState([]);
     const [Class, setClass] = useState([]);
     const [expandedRows, setExpandedRows] = useState([]);
@@ -193,6 +194,7 @@ const PaymentManagementSection = forwardRef(
           return item;
         });
         setRowData([...rRowData]);
+        setOnloadData(JSON["parse"](JSON.stringify(rRowData)));
         // setRowData((prevData) => {
         //   const iPrevData = prevData.map((item) => {
         //     const row = rRowData.find((row) => item["RowId"] == row["RowId"]);
@@ -1506,6 +1508,8 @@ const PaymentManagementSection = forwardRef(
                 tableData={rowData}
                 setEditingRows={setEditingRows}
                 accounts={glAccounts}
+                setOnloadData={setOnloadData}
+                OnloadData={OnloadData}
                 Class={Class}
                 vendors={vendors}
                 columns={columns}

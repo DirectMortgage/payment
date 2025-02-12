@@ -1501,20 +1501,24 @@ const Table = forwardRef(
       if (isSaved) {
         showMessage && handleNotification("Saved Successfully.");
         setIsSaveEnabled(false);
-        setRowData((prevData) => {
-          return [
-            ...prevData
-              .filter(
-                ({ RowId }) =>
-                  !document.getElementById(`chkMarkaspaid${RowId}`)?.checked
-              )
-              .map((item) => {
-                item.Change = 0;
-                item.isNewRow = false;
-                return item;
-              }),
-          ];
-        });
+        try {
+          const button = document.querySelector("#refresh-payment-data");
+          button.click();
+        } catch (error) {}
+        // setRowData((prevData) => {
+        //   return [
+        //     ...prevData
+        //       .filter(
+        //         ({ RowId }) =>
+        //           !document.getElementById(`chkMarkaspaid${RowId}`)?.checked
+        //       )
+        //       .map((item) => {
+        //         item.Change = 0;
+        //         item.isNewRow = false;
+        //         return item;
+        //       }),
+        //   ];
+        // });
         setTimeout(() => {
           document.getElementById("idTriggerDuplicateValidation")?.click();
         }, 1000);
@@ -1610,12 +1614,19 @@ const Table = forwardRef(
 
     const handleTableHeight = () => {
       try {
-        const tableHeight =
-          document.querySelector("#main-header")?.offsetHeight +
-          document.querySelector(".p-datatable-header")?.offsetHeight +
-          document.querySelector(".fixed-footer")?.offsetHeight +
+        let tableHeight =
+          (document.querySelector("#main-header")?.offsetHeight || 0) +
+          (document.querySelector(".p-datatable-header")?.offsetHeight || 0) +
+          (document.querySelector(".fixed-footer")?.offsetHeight || 0) +
           90;
 
+        let secondRow = document.querySelector("#secondRow")?.offsetHeight || 0,
+          thirdRow = document.querySelector("#thirdRow")?.offsetHeight || 0;
+
+        secondRow = secondRow ? secondRow + 20 : 0;
+        thirdRow = thirdRow ? thirdRow + 20 : 0;
+
+        tableHeight += secondRow + thirdRow;
         document.documentElement.style.setProperty(
           "--table-height",
           window.innerHeight - tableHeight + "px"
@@ -1625,11 +1636,18 @@ const Table = forwardRef(
       }
     };
     useEffect(() => {
+      // const observer = new MutationObserver(handleTableHeight);
+      // observer.observe(document.documentElement, {
+      //   childList: true,
+      //   subtree: true,
+      //   attributes: true,
+      // });
       window.addEventListener("resize", handleTableHeight);
       return () => {
         window.removeEventListener("resize", handleTableHeight);
       };
     }, []);
+
     useEffect(() => {
       document.documentElement.style.setProperty("--table-height", "auto");
       handleTableHeight();

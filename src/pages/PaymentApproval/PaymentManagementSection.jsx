@@ -90,7 +90,9 @@ const PaymentManagementSection = forwardRef(
         rowData.filter(({ Change = 0 }) => Number(Change)).length > 0
       );
     }, [rowData]);
-
+    useEffect(() => {
+      window.dispatchEvent(new Event("resize"));
+    }, [showThirdRow, showSecondRow]);
     useEffect(() => {
       setIsSaveEnabled(isSaveEnabled);
     }, [isSaveEnabled]);
@@ -1658,7 +1660,10 @@ const PaymentManagementSection = forwardRef(
                         </div>
 
                         {showSecondRow && (
-                          <div className="flex items-center w-full justify-end">
+                          <div
+                            id="secondRow"
+                            className="flex items-center w-full justify-end"
+                          >
                             <div className="flex items-end gap-4 ">
                               <div className="w-[250px]">
                                 <Text
@@ -1720,7 +1725,10 @@ const PaymentManagementSection = forwardRef(
                         )}
 
                         {showThirdRow && (
-                          <div className="flex items-center w-full justify-end">
+                          <div
+                            id="thirdRow"
+                            className="flex items-center w-full justify-end"
+                          >
                             <div className="flex items-center gap-8">
                               <Text
                                 as="p"

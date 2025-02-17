@@ -190,6 +190,12 @@ const PaymentManagementSection = forwardRef(
               ?.replace("0-", "")
               .trim();
           }
+          const radioACH = document.getElementById(
+              `chkACHApproved${item.RowId}`
+            ),
+            radioCheck = document.getElementById(`chkPrintChecks${item.RowId}`);
+          if (radioACH) item["PayACH"] = radioACH.checked;
+          if (radioCheck) item["PayCheck"] = radioCheck.checked;
           item["Account_Id"] = Number(
             ((item["GLAccount"] || "")?.split("-")[0] || "")?.trim() || 0
           );

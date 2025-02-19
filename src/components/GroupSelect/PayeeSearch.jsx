@@ -59,6 +59,7 @@ const PayeeSearch = ({
   showAddPaymentSplit = false, // Add these new props
   showRemoveRow = false,
   companyId,
+  handleAddAdditionalInvoice = () => {},
   EmpId,
   VendorPaymentDetailId,
   VendorPaymentId,
@@ -92,6 +93,14 @@ const PayeeSearch = ({
               sessionid
             );
           }
+        },
+      });
+      additionalOptions.push({
+        label: "Add Additional Invoice",
+        value: "add-additional-invoice",
+        icon: Add,
+        onClick: () => {
+          handleAddAdditionalInvoice({ vendorPaymentId: VendorPaymentId });
         },
       });
     }

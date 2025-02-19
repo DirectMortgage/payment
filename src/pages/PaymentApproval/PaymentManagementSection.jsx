@@ -201,8 +201,21 @@ const PaymentManagementSection = forwardRef(
           );
           return item;
         });
+        const target = document.querySelector(
+            ".p-datatable .p-datatable-wrapper"
+          ),
+          { scrollTop } = target;
+        target.style.overflow = "hidden";
         setRowData([...rRowData]);
         setOnloadData(JSON["parse"](JSON.stringify(rRowData)));
+        setTimeout(() => {
+          document.querySelector(
+            ".p-datatable .p-datatable-wrapper"
+          ).style.overflow = "auto";
+          document.querySelector(
+            ".p-datatable .p-datatable-wrapper"
+          ).scrollTop = scrollTop + 150;
+        }, 100);
         // setRowData((prevData) => {
         //   const iPrevData = prevData.map((item) => {
         //     const row = rRowData.find((row) => item["RowId"] == row["RowId"]);

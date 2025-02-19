@@ -24,6 +24,7 @@ import {
   formatDate,
   cleanValue,
   removeCurrencyFormatting,
+  formatCurrency,
 } from "../../components/CommonFunctions/CommonFunction.js";
 import { Tooltip } from "react-tooltip";
 import "react-tooltip/dist/react-tooltip.css";
@@ -92,10 +93,12 @@ const Table = forwardRef(
       [localData, setLocalData] = useState([]),
       [resizeColumn, setResizableColumn] = useState(null);
 
-    const dataArray = useMemo(
-      () => (Array.isArray(tableData) && tableData.length > 0 ? tableData : []),
-      [tableData, tableData.length]
-    );
+    const dataArray = useMemo(() => {
+      if (Array.isArray(tableData) && tableData.length > 0) {
+        return tableData;
+      }
+      return [];
+    }, [tableData, tableData.length]);
 
     const { groupedData, paymentIdOrder, fieldMaps, parentRows } =
       useMemo(() => {
@@ -124,6 +127,9 @@ const Table = forwardRef(
 
         // Store the original values at the group level
         Object.entries(groupedData).forEach(([paymentId, rows]) => {
+          rows = rows.sort(
+            (a, b) => a.VendorPaymentDetailId - b.VendorPaymentDetailId
+          );
           const firstRow = rows[0];
           fieldMaps.classNameMap[paymentId] = firstRow.ClassName;
           fieldMaps.glAccountMap[paymentId] = firstRow.GLAccount;
@@ -185,7 +191,7 @@ const Table = forwardRef(
         }
         setLocalData([...parentRows]);
       }
-    }, [parentRows, parentRows.length]);
+    }, [parentRows, parentRows.length, dataArray]);
 
     useEffect(() => {
       const sortedParentRows = [...parentRows].sort(
@@ -1134,10 +1140,12 @@ const Table = forwardRef(
                             type="text"
                             value={
                               col.field === "TotalAmount"
-                                ? childRow.SubTotal
+                                ? removeCurrencyFormatting(childRow.SubTotal) ||
+                                  ""
                                 : childRow[col.field] || ""
                             }
                             onChange={(e) => {
+                              debugger;
                               const newValue = e.target.value;
                               if (col.field === "TotalAmount") {
                                 childRow.SubTotal = newValue;
@@ -1150,7 +1158,33 @@ const Table = forwardRef(
                             }}
                             className="text-[12px] font-normal text-black-900 clsGridInput w-full"
                             onBlur={() => {
-                              setEditingCell(null);
+                              if (col.field === "TotalAmount") {
+                                const total = tableData
+                                  .filter((item) => {
+                                    return (
+                                      childRow["VendorPaymentId"] ==
+                                      item["VendorPaymentId"]
+                                    );
+                                  })
+                                  .reduce((acc, item) => {
+                                    acc += Number(
+                                      removeCurrencyFormatting(item["SubTotal"])
+                                    );
+                                    return acc;
+                                  }, 0);
+                                setRowData((prevData) => {
+                                  return prevData.map((item) => {
+                                    if (
+                                      childRow["VendorPaymentId"] ===
+                                      item["VendorPaymentId"]
+                                    ) {
+                                      item["TotalAmount"] = total;
+                                    }
+                                    return item;
+                                  });
+                                });
+                              }
+                              // setEditingCell(null);
                             }}
                             onClick={(e) => e.stopPropagation()}
                             autoFocus
@@ -1169,8 +1203,8 @@ const Table = forwardRef(
                             className="text-[14px] font-normal text-black-900 cursor-pointer"
                           >
                             {col.field === "TotalAmount"
-                              ? childRow.SubTotal
-                              : childRow[col.field] || ""}
+                              ? formatCurrency(childRow.SubTotal)
+                              : childRow[col.field] || "         "}
                           </span>
                         )
                       ) : ["paymentMethodHeader", "MarkPaid"].includes(
@@ -1721,6 +1755,20 @@ const Table = forwardRef(
       setFirst(event.first);
       setRows(event.rows);
     };
+    const handleAddAdditionalInvoice = ({ vendorPaymentId }) => {
+      handleAPI({
+        name: "addAdditionalInvoice",
+        params: {
+          vendorPaymentId,
+          empNum: EmpId,
+        },
+      }).then((res) => {
+        try {
+          const button = document.querySelector("#refresh-payment-data");
+          button.click();
+        } catch (error) {}
+      });
+    };
     const cellEditor = (options) => {
       //if (editingCell && options.rowData.isParentRow) {
       //  setEditingCell(null);
@@ -1854,6 +1902,7 @@ const Table = forwardRef(
             handleRemove={handleRemove}
             showAddPaymentSplit={true} // Control visibility of Add Payment Split
             showRemoveRow={true}
+            handleAddAdditionalInvoice={handleAddAdditionalInvoice}
             onChange={async (selected) => {
               if (selected.length > 0 || true) {
                 setEditingRows((prev) => {

@@ -186,7 +186,7 @@ const GroupSelect = ({
         labelField={labelKey}
         valueField={valueKey}
         value={iValue}
-        menuPlacement={menuPlacement}
+        // menuPlacement={menuPlacement}
         onChange={handleChange}
         disabled={loading}
         className={`${className} block s-dropdown w-full cursor-pointer font-[10px] items-center justify-center border border-solid bg-white-a700 rounded ${
@@ -196,6 +196,10 @@ const GroupSelect = ({
         }`}
         dropdownGap={0}
         styles={{
+          menuList: (base, state) => ({
+            ...base,
+            height: 180,
+          }),
           dropdownIndicator: (base, state) => ({
             ...base,
             color: state.isFocused ? "#508bc9" : "gray",

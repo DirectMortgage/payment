@@ -1008,7 +1008,9 @@ const Table = forwardRef(
                             size="sm"
                             shape="round"
                             menuPlacement={
-                              index >= allRows.length - 5 ? "top" : "auto"
+                              index >= allRows.length - 5 && allRows.length > 5
+                                ? "top"
+                                : "auto"
                             }
                             options={accounts.map((opt) => ({
                               label: `${opt.Account_Id} - ${opt.Account_Name}`,
@@ -1077,7 +1079,9 @@ const Table = forwardRef(
                             size="sm"
                             shape="round"
                             menuPlacement={
-                              index >= allRows.length - 5 ? "top" : "auto"
+                              index >= allRows.length - 5 && allRows.length > 5
+                                ? "top"
+                                : "auto"
                             }
                             options={Class.map((opt) => ({
                               label: `${opt.label}`,
@@ -1821,7 +1825,9 @@ const Table = forwardRef(
               Account_Name: opt.Account_Name,
             }))}
             menuPlacement={
-              options.rowIndex >= tableData.length - 5 ? "top" : "auto"
+              options.rowIndex >= tableData.length - 5 && tableData.length > 5
+                ? "top"
+                : "auto"
             }
             name="Account"
             valueKey="Account_Id"
@@ -1884,7 +1890,9 @@ const Table = forwardRef(
             shape="round"
             options={vendors}
             menuPlacement={
-              options.rowIndex >= tableData.length - 5 ? "top" : "auto"
+              options.rowIndex >= tableData.length - 5 && tableData.length > 5
+                ? "top"
+                : "auto"
             }
             VendorPaymentDetailId={VendorPaymentDetailId}
             VendorPaymentId={VendorPaymentId}
@@ -2017,7 +2025,9 @@ const Table = forwardRef(
               Class_Name: opt.Class_Name,
             }))}
             menuPlacement={
-              options.rowIndex >= tableData.length - 5 ? "top" : "auto"
+              options.rowIndex >= tableData.length - 5 && tableData.length > 5
+                ? "top"
+                : "auto"
             }
             name="Class"
             valueKey="Class_Id"

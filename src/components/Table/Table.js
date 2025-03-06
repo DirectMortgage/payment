@@ -148,6 +148,12 @@ const Table = forwardRef(
             const displayParentRow = { ...parentRow };
 
             if (rows.length > 1) {
+              const total = rows.reduce((sum, row) => {
+                const TotalAmount = FormatValueforCalc(row.SubTotal);
+                return sum + (parseFloat(TotalAmount) || 0);
+              }, 0);
+
+              displayParentRow.TotalAmount = total;
               displayParentRow.ClassName = "";
               displayParentRow.GLAccount = "";
               // displayParentRow.InvoiceDate = ""; // Commented out as per original logic
@@ -1149,7 +1155,6 @@ const Table = forwardRef(
                                 : childRow[col.field] || ""
                             }
                             onChange={(e) => {
-                              debugger;
                               const newValue = e.target.value;
                               if (col.field === "TotalAmount") {
                                 childRow.SubTotal = newValue;

@@ -284,7 +284,7 @@ const PayeeSearch = ({
                   .then((res) => {
                     const { VendorId } = JSON.parse(res)["Table"][0];
 
-                    var URL = `../../../VendorChanges/Presentation/Webforms/VendorInfoChangeRequest_Bootstrap.aspx?LoanID=0&vendorID=${VendorId}&SessionId=${sessionid}`;
+                    let URL = `../../..//NewDMAcct/CustomerVendorOptions.aspx?SessionID=${sessionid}&VendorPaymentId=${VendorPaymentId}`;
                     window.open(
                       URL,
                       "",

@@ -70,6 +70,8 @@ const Table = forwardRef(
       handleNotification = () => {},
       setIsSaveEnabled = () => {},
       checknumber,
+      dialogDetails = {},
+      setDialogDetails = () => {},
       setChecknumber,
       setDropDownOptions,
       OnloadData = [],
@@ -1891,6 +1893,9 @@ const Table = forwardRef(
 
         return (
           <PayeeSearch
+            dialogDetails={dialogDetails}
+            setDialogDetails={setDialogDetails}
+            setRowData={setRowData}
             size="sm"
             shape="round"
             options={vendors}

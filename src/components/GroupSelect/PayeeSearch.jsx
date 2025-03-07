@@ -34,7 +34,21 @@ const sizes = {
   sm: "text-[14px]", //48 16px
   xs: "text-[14px]",
 };
+const getSafeTextContent = (element) => {
+  if (!element) return null; // Ensure element exists
 
+  let { target } = element;
+  for (let i = 0; i < 3; i++) {
+    if (target.parentNode) {
+      target = target.parentNode;
+    } else {
+      return null;
+    }
+  }
+
+  let nextSibling = target.nextElementSibling;
+  return nextSibling ? nextSibling.textContent.trim() : null;
+};
 const PayeeSearch = ({
   className = "",
   options = [],
@@ -60,6 +74,7 @@ const PayeeSearch = ({
   showRemoveRow = false,
   companyId,
   handleAddAdditionalInvoice = () => {},
+  setRowData = () => {},
   EmpId,
   VendorPaymentDetailId,
   VendorPaymentId,
@@ -67,6 +82,8 @@ const PayeeSearch = ({
   isChildRow = false,
   menuPlacement = "auto",
   valueText = "",
+  dialogDetails = {},
+  setDialogDetails = () => {},
   ...restProps
 }) => {
   const [customOptions, setCustomOptions] = useState([]);
@@ -242,6 +259,62 @@ const PayeeSearch = ({
         labelField={labelKey}
         valueField={valueKey}
         value={iValue}
+        onBlur={(ele) => {
+          const textContent = getSafeTextContent(ele);
+          if (textContent && textContent.includes("options")) {
+            const payeeName = ele.target.value;
+            if ((payeeName || "").trim().length === 0) return;
+            setDialogDetails({
+              isShow: true,
+              title: "Confirmation",
+              message: (
+                <>
+                  The {<b>{payeeName}</b>} payee added is not in the list. Do
+                  you want to add the same?
+                </>
+              ),
+              handleAdd: () => {
+                handleAPI({
+                  name: "VendorPaymentAddNewPayee",
+                  params: {
+                    vendorPaymentId: VendorPaymentId,
+                    payeeName,
+                  },
+                })
+                  .then((res) => {
+                    const { VendorId } = JSON.parse(res)["Table"][0];
+
+                    var URL = `../../../VendorChanges/Presentation/Webforms/VendorInfoChangeRequest_Bootstrap.aspx?LoanID=0&vendorID=${VendorId}&SessionId=${sessionid}`;
+                    window.open(
+                      URL,
+                      "",
+                      "width=1200,height=1200,resizable=yes,scrollbars=yes"
+                    );
+
+                    setRowData((prevRowData) => {
+                      prevRowData.forEach((item) => {
+                        if (item.VendorPaymentId == VendorPaymentId) {
+                          item["Payee"] = payeeName;
+                        }
+                      });
+                      return prevRowData;
+                    });
+                    onChange([
+                      {
+                        name,
+                        value: VendorId,
+                      },
+                      {
+                        name: name + "_name",
+                        value: payeeName,
+                      },
+                    ]);
+                  })
+                  .catch((err) => {});
+              },
+            });
+          }
+        }}
         menuPlacement={menuPlacement}
         onChange={handleChange}
         disabled={loading}

@@ -1524,6 +1524,8 @@ const PaymentManagementSection = forwardRef(
               <Table
                 ref={tableRef}
                 paginator
+                dialogDetails={dialogDetails}
+                setDialogDetails={setDialogDetails}
                 setIsSaveEnabled={setIsSaveEnabled}
                 isLoading={isLoading}
                 tableData={rowData}
@@ -1859,7 +1861,11 @@ const PaymentManagementSection = forwardRef(
                 className="bg-[#3872af] px-5 py-2 rounded-lg border-2"
                 style={{ color: "white", borderColor: "#3872af" }}
                 onClick={() => {
-                  handleRemoveWithConfirmation(dialogDetails["rowId"]);
+                  if (dialogDetails["handleAdd"]) {
+                    dialogDetails["handleAdd"]();
+                  } else {
+                    handleRemoveWithConfirmation(dialogDetails["rowId"]);
+                  }
                   setDialogDetails({
                     isShow: false,
                   });

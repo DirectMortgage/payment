@@ -495,12 +495,74 @@ const PaymentManagementSection = forwardRef(
         // Add other fields as empty or default values
       };
     };
-    const handleAllImageClick = ({
+    const handleAllImageClick = async ({
       VendorPaymentDetailId,
       VendorPaymentId,
       RowId,
       VendorId,
+      isParentRow = false,
     }) => {
+      if (isParentRow) {
+        const selectedRow = rowData.filter(
+          ({ VendorPaymentId: iVendorPaymentId }) =>
+            iVendorPaymentId == VendorPaymentId
+        );
+        const linkIds = [
+          ...new Set(
+            await Promise.all(
+              selectedRow
+                .map(
+                  async ({
+                    allFileCount = 0,
+                    LinkId = "",
+                    VendorPaymentDetailId,
+                  }) => {
+                    if (allFileCount > 1) {
+                      const multipleLinkId = await handleAPI({
+                        name: "vendorPaymentGetScannedDocument",
+                        params: { VendorPaymentDetailId, companyId },
+                        method: "GET",
+                      });
+                      return [
+                        ...new Set(
+                          JSON.parse(multipleLinkId)
+                            ["AccDocs"].filter(
+                              ({ Usedoc }) => Number(Usedoc) === 1
+                            )
+                            .map(({ LinkId }) => LinkId)
+                        ),
+                      ];
+                    }
+                    return LinkId;
+                  }
+                )
+                .flatMap((_) => _)
+            )
+          ),
+        ]
+          .filter((_) => _)
+          .join(",");
+
+        handleAPI({
+          name: "getMergedInvoice",
+          params: { linkIds },
+          apiName: "LoginCredentialsAPI",
+          method: "GET",
+        }).then((url) => {
+          if (window.location.host.includes("localhost")) {
+            url = url.replace("../../../", "https://www.directcorp.com/");
+          }
+          setTimeout(() => {
+            window.open(
+              url,
+              "_blank",
+              "width=1200,height=1200,resizable=yes,scrollbars=yes"
+            );
+          }, 500);
+        });
+
+        return;
+      }
       let URL =
         "../../../FeeCollection/Presentation/Webforms/VendorPaymentDetailDocuments.aspx?VendorPaymentDetailId=" +
         VendorPaymentDetailId +
@@ -525,8 +587,74 @@ const PaymentManagementSection = forwardRef(
       );
     };
 
-    const handleImageClick = (LinkId, RowId) => {
+    const handleImageClick = async (
+      LinkId,
+      RowId,
+      VendorPaymentId,
+      isParentRow
+    ) => {
       // Handle the click event here
+      if (isParentRow) {
+        const selectedRow = rowData.filter(
+          ({ VendorPaymentId: iVendorPaymentId }) =>
+            iVendorPaymentId == VendorPaymentId
+        );
+        const linkIds = [
+          ...new Set(
+            await Promise.all(
+              selectedRow
+                .map(
+                  async ({
+                    allFileCount = 0,
+                    LinkId = "",
+                    VendorPaymentDetailId,
+                  }) => {
+                    if (allFileCount > 1) {
+                      const multipleLinkId = await handleAPI({
+                        name: "vendorPaymentGetScannedDocument",
+                        params: { VendorPaymentDetailId, companyId },
+                        method: "GET",
+                      });
+                      return [
+                        ...new Set(
+                          JSON.parse(multipleLinkId)
+                            ["AccDocs"].filter(
+                              ({ Usedoc }) => Number(Usedoc) === 1
+                            )
+                            .map(({ LinkId }) => LinkId)
+                        ),
+                      ];
+                    }
+                    return LinkId;
+                  }
+                )
+                .flatMap((_) => _)
+            )
+          ),
+        ]
+          .filter((_) => _)
+          .join(",");
+
+        handleAPI({
+          name: "getMergedInvoice",
+          params: { linkIds },
+          apiName: "LoginCredentialsAPI",
+          method: "GET",
+        }).then((url) => {
+          if (window.location.host.includes("localhost")) {
+            url = url.replace("../../../", "https://www.directcorp.com/");
+          }
+          setTimeout(() => {
+            window.open(
+              url,
+              "_blank",
+              "width=1200,height=1200,resizable=yes,scrollbars=yes"
+            );
+          }, 500);
+        });
+
+        return;
+      }
       let URL =
         "../../../NewDMAcct/GetUploadedImage.aspx?CompanyId=" +
         (companyId || 4) +
@@ -1260,13 +1388,23 @@ const PaymentManagementSection = forwardRef(
                     onKeyDown={(e) => {
                       if ([32, 13].includes(e.keyCode)) {
                         e.preventDefault();
-                        handleImageClick(rowData.LinkId, rowData.RowId);
+                        handleImageClick(
+                          rowData.LinkId,
+                          rowData.RowId,
+                          rowData.VendorPaymentId,
+                          rowData.isParentRow
+                        );
                       }
                     }}
                     tabIndex={0}
-                    onClick={() =>
-                      handleImageClick(rowData.LinkId, rowData.RowId)
-                    }
+                    onClick={() => {
+                      handleImageClick(
+                        rowData.LinkId,
+                        rowData.RowId,
+                        rowData.VendorPaymentId,
+                        rowData.isParentRow
+                      );
+                    }}
                   />
                 )
               )}

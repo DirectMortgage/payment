@@ -1450,7 +1450,9 @@ const PaymentManagementSection = forwardRef(
               //tabIndex={0}
               label=""
               name="item"
-              id={`chkMarkaspaid${rowData.RowId}`}
+              //id={`chkMarkaspaid${rowData.RowId}`}
+              id={`chkMarkaspaid${rowData.RowId}${rowData.isParentRow && (rowData.VendorId === 166624 ||
+                rowData.VendorId === 167753) ? '_parent' : ''}`}
               onChange={(e) => {
                 setIsSaveEnabled(true);
               }}
